@@ -1,0 +1,11 @@
+{
+  "owner": "myestery",
+  "slug": "verify-on-browser",
+  "displayName": "Browser CDP MCP",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1767763888738,
+    "commit": null
+  },
+  "history": []
+}
