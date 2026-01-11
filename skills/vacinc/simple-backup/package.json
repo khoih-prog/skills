@@ -3,10 +3,14 @@
   "version": "1.0.0",
   "description": "Secure, encrypted backup tool for agent workspaces using tar, gpg, and rclone.",
   "bin": {
-    "simple-backup": "./simple-backup"
+    "simple-backup": "./simple-backup.sh"
   },
   "author": "VACInc",
   "license": "MIT",
+  "files": [
+    "simple-backup.sh",
+    "SKILL.md"
+  ],
   "dependencies": {
       "rclone": "*",
       "gpg": "*"
