@@ -1,0 +1,11 @@
+{
+  "owner": "aaronn",
+  "slug": "apple-media",
+  "displayName": "Apple Media Remote (for HomePod, Apple TV, etc)",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1769191422978,
+    "commit": null
+  },
+  "history": []
+}
