@@ -3,9 +3,15 @@
   "slug": "bitcoin-daily",
   "displayName": "Bitcoin Daily",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1769716282889,
-    "commit": "https://github.com/clawdbot/skills/commit/6809a72f920f7d798c37c79f77e2f5655b80357a"
+    "version": "1.2.1",
+    "publishedAt": 1769716953380,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1769716282889,
+      "commit": "https://github.com/clawdbot/skills/commit/6809a72f920f7d798c37c79f77e2f5655b80357a"
+    }
+  ]
 }

@@ -8,6 +8,8 @@ metadata: {"clawdbot":{"emoji":"📰"}}
 
 Daily summary of bitcoindev mailing list + Bitcoin Core commits.
 
+*Made in 🤠 Texas ❤️ [PlebLab](https://pleblab.dev)*
+
 ## Commands
 
 Run via: `node ~/workspace/skills/bitcoindev-digest/scripts/digest.js <command>`
@@ -20,9 +22,15 @@ Run via: `node ~/workspace/skills/bitcoindev-digest/scripts/digest.js <command>`
 
 ## Output
 
-The digest includes:
-1. **Mailing list threads** — titles, links, and content previews from bitcoindev Google Group
-2. **Bitcoin Core commits** — all merges to master since the target date
+The digest script fetches raw data. The agent then summarizes it for the user in this format:
+
+**Mailing list:** Numbered list, each item with:
+- **Bold title** — 1-2 sentence ELI10 explanation with a touch of dry humor
+- Thread link
+
+**Commits:** Bullet list of notable merges with PR links.
+
+Keep summaries accessible — explain like the reader is smart but not a Bitcoin Core contributor. Dry humor welcome, not forced.
 
 ## Archive
 
