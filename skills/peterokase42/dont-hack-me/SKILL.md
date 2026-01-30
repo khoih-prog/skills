@@ -2,9 +2,10 @@
 name: dont-hack-me
 description: >-
   別駭我！基本安全檢測 — Security self-check for Clawdbot/Moltbot.
-  Run a quick audit of your clawdbot.json to catch dangerous
-  misconfigurations — exposed gateway, missing auth, open DM policy,
-  weak tokens, loose file permissions. Auto-fix included.
+  12-point audit of your clawdbot.json: exposed gateway, missing auth,
+  open DM policy, weak tokens, file permissions, reverse proxy bypass,
+  Tailscale exposure, directory perms, browser control, log redaction.
+  Auto-fix included.
   Invoke: "run a security check" or "幫我做安全檢查".
 author: "小安 Ann Agent — Taiwan 台灣"
 homepage: https://github.com/peterann/dont-hack-me
@@ -16,7 +17,7 @@ metadata:
 # dont-hack-me
 
 Security self-check skill for Clawdbot / Moltbot.
-Reads `~/.clawdbot/clawdbot.json` and checks 7 items that cover the most
+Reads `~/.clawdbot/clawdbot.json` and checks 12 items that cover the most
 common misconfigurations. Outputs a simple PASS / FAIL / WARN report.
 
 ## How to run
@@ -38,11 +39,12 @@ Use the `read` tool to open `~/.clawdbot/clawdbot.json`.
 Parse the JSON content. If the file does not exist or is unreadable,
 report an error and stop.
 
-Also run a shell command to get the file permissions:
-```
+Also run shell commands to get file and directory permissions:
+```bash
 stat -f '%Lp' ~/.clawdbot/clawdbot.json
+stat -f '%Lp' ~/.clawdbot/
 ```
-(On Linux: `stat -c '%a' ~/.clawdbot/clawdbot.json`)
+(On Linux: use `stat -c '%a'` instead of `stat -f '%Lp'`)
 
 ### Step 1 — Gateway Bind
 
@@ -73,8 +75,9 @@ stat -f '%Lp' ~/.clawdbot/clawdbot.json
 ### Step 4 — DM Policy (per channel)
 
 - **Path:** `channels.<name>.dmPolicy` for each channel
-- **Expected:** `"pairing"` — or if `"open"`, there must be a non-empty `allowFrom` array
-- **PASS** if `dmPolicy` is `"pairing"`, or if `allowFrom` has at least one entry
+- **Expected:** `"pairing"`, `"allowlist"`, or `"disabled"`
+- **PASS** if `dmPolicy` is `"pairing"`, `"allowlist"`, or `"disabled"`
+- **PASS** if `dmPolicy` is `"open"` but `allowFrom` (same level) has at least one entry
 - **FAIL** if `dmPolicy` is `"open"` and `allowFrom` is missing or empty
 - **SKIP** if no channels are configured
 - **Severity:** HIGH — an open DM policy lets anyone send commands to your agent
@@ -93,8 +96,8 @@ stat -f '%Lp' ~/.clawdbot/clawdbot.json
 - **Check:** file mode of `~/.clawdbot/clawdbot.json`
 - **Expected:** `600` or `400` (owner read/write only)
 - **PASS** if permissions are `600` or `400`
-- **WARN** if permissions are `644` or `640` (group/other can read)
-- **FAIL** if permissions are `777`, `755`, `666`, or anything world-writable
+- **WARN** if group or others can read but NOT write (e.g., `644`, `640`, `604`) — use bitwise check: `(mode & 0o044) != 0` and `(mode & 0o022) == 0`
+- **FAIL** if others or group can write (e.g., `777`, `666`, `662`) — use bitwise check: `(mode & 0o022) != 0`
 - **Severity:** MEDIUM — loose permissions let other users on the system read your tokens
 
 ### Step 7 — Plaintext Secrets Scan
@@ -102,8 +105,81 @@ stat -f '%Lp' ~/.clawdbot/clawdbot.json
 - **Check:** scan all string values in the JSON for keys named `password`, `secret`, `apiKey`, `api_key`, `privateKey`, `private_key` (case-insensitive) that contain a non-empty string value
 - **PASS** if no such keys are found
 - **WARN** if such keys exist — remind the user to consider using environment variables or a secrets manager
-- **Note:** `token` fields used for gateway auth are expected and should NOT be flagged
+- **Note:** `token` under `gateway.auth` is expected and should NOT be flagged
+- **Note:** Channel-specific tokens like `botToken` (Telegram) SHOULD be flagged as WARN — they are required for operation but are high-value targets if the config leaks
 - **Severity:** MEDIUM — plaintext secrets in config files can be leaked through backups, logs, or version control
+
+### Step 8 — Reverse Proxy (trustedProxies)
+
+- **Path:** `gateway.trustedProxies`
+- **Context:** When Clawdbot sits behind nginx, Caddy, or any reverse proxy on the same machine, all connections appear to come from 127.0.0.1. Without `trustedProxies`, the gateway treats every proxied request as a local client and skips auth.
+- **PASS** if `trustedProxies` is a non-empty array (proxy IPs are explicitly listed)
+- **PASS** if `trustedProxies` is absent or empty AND bind is `"loopback"` — print as: `✅ PASS — no proxy, bind is loopback (set trustedProxies if you add one later)`
+- **WARN** if `trustedProxies` is absent or empty AND bind is NOT `"loopback"` (e.g., `"0.0.0.0"`) — the gateway is network-exposed and any proxy can spoof local access
+- **Fix:** Ask the user for their proxy IP(s) and set:
+  ```json
+  { "gateway": { "trustedProxies": ["127.0.0.1"] } }
+  ```
+- **Severity:** CRITICAL — this is the #1 real-world exploit vector (CVE-2025-49596)
+
+### Step 9 — Tailscale Exposure
+
+- **Path:** `gateway.tailscale.mode`
+- **Expected:** `"off"`
+- **PASS** if the value is `"off"` or the key is absent
+- **WARN** if the value is anything other than `"off"` (e.g., `"on"`, `"auto"`) — the gateway becomes reachable by all devices on the tailnet
+- **Fix:** Set `gateway.tailscale.mode` to `"off"`:
+  ```json
+  { "gateway": { "tailscale": { "mode": "off" } } }
+  ```
+- **Severity:** HIGH — tailnet exposure means any device on your Tailscale network can reach the gateway
+
+### Step 10 — Directory Permissions
+
+- **Check:** file mode of the `~/.clawdbot/` directory itself
+- Run: `stat -f '%Lp' ~/.clawdbot/` (macOS) or `stat -c '%a' ~/.clawdbot/` (Linux)
+- **Expected:** `700` (owner only)
+- **PASS** if permissions are `700`
+- **WARN** if permissions are `755` or `750` — other users can list filenames inside
+- **FAIL** if permissions are `777` or anything world-writable
+- **Fix:** Run:
+  ```bash
+  chmod 700 ~/.clawdbot/
+  ```
+- **Severity:** MEDIUM — even if individual files are 600, a listable directory leaks filenames and structure to other users on the system. Infostealers (RedLine, Lumma, Vidar) specifically target `~/.clawdbot/`.
+
+### Step 11 — Browser Control Exposure
+
+- **Path:** `browser.controlUrl` and `browser.controlToken`
+- **Context:** Clawdbot can remote-control a browser. If `controlUrl` is set but `controlToken` is missing, anyone who knows the URL can hijack the browser session.
+- Also check `gateway.controlUi.allowInsecureAuth` — if `true`, token auth is allowed over plain HTTP (tokens can be sniffed).
+- **PASS** if `browser.controlUrl` is absent (browser control not configured)
+- **PASS** if `browser.controlUrl` is set AND `browser.controlToken` is also set
+- **FAIL** if `browser.controlUrl` is set but `browser.controlToken` is missing or empty
+- **WARN** if `gateway.controlUi.allowInsecureAuth` is `true` — tokens sent over HTTP can be intercepted
+- **Note:** If both FAIL (missing token) and WARN (insecureAuth) trigger, report as 1 item with the highest severity (FAIL). Fix both.
+- **Fix:** Set a control token:
+  ```bash
+  openssl rand -hex 24
+  ```
+  Write the output into `browser.controlToken`. If `allowInsecureAuth` is true, set it to false:
+  ```json
+  { "gateway": { "controlUi": { "allowInsecureAuth": false } } }
+  ```
+- **Severity:** HIGH — browser control without auth allows remote UI takeover and access to any logged-in sessions
+
+### Step 12 — Logging Redaction
+
+- **Path:** `logging.redactSensitive`
+- **Expected:** `"tools"` (the only safe value besides being absent)
+- **Valid values:** `"off"` or `"tools"` — there is no `"all"` option
+- **PASS** if the value is `"tools"` or the key is absent (default is `"tools"`)
+- **WARN** if the value is `"off"` — sensitive tool output (API keys, tokens, credentials) will appear in plaintext in session logs
+- **Fix:** Set `logging.redactSensitive` to `"tools"`:
+  ```json
+  { "logging": { "redactSensitive": "tools" } }
+  ```
+- **Severity:** MEDIUM — with redaction off, any secret that passes through a tool call gets logged in plaintext at `~/.clawdbot/logs/`
 
 ## Output format
 
@@ -112,21 +188,27 @@ After completing all checks, output a report in this exact format:
 ```
 🔒 Security Check Report
 
-1. Gateway Bind        <ICON> <STATUS> — <detail>
-2. Gateway Auth        <ICON> <STATUS> — <detail>
-3. Token Strength      <ICON> <STATUS> — <detail>
-4. DM Policy           <ICON> <STATUS> — <detail>
-5. Group Policy        <ICON> <STATUS> — <detail>
-6. File Permissions    <ICON> <STATUS> — <detail>
-7. Secrets Scan        <ICON> <STATUS> — <detail>
+ 1. Gateway Bind        <ICON> <STATUS> — <detail>
+ 2. Gateway Auth        <ICON> <STATUS> — <detail>
+ 3. Token Strength      <ICON> <STATUS> — <detail>
+ 4. DM Policy           <ICON> <STATUS> — <detail>
+ 5. Group Policy        <ICON> <STATUS> — <detail>
+ 6. File Permissions    <ICON> <STATUS> — <detail>
+ 7. Secrets Scan        <ICON> <STATUS> — <detail>
+ 8. Reverse Proxy       <ICON> <STATUS> — <detail>
+ 9. Tailscale           <ICON> <STATUS> — <detail>
+10. Directory Perms     <ICON> <STATUS> — <detail>
+11. Browser Control     <ICON> <STATUS> — <detail>
+12. Log Redaction       <ICON> <STATUS> — <detail>
 
-Score: X/7 PASS, Y WARN, Z FAIL
+Score: X/12 PASS, Y WARN, Z FAIL
 ```
 
 Where:
 - `<ICON>` is one of: ✅ (PASS), ⚠️ (WARN), ❌ (FAIL), ⏭️ (SKIP)
 - `<STATUS>` is one of: `PASS`, `WARN`, `FAIL`, `SKIP`
 - `<detail>` is a short explanation (e.g., "loopback", "token mode", "48 chars", "permissions 600")
+- SKIP items do not count toward the denominator. If 2 items are skipped, the score line reads `X/10` not `X/12`
 
 ## Auto-fix flow
 
@@ -135,10 +217,10 @@ If **any** item is FAIL or WARN, do the following:
 1. Show the report first (as above).
 2. List each fixable item with a short description of what will be changed.
 3. Ask the user: **"Want me to fix these? (yes / no / pick)"**
-   - **yes** — fix all FAIL and WARN items automatically.
+   - **yes** — fix all FAIL and WARN items automatically, EXCEPT items marked "⚠️ NEEDS EXTRA CONFIRMATION" (#3 Token, #9 Tailscale) — those always require individual yes/no even in "yes" mode.
    - **no** — stop, do nothing.
    - **pick** — let the user choose which items to fix.
-4. Apply the fixes (see Fix recipes below).
+4. Apply the fixes (see Fix recipes below). Items marked "NEEDS EXTRA CONFIRMATION" must be confirmed individually before applying.
 5. After applying, re-read the config and re-run the full check to confirm everything is PASS.
 6. If the config was changed, remind the user: **"Run `clawdbot gateway restart` to apply the new settings."**
 
@@ -163,8 +245,10 @@ openssl rand -hex 24
 ```
 That produces a 48-character hex string (192-bit entropy).
 
-#### #3 Token Strength — FAIL / WARN
-Replace the existing token with a new strong one:
+#### #3 Token Strength — FAIL / WARN ⚠️ NEEDS EXTRA CONFIRMATION
+**Warning:** Replacing the token disconnects ALL paired devices (Telegram, phones, other clients). They will need the new token to reconnect.
+Always ask the user before changing: "Replacing the gateway token will disconnect all paired devices. Proceed?"
+If confirmed, generate a new token:
 ```bash
 openssl rand -hex 24
 ```
@@ -195,6 +279,45 @@ remind the user:
 - Or use a secrets manager
 - Reference it in the config as `"$ENV_VAR_NAME"` if the platform supports it
 
+#### #8 Reverse Proxy — WARN
+Ask the user: "Are you running a reverse proxy (nginx, Caddy, etc.) in front of Clawdbot?"
+- If yes: ask for the proxy IP(s) and set:
+  ```json
+  { "gateway": { "trustedProxies": ["127.0.0.1"] } }
+  ```
+- If no: mark as INFO/acknowledged, no config change needed
+
+#### #9 Tailscale — WARN ⚠️ NEEDS EXTRA CONFIRMATION
+**Warning:** Disabling Tailscale cuts off remote access for all tailnet devices.
+Always ask the user before changing: "Disabling Tailscale mode means the gateway is no longer reachable from your tailnet. If you need remote access, use SSH tunneling instead. Proceed?"
+If confirmed, set `gateway.tailscale.mode` to `"off"`:
+```json
+{ "gateway": { "tailscale": { "mode": "off" } } }
+```
+
+#### #10 Directory Permissions — WARN / FAIL
+Run:
+```bash
+chmod 700 ~/.clawdbot/
+```
+
+#### #11 Browser Control — FAIL / WARN
+If `controlToken` is missing, generate and set one:
+```bash
+openssl rand -hex 24
+```
+Write into `browser.controlToken`.
+If `allowInsecureAuth` is true, set to false:
+```json
+{ "gateway": { "controlUi": { "allowInsecureAuth": false } } }
+```
+
+#### #12 Logging Redaction — WARN
+Set `logging.redactSensitive` to `"tools"`:
+```json
+{ "logging": { "redactSensitive": "tools" } }
+```
+
 ### Important rules for auto-fix
 
 - **Always back up first.** Before writing any changes, copy the original:
@@ -223,8 +346,10 @@ For a more comprehensive audit, see community tools like `clawdbot-security-chec
 
 ## Reference
 
-Based on the community-compiled "Top 10 Clawdbot/Moltbot Security Vulnerabilities" list.
-Covers 7 of the 10 items that apply to typical macOS-native deployments.
+Based on the community-compiled "Top 10 Clawdbot/Moltbot Security Vulnerabilities" list,
+plus January 2026 disclosures (CVE-2025-49596 reverse proxy bypass, infostealer targeting,
+Tailscale exposure, browser control, logging redaction). Covers 12 items
+for typical macOS-native deployments.
 
 ---
 
