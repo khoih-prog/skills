@@ -4,9 +4,9 @@ description: |
   AI-powered shopping API for product search and crypto checkout. Use this skill when:
   - Searching for products from Amazon and Shopify
   - Building shopping assistants or product recommendation features
-  - Creating purchase orders with crypto (USDC on Solana) payments
+  - Creating purchase orders with crypto (USDC on Solana or Base)
   - Integrating e-commerce checkout into applications
-  - Signing and submitting Solana transactions for purchases
+  - Signing and submitting blockchain transactions for purchases
 ---
 
 # Purch Public API
@@ -112,9 +112,11 @@ curl -X POST "https://api.purch.xyz/shop" \
 
 ### POST /buy - Create Purchase Order
 
-Create an order and get a Solana transaction to sign.
+Create an order and get a transaction to sign. **Chain is auto-detected from wallet format:**
+- Solana wallet (base58): `7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU`
+- Base/EVM wallet (0x): `0x1234567890abcdef1234567890abcdef12345678`
 
-**Amazon Products** - Use `asin` OR `productUrl`:
+**Amazon Products (Solana)**:
 ```bash
 curl -X POST "https://api.purch.xyz/buy" \
   -H "Content-Type: application/json" \
@@ -131,6 +133,25 @@ curl -X POST "https://api.purch.xyz/buy" \
       "postalCode": "10001",
       "country": "US",
       "phone": "+1-555-123-4567"
+    }
+  }'
+```
+
+**Amazon Products (Base)**:
+```bash
+curl -X POST "https://api.purch.xyz/buy" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "asin": "B0CXYZ1234",
+    "email": "buyer@example.com",
+    "walletAddress": "0x1234567890abcdef1234567890abcdef12345678",
+    "shippingAddress": {
+      "name": "John Doe",
+      "line1": "123 Main St",
+      "city": "New York",
+      "state": "NY",
+      "postalCode": "10001",
+      "country": "US"
     }
   }'
 ```
@@ -175,13 +196,19 @@ curl -X POST "https://api.purch.xyz/buy" \
 
 This skill includes ready-to-use CLI scripts for all endpoints. Available in Python and TypeScript/Bun.
 
-**Dependencies:**
+**Dependencies (Solana):**
 ```bash
 # Python
 pip install solana solders base58
 
 # TypeScript/Bun
 bun add @solana/web3.js bs58
+```
+
+**Dependencies (Base/EVM):**
+```bash
+# TypeScript/Bun
+bun add viem
 ```
 
 ### Search Products
@@ -219,7 +246,7 @@ bun run scripts/buy.ts --url "https://store.com/products/item" --variant 4191394
 
 Address format: `Name,Line1,City,State,PostalCode,Country[,Line2][,Phone]`
 
-### Create Order AND Sign Transaction
+### Create Order AND Sign Transaction (Solana)
 
 End-to-end purchase flow - creates order and signs/submits the Solana transaction:
 
@@ -235,24 +262,47 @@ bun run scripts/buy_and_sign.ts --url "https://store.com/products/item" --varian
   --address "John Doe,123 Main St,NYC,NY,10001,US"
 ```
 
-### Sign Transaction Only
+### Create Order AND Sign Transaction (Base)
+
+End-to-end purchase flow using Base/EVM wallet:
+
+```bash
+bun run scripts/buy_and_sign_base.ts --asin B0CXYZ1234 --email buyer@example.com \
+  --wallet 0x1234567890abcdef1234567890abcdef12345678 \
+  --private-key 0xabc123... \
+  --address "John Doe,123 Main St,New York,NY,10001,US"
+```
+
+### Sign Transaction Only (Solana)
 
 If you already have a `serializedTransaction` from the `/buy` endpoint:
 
 ```bash
 # Python
 python scripts/sign_transaction.py "<serialized_tx>" "<private_key_base58>"
-python scripts/sign_transaction.py "<serialized_tx>" "<private_key_base58>" --rpc-url https://api.mainnet-beta.solana.com
 
 # TypeScript
 bun run scripts/sign_transaction.ts "<serialized_tx>" "<private_key_base58>"
 ```
 
-**Output:**
+### Sign Transaction Only (Base)
+
+```bash
+bun run scripts/sign_transaction_base.ts "<serialized_tx_hex>" "<private_key_hex>"
+```
+
+**Output (Solana):**
 ```
 ✅ Transaction successful!
    Signature: 5UfgJ3vN...
    Explorer:  https://solscan.io/tx/5UfgJ3vN...
+```
+
+**Output (Base):**
+```
+✅ Transaction successful!
+   Hash:     0x1234...
+   Explorer: https://basescan.org/tx/0x1234...
 ```
 
 ## Signing Transactions Programmatically
@@ -343,7 +393,59 @@ def sign_and_send(serialized_tx: str, keypair: Keypair) -> str:
     return result.value  # transaction signature
 ```
 
-## Complete Checkout Flow
+## Signing Base/EVM Transactions
+
+For Base chain orders, the `serializedTransaction` is an EVM transaction that needs to be signed with an EVM wallet.
+
+### TypeScript with viem
+
+```typescript
+import { createWalletClient, http, parseTransaction } from "viem";
+import { base } from "viem/chains";
+import { privateKeyToAccount } from "viem/accounts";
+
+async function signAndSendBaseTransaction(
+  serializedTransaction: string,
+  privateKey: `0x${string}`
+) {
+  const account = privateKeyToAccount(privateKey);
+
+  const client = createWalletClient({
+    account,
+    chain: base,
+    transport: http(),
+  });
+
+  // Parse and send the serialized transaction
+  const tx = parseTransaction(serializedTransaction as `0x${string}`);
+  const hash = await client.sendTransaction(tx);
+
+  console.log("Transaction hash:", hash);
+  console.log("Explorer: https://basescan.org/tx/" + hash);
+
+  return hash;
+}
+```
+
+### React with wagmi
+
+```typescript
+import { useSendTransaction } from "wagmi";
+import { parseTransaction } from "viem";
+
+function CheckoutButton({ serializedTransaction }: { serializedTransaction: string }) {
+  const { sendTransaction } = useSendTransaction();
+
+  const handlePayment = async () => {
+    const tx = parseTransaction(serializedTransaction as `0x${string}`);
+    sendTransaction(tx);
+  };
+
+  return <button onClick={handlePayment}>Pay with USDC on Base</button>;
+}
+```
+
+## Complete Checkout Flow (Solana)
 
 ```typescript
 // 1. Search for products
@@ -354,14 +456,14 @@ const searchResponse = await fetch("https://api.purch.xyz/shop", {
 });
 const { products, reply } = await searchResponse.json();
 
-// 2. User selects a product, create order
+// 2. User selects a product, create order (Solana wallet)
 const orderResponse = await fetch("https://api.purch.xyz/buy", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
-    asin: products[0].asin,  // or productUrl + variantId for Shopify
+    asin: products[0].asin,
     email: "buyer@example.com",
-    walletAddress: wallet.publicKey.toBase58(),
+    walletAddress: wallet.publicKey.toBase58(), // Solana address
     shippingAddress: {
       name: "John Doe",
       line1: "123 Main St",
@@ -374,14 +476,53 @@ const orderResponse = await fetch("https://api.purch.xyz/buy", {
 });
 const { orderId, serializedTransaction, checkoutUrl } = await orderResponse.json();
 
-// 3. Sign and send transaction
+// 3. Sign and send Solana transaction
 const tx = Transaction.from(bs58.decode(serializedTransaction));
 const signed = await wallet.signTransaction(tx);
 const signature = await connection.sendRawTransaction(signed.serialize());
 await connection.confirmTransaction(signature, "confirmed");
 
-// 4. Payment complete - order will be fulfilled
 console.log(`Order ${orderId} paid. Tx: ${signature}`);
+```
+
+## Complete Checkout Flow (Base)
+
+```typescript
+import { parseTransaction } from "viem";
+
+// 1. Search for products
+const searchResponse = await fetch("https://api.purch.xyz/shop", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ message: "wireless headphones under $100" })
+});
+const { products } = await searchResponse.json();
+
+// 2. User selects a product, create order (EVM wallet)
+const orderResponse = await fetch("https://api.purch.xyz/buy", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    asin: products[0].asin,
+    email: "buyer@example.com",
+    walletAddress: "0x1234...", // Base/EVM address - chain auto-detected
+    shippingAddress: {
+      name: "John Doe",
+      line1: "123 Main St",
+      city: "New York",
+      state: "NY",
+      postalCode: "10001",
+      country: "US"
+    }
+  })
+});
+const { orderId, serializedTransaction } = await orderResponse.json();
+
+// 3. Sign and send Base transaction
+const tx = parseTransaction(serializedTransaction as `0x${string}`);
+const hash = await walletClient.sendTransaction(tx);
+
+console.log(`Order ${orderId} paid. Tx: ${hash}`);
 ```
 
 ## Fallback: Browser Checkout
