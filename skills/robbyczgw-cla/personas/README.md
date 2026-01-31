@@ -1,6 +1,6 @@
 # 🎭 Personas
 
-### A OpenClaw Skill
+### A Moltbot Skill
 
 > Transform into 31 specialized AI personalities on demand - from Dev (coding) to Chef Marco (cooking) to Dr. Med (medical)
 
@@ -17,22 +17,10 @@
 "Activate Dr. Med"
 ```
 
-**Slash command shortcuts:**
-```
-/persona dev
-/persona "Chef Marco"
-```
-
 **List available personas:**
 ```
 "List all personas"
 "Show persona categories"
-```
-
-**Slash command list:**
-```
-/persona list
-/personas
 ```
 
 **Create your own:**
@@ -41,20 +29,10 @@
 "I want a persona for debugging"
 ```
 
-**Slash command create:**
-```
-/persona create "Game Master"
-```
-
 **Exit persona mode:**
 ```
 "Exit persona mode"
 "Back to normal"
-```
-
-**Slash command exit:**
-```
-/persona exit
 ```
 
 ---
@@ -273,7 +251,7 @@ Essential personas for everyday use.
 personas/
 ├── README.md         # This file
 ├── FAQ.md            # Common questions
-├── SKILL.md          # Usage instructions (loaded by OpenClaw)
+├── SKILL.md          # Usage instructions (loaded by Moltbot)
 ├── skill.json        # Metadata & persona index
 ├── INTERNAL.md       # Developer documentation
 └── data/             # Persona definitions
@@ -307,8 +285,8 @@ personas/
 - Add to appropriate category in `skill.json`
 - Update this README
 
-**Publishing to ClawHub:**
-- `clawhub publish` from skill directory
+**Publishing to ClawdHub:**
+- `clawdhub publish` from skill directory
 - Semantic versioning for updates
 - Include changelog
 
@@ -316,10 +294,10 @@ personas/
 
 ## 📜 License
 
-Based on Chameleon AI Chat personas - adapted for OpenClaw.
+Based on Chameleon AI Chat personas - adapted for Moltbot.
 
 - Original: Chameleon AI (MIT License)
-- Adaptation: OpenClaw (MIT License)
+- Adaptation: Moltbot (MIT License)
 - Author: Robby / Chameleon AI Community
 
 ---
@@ -327,8 +305,8 @@ Based on Chameleon AI Chat personas - adapted for OpenClaw.
 ## 🔗 Links
 
 - [Chameleon AI Chat](https://github.com/robbyczgw-cla/Chameleon-AI-Chat) - Original project
-- [ClawHub](https://clawhub.ai) - Skill marketplace
-- [OpenClaw Docs](https://openclaw.com/docs) - Framework documentation
+- [ClawdHub](https://clawdhub.com) - Skill marketplace
+- [Moltbot Docs](https://moltbot.com/docs) - Framework documentation
 
 ---
 
