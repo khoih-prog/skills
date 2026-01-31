@@ -64,7 +64,7 @@ If you don't click first and don't hear sounds, that's why! Just click the Test 
 
 ### 1. Test the POC
 
-Open `examples/test.html` in your browser:
+Open `examples/test.html` or `examples/easy-setup.html` in your browser:
 
 ```bash
 cd webchat-audio-notifications/examples
@@ -77,20 +77,6 @@ python3 -m http.server 8080
 2. Switch to another tab
 3. Click "Trigger Notification" (or have someone trigger it)
 4. You should hear a sound! 🔊
-
-**Testing on Remote Server (VPS):**
-
-If you're running on a remote server, use SSH tunneling to access the test page:
-
-```bash
-# On your local machine (replace with your SSH key path and server IP):
-ssh -N -L 8080:127.0.0.1:8080 -i /path/to/your-key.pem user@your-server-ip
-
-# Then open in your local browser:
-# http://localhost:8080/test.html
-```
-
-This forwards the remote server's port 8080 to your local machine, allowing you to test as if it were running locally.
 
 ### 2. Basic Integration
 

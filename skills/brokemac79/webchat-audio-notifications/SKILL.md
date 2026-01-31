@@ -1,7 +1,7 @@
 ---
 name: webchat-audio-notifications
 description: Add browser audio notifications to Moltbot/Clawdbot webchat with 5 intensity levels - from whisper to impossible-to-miss (only when tab is backgrounded).
-version: 1.2.0
+version: 1.1.0
 author: brokemac79
 repository: https://github.com/brokemac79/webchat-audio-notifications
 homepage: https://github.com/brokemac79/webchat-audio-notifications
