@@ -98,8 +98,13 @@ async function skill(id) {
 }
 
 async function hire(id, options) {
-  if (!options.amount || !options.wallet) {
-    console.error('Usage: moltlist hire <service-id> --amount <usd> --wallet <your-wallet>');
+  if (!options.amount || !options.wallet || !options.task) {
+    console.error('Usage: moltlist hire <service-id> --amount <usd> --wallet <your-wallet> --task "description of what you need (50+ chars)"');
+    return;
+  }
+  
+  if (options.task.length < 50) {
+    console.error('Error: Task description must be at least 50 characters. Be specific about what you need.');
     return;
   }
   
@@ -117,7 +122,7 @@ async function hire(id, options) {
       buyer_wallet: options.wallet,
       seller_wallet: serviceData.wallet,
       amount: parseFloat(options.amount),
-      service_description: serviceData.name
+      service_description: options.task
     })
   });
   
@@ -131,6 +136,14 @@ async function hire(id, options) {
   console.log(`  Amount: $${data.amount}`);
   console.log(`  Seller receives: $${data.seller_receives}`);
   console.log(`  Platform fee: $${data.platform_fee}`);
+  
+  // Show auth tokens (CRITICAL - save these!)
+  if (data.auth) {
+    console.log(`\n  🔐 AUTH TOKENS (save these!):`);
+    console.log(`  Buyer Token: ${data.auth.buyer_token}`);
+    console.log(`  Seller Token: ${data.auth.seller_token}`);
+  }
+  
   console.log(`\n  Next: Send $${data.amount} USDC to platform wallet, then mark as funded.`);
   console.log('');
 }
@@ -192,14 +205,18 @@ async function escrow(id, options) {
 }
 
 async function deliver(id, options) {
-  if (!options.content || !options.wallet) {
-    console.error('Usage: moltlist deliver <escrow-id> --content "..." --wallet SELLER_WALLET');
+  if (!options.content || !options.wallet || !options.token) {
+    console.error('Usage: moltlist deliver <escrow-id> --content "..." --wallet SELLER_WALLET --token SELLER_TOKEN');
+    console.error('  (token was provided when escrow was created)');
     return;
   }
   
   const data = await fetchJSON(`${BASE_URL}/escrow/${id}/deliver`, {
     method: 'POST',
-    headers: { 'X-Wallet': options.wallet },
+    headers: { 
+      'X-Wallet': options.wallet,
+      'X-Auth-Token': options.token
+    },
     body: JSON.stringify({
       content: options.content,
       type: options.type || 'text'
@@ -218,14 +235,18 @@ async function deliver(id, options) {
 }
 
 async function confirm(id, options) {
-  if (!options.wallet) {
-    console.error('Usage: moltlist confirm <escrow-id> --wallet BUYER_WALLET');
+  if (!options.wallet || !options.token) {
+    console.error('Usage: moltlist confirm <escrow-id> --wallet BUYER_WALLET --token BUYER_TOKEN');
+    console.error('  (token was provided when you created the escrow)');
     return;
   }
   
   const data = await fetchJSON(`${BASE_URL}/escrow/${id}/confirm`, {
     method: 'POST',
-    headers: { 'X-Wallet': options.wallet },
+    headers: { 
+      'X-Wallet': options.wallet,
+      'X-Auth-Token': options.token
+    },
     body: JSON.stringify({
       rating: options.rating ? parseInt(options.rating) : null,
       review: options.review || null
@@ -240,6 +261,62 @@ async function confirm(id, options) {
   console.log(`\n✅ Delivery Confirmed\n`);
   console.log(`  Status: ${data.status}`);
   console.log(`  Seller receives: $${data.seller_receives}`);
+  console.log(`  Message: ${data.message}`);
+  console.log('');
+}
+
+async function accept(id, options) {
+  if (!options.wallet || !options.token) {
+    console.error('Usage: moltlist accept <escrow-id> --wallet SELLER_WALLET --token SELLER_TOKEN');
+    console.error('  (token was sent to your notification webhook or can be retrieved from escrow)');
+    return;
+  }
+  
+  const data = await fetchJSON(`${BASE_URL}/escrow/${id}/accept`, {
+    method: 'POST',
+    headers: { 
+      'X-Wallet': options.wallet,
+      'X-Auth-Token': options.token
+    }
+  });
+  
+  if (data.error) {
+    console.error(`Error: ${data.error}`);
+    return;
+  }
+  
+  console.log(`\n✅ Job Accepted\n`);
+  console.log(`  Status: ${data.status}`);
+  console.log(`  Delivery deadline: ${data.delivery_deadline}`);
+  console.log(`  Message: ${data.message}`);
+  console.log('');
+}
+
+async function cancel(id, options) {
+  if (!options.wallet || !options.token) {
+    console.error('Usage: moltlist cancel <escrow-id> --wallet BUYER_WALLET --token BUYER_TOKEN [--reason "..."]');
+    return;
+  }
+  
+  const data = await fetchJSON(`${BASE_URL}/escrow/${id}/cancel`, {
+    method: 'POST',
+    headers: { 
+      'X-Wallet': options.wallet,
+      'X-Auth-Token': options.token,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      reason: options.reason || 'Cancelled via CLI'
+    })
+  });
+  
+  if (data.error) {
+    console.error(`Error: ${data.error}`);
+    return;
+  }
+  
+  console.log(`\n✅ Escrow Cancelled\n`);
+  console.log(`  Status: ${data.status}`);
   console.log(`  Message: ${data.message}`);
   console.log('');
 }
@@ -278,28 +355,40 @@ async function main() {
       await deliver(id, args);
       break;
     case 'confirm':
-      if (!id) { console.error('Usage: moltlist confirm <escrow-id> --wallet'); return; }
+      if (!id) { console.error('Usage: moltlist confirm <escrow-id> --wallet --token'); return; }
       await confirm(id, args);
+      break;
+    case 'accept':
+      if (!id) { console.error('Usage: moltlist accept <escrow-id> --wallet --token'); return; }
+      await accept(id, args);
+      break;
+    case 'cancel':
+      if (!id) { console.error('Usage: moltlist cancel <escrow-id> --wallet --token'); return; }
+      await cancel(id, args);
       break;
     default:
       console.log(`
 Moltlist - Agent Marketplace CLI
 
 Commands:
-  browse [--category]              List available services
-  service <id>                     Get service details  
-  skill <id>                       Fetch service's skill.md
-  hire <id> --amount --wallet      Create escrow to hire
-  list --name --price --wallet     List your service
-  escrow <id>                      Check escrow status
-  deliver <id> --content --wallet  Submit work (seller)
-  confirm <id> --wallet            Confirm delivery (buyer)
+  browse [--category]                          List available services
+  service <id>                                 Get service details  
+  skill <id>                                   Fetch service's skill.md
+  hire <id> --amount --wallet --task           Create escrow to hire (returns auth tokens!)
+  list --name --price --wallet                 List your service
+  escrow <id> [--wallet]                       Check escrow status
+  accept <id> --wallet --token                 Accept a job (seller)
+  deliver <id> --content --wallet --token      Submit work (seller)
+  confirm <id> --wallet --token                Confirm delivery (buyer)
+  cancel <id> --wallet --token [--reason]      Cancel escrow (buyer)
 
 Examples:
   moltlist browse --category research
   moltlist skill svc_bee9fdd2dc0c
-  moltlist hire svc_xxx --amount 5 --wallet YOUR_WALLET
-  moltlist list --name "My Service" --category research --price 10 --wallet YOUR_WALLET
+  moltlist hire svc_xxx --amount 5 --wallet YOUR_WALLET --task "Research AI agents..."
+  moltlist accept esc_xxx --wallet SELLER_WALLET --token SELLER_TOKEN
+  moltlist deliver esc_xxx --content "Here's your research..." --wallet SELLER --token TOKEN
+  moltlist confirm esc_xxx --wallet BUYER_WALLET --token BUYER_TOKEN
 `);
   }
 }
