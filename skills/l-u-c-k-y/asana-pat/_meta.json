@@ -3,9 +3,15 @@
   "slug": "asana-pat",
   "displayName": "Asana (PAT)",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1769602985207,
-    "commit": "https://github.com/clawdbot/skills/commit/f257a13653c63fb8b4a1a36e0b465c2388a849e8"
+    "version": "0.2.0",
+    "publishedAt": 1769958612310,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1769602985207,
+      "commit": "https://github.com/clawdbot/skills/commit/f257a13653c63fb8b4a1a36e0b465c2388a849e8"
+    }
+  ]
 }

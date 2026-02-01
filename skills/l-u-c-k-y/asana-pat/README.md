@@ -1,145 +1,223 @@
-# Asana (PAT) skill for Moltbot / Clawdbot
+# Asana skill (PAT) for OpenClaw / Clawdbot
 
-A clean, dependency-free Asana CLI skill that authenticates with an **Asana Personal Access Token (PAT)** and supports both:
+A dependency-free **AgentSkill** that integrates **Asana** via the **Asana REST API (v1)** using a **Personal Access Token (PAT)**.
 
-- **Personal productivity**: capture, triage, manage “My Tasks”.
-- **Project management**: project briefs, status updates, dependencies/blockers, timelines, custom fields, and structured stakeholder updates.
+- No npm dependencies
+- Node.js 18+ (uses built-in `fetch`, `FormData`, `Blob`)
+- JSON-only output (designed for agent tool calls)
+- Supports both:
+  - Personal task management (My Tasks / triage)
+  - Project manager workflows (briefs, status updates, timelines, custom fields, blockers, stakeholder comments)
 
-This skill is intended to be published on **ClawdHub** and used via Moltbot/Clawdbot skills loading.
+## Repo layout
 
-## What’s included
+- `SKILL.md` — skill instructions for the agent runtime
+- `README.md` — human-facing quickstart (this file)
+- `scripts/asana.mjs` — CLI (the only executable)
+- `references/REFERENCE.md` — implementation notes and API links
+- `LICENSE`
 
-- `scripts/asana.mjs`: Node.js CLI (no external npm deps)
-- `SKILL.md`: skill instructions + metadata
-- `references/REFERENCE.md`: reference links and design notes
-- `LICENSE.txt`: MIT
+## Prerequisites
 
-## Requirements
+- Node.js **18+**
+- An Asana account
+- An Asana **Personal Access Token** (PAT)
 
-- Node.js **18+** (Node 20/22 recommended)
-- An Asana PAT (acts as the user who created it)
+## Setup (PAT)
 
-## Security note
+1. Create a PAT: Asana → Developer App / PAT settings (see Asana docs: Personal access token).
+2. Provide it to the runtime as `ASANA_PAT`.
 
-A PAT has the same permissions in the API as the user who generated it has in the Asana UI. Treat it like a password:
-store securely, do not commit to git, and rotate if exposed.
+### Recommended: store the PAT in OpenClaw config (non-interactive)
 
-## Configure in Moltbot/Clawdbot
+This keeps secrets out of prompts and reduces accidental token leakage.
 
-This skill requires:
-
-- `ASANA_PAT`
-
-### Skills config
-
-Use skills config to inject env vars (especially when the agent is sandboxed).
-
-Docs:
-- https://docs.molt.bot/tools/skills-config
-- https://docs.molt.bot/tools/skills
-
-Example snippet:
-
-```jsonc
-{
-  "skills": {
-    "entries": {
-      "asana-pat": {
-        "enabled": true,
-        "apiKey": "ASANA_PAT",
-        "env": {
-          "ASANA_PAT": "YOUR_TOKEN"
-        }
-      }
-    }
-  }
-}
-```
-
-## Usage
-
-Get command help:
+**Recommended (apiKey → ASANA_PAT):**
 
 ```bash
-node ./skills/asana-pat/scripts/asana.mjs help
+openclaw config set skills.entries.asana.enabled true
+openclaw config set skills.entries.asana.apiKey "ASANA_PAT_HERE"
 ```
 
-### Common personal flows
-
-List tasks assigned to me:
+**Alternative (explicit env):**
 
 ```bash
-node ./skills/asana-pat/scripts/asana.mjs tasks-assigned --assignee me --all
+openclaw config set skills.entries.asana.enabled true
+openclaw config set skills.entries.asana.env.ASANA_PAT "ASANA_PAT_HERE"
 ```
 
-Create a task:
+**Verify what is stored:**
 
 ```bash
-node ./skills/asana-pat/scripts/asana.mjs create-task --workspace <workspace_gid> --name "Call the accountant" --due_on 2026-02-01
+openclaw config get skills.entries.asana
+openclaw config get skills.entries.asana.enabled
+openclaw config get skills.entries.asana.apiKey
 ```
 
-### Common PM flows
-
-Get a project dashboard snapshot:
+**Remove a stored token:**
 
 ```bash
-node ./skills/asana-pat/scripts/asana.mjs project-dashboard --project <project_gid> --all
+openclaw config unset skills.entries.asana.apiKey
+# or
+openclaw config unset skills.entries.asana.env.ASANA_PAT
 ```
 
-Upsert a project brief (rich text):
+#### Important: sandboxed runs
+
+When a session is sandboxed, skills run inside Docker and do **not** inherit the host environment.
+Set Docker env via `agents.defaults.sandbox.docker.env` (or per-agent `agents.list[].sandbox.docker.env`).
+
+### Local smoke test
 
 ```bash
-node ./skills/asana-pat/scripts/asana.mjs upsert-project-brief <project_gid> --title "Weekly Brief" --html_text "<body><h1>Status</h1><ul><li>On track</li></ul></body>"
+export ASANA_PAT="YOUR_TOKEN"
+node scripts/asana.mjs me
 ```
 
-Create a project status update:
+## Common workflows
+
+### 1) Set a default workspace once (recommended)
 
 ```bash
-node ./skills/asana-pat/scripts/asana.mjs create-status-update --parent <project_gid> --status_type on_track --title "Weekly update" --text "All milestones are on track."
+node scripts/asana.mjs workspaces
+node scripts/asana.mjs set-default-workspace --workspace <workspace_gid>
 ```
 
-### Rich text mentions
+After this, commands that require a workspace can omit `--workspace`.
 
-Asana rich text uses XML-valid HTML wrapped in `<body>...</body>`.
-To mention/link an object you can use `<a data-asana-gid="..."/>` and Asana will expand it (when you have access).
-
-For comments, mention notifications typically require the user to already be a follower. This CLI supports that pattern:
+### 2) List projects in a workspace
 
 ```bash
-node ./skills/asana-pat/scripts/asana.mjs comment <task_gid> --html_text "<body>FYI <a data-asana-gid=\"<user_gid>\"/></body>" --ensure_followers <user_gid>
+node scripts/asana.mjs projects --workspace <workspace_gid> --all
 ```
 
-### Attachments and inline images
+(or omit `--workspace` if you set a default)
 
-Upload an image to a task:
+### 3) Personal productivity: tasks assigned to me
 
 ```bash
-node ./skills/asana-pat/scripts/asana.mjs upload-attachment --parent <task_gid> --file ./screenshot.png
+node scripts/asana.mjs tasks-assigned --assignee me --workspace <workspace_gid> --all
 ```
 
-List attachments on the task (to get the attachment GID):
+### 4) Project: list tasks in project
 
 ```bash
-node ./skills/asana-pat/scripts/asana.mjs attachments <task_gid> --all
+node scripts/asana.mjs tasks-in-project --project <project_gid> --all
 ```
 
-Append that image inline into the task description:
+### 5) Search tasks (Advanced Search)
+
+This is the canonical primitive for “search within a project” (and many other filters):
 
 ```bash
-node ./skills/asana-pat/scripts/asana.mjs append-inline-image --task <task_gid> --attachment <attachment_gid>
+node scripts/asana.mjs search-tasks --workspace <gid> --project <project_gid> --text "invoice" --all
 ```
 
-## Publishing to ClawdHub
+### 6) Create / update a task
 
-Docs:
-- https://docs.molt.bot/tools/clawdhub
+Create:
 
-Typical workflows:
+```bash
+node scripts/asana.mjs create-task   --workspace <workspace_gid>   --name "TEST - Asana formatting"   --projects <project_gid>   --assignee me
+```
 
-- Search skills: `clawdhub search "asana"`
-- Install: `clawdhub install <skill-slug>`
-- Publish your skill folder: `clawdhub publish` (see docs for auth + versioning)
+Update:
 
-## License
+```bash
+node scripts/asana.mjs update-task <task_gid> --due_on 2026-02-01
+```
 
-MIT. See `LICENSE`.
+### 7) Add/remove a task to/from a project
+
+Add:
+
+```bash
+node scripts/asana.mjs add-task-to-project <task_gid> --project <project_gid>
+```
+
+Add with section placement:
+
+```bash
+node scripts/asana.mjs add-task-to-project <task_gid> --project <project_gid>   --section <section_gid> --insert_before null --insert_after null
+```
+
+Remove:
+
+```bash
+node scripts/asana.mjs remove-task-from-project <task_gid> --project <project_gid>
+```
+
+### 8) Rich text + mentions (reliable pattern)
+
+Asana rich text must be **XML-valid** and wrapped in `<body>...</body>`. Avoid unsupported tags like `<p>` / `<br>`. Use literal newlines and `<hr/>` separators.
+
+Task description (rich):
+
+```bash
+node scripts/asana.mjs update-task <task_gid> --html_notes '<body>Rich description: <a data-asana-gid="USER_GID"/>
+<hr/>
+Plain-ish description: @Lucky</body>'
+```
+
+Comment (rich) with reliable notification delivery:
+
+```bash
+node scripts/asana.mjs comment <task_gid>   --html_text '<body>Rich comment: <a data-asana-gid="USER_GID"/> hello from rich text.</body>'   --ensure_followers USER_GID   --wait_ms 2500
+```
+
+Plain text comments (`--text`) do **not** create real @mentions via the API; they remain plain text.
+
+### 9) Upload a file and embed an inline image
+
+Upload:
+
+```bash
+node scripts/asana.mjs upload-attachment --parent <task_gid> --file ./screenshot.png
+```
+
+Embed inline (tasks + project briefs only):
+
+```bash
+node scripts/asana.mjs append-inline-image --attachment <attachment_gid> --task <task_gid>
+```
+
+## Install as a local skill
+
+OpenClaw loads skills from (highest precedence first):
+
+1. `<workspace>/skills`
+2. `~/.openclaw/skills`
+3. bundled skills
+
+Copy this folder into your workspace skills directory, e.g.:
+
+`<your_openclaw_workspace>/skills/asana/`
+
+## Publishing to ClawHub
+
+You can publish directly from a local folder; a GitHub repo is optional.
+
+### Install the CLI
+
+```bash
+npm i -g clawhub
+clawhub --help
+```
+
+### First-time publish (run from this folder)
+
+```bash
+clawhub publish . --slug asana --name "Asana" --version 1.0.0 --tags latest --changelog "Initial release (PAT)"
+```
+
+Notes:
+- `--slug` must be unique on ClawHub. If `asana` is taken, use something like `asana-pat` or `asana-skill`.
+- To publish an update, bump `--version` (semver) and publish again.
+
+## Troubleshooting
+
+- **401 Unauthorized**: PAT missing/invalid. Verify `ASANA_PAT` is set and has not been revoked.
+- **400 xml_parsing_error**: invalid rich text XML or unsupported tags. Use `<body>...</body>`, avoid `<p>`/`<br>`, and keep markup minimal.
+- **Mention didn’t notify**: ensure the mentioned user is assigned or a follower before posting the comment (and add a short wait after adding followers).
+
+See `references/REFERENCE.md` for links and implementation notes.

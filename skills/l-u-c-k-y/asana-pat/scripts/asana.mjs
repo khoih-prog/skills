@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Asana (PAT) CLI for Clawdbot / Clawd skills
+ * Asana (PAT) CLI for OpenClaw / Clawdbot skills
  *
  * - Authentication: Personal Access Token (PAT) via env var
  * - Zero external dependencies (Node 18+)
@@ -17,14 +17,18 @@ const API_BASE = "https://app.asana.com/api/1.0";
 
 /**
  * Token env vars (in priority order).
- * Clawdbot typically injects apiKey into the skill's primary env var.
+ * OpenClaw/Clawdbot typically injects apiKey into the skill's primary env var.
  */
 const TOKEN_ENV_VARS = ["ASANA_PAT", "ASANA_TOKEN"];
 
-const DEFAULT_CONFIG_PATH = path.join(os.homedir(), ".clawdbot", "skills", "asana-pat.json");
+const DEFAULT_CONFIG_PATH = path.join(os.homedir(), ".openclaw", "skills", "asana.json");
 const LEGACY_CONFIG_PATHS = [
+  // Older naming / locations
+  path.join(os.homedir(), ".openclaw", "skills", "asana-pat.json"),
   path.join(os.homedir(), ".clawdbot", "skills", "asana.json"),
+  path.join(os.homedir(), ".clawdbot", "skills", "asana-pat.json"),
   path.join(os.homedir(), ".clawd", "skills", "asana.json"),
+  path.join(os.homedir(), ".clawd", "skills", "asana-pat.json"),
 ];
 
 /** -------------------------------------------------------------------------- */

@@ -1,6 +1,7 @@
 # AGENTS.md
 
-This repository is an **AgentSkill** for Clawdbot/ClawdHub: **Asana (PAT)**.
+This repository is an **AgentSkill** for OpenClaw / Clawdbot: **Asana (PAT)**.
+
 It is intentionally small, dependency-free, and designed to work in sandboxed environments.
 
 If you are a coding agent working in this repo, follow the guidance below.
@@ -22,13 +23,25 @@ Non-goals:
 
 ## Repo layout
 
-- `SKILL.md` — Clawdbot/ClawdHub skill definition + usage guide
+- `SKILL.md` — skill definition + agent-facing usage guide
 - `README.md` — human-facing quickstart (install/config/run)
 - `scripts/asana.mjs` — the only executable; dependency-free Node ESM CLI
 - `references/REFERENCE.md` — API notes, links, and gotchas
 - `LICENSE`
 
+## Local config files
+
+The CLI stores local-only convenience config (defaults, contexts, event sync tokens) in:
+
+- Default: `~/.openclaw/skills/asana.json`
+- Override: `ASANA_CONFIG_PATH=/path/to/file.json`
+
+Legacy paths are still read (for compatibility): `~/.clawdbot/skills/*` and `~/.clawd/skills/*`.
+
 ## Setup commands
+
+OpenClaw config can be edited non-interactively via `openclaw config get|set|unset` (useful for enabling the skill and injecting `ASANA_PAT`).
+
 
 No package manager required.
 
@@ -62,7 +75,7 @@ There is no test suite yet. If you change behavior, run at least:
 ### API calls
 
 - Prefer explicit `opt_fields` defaults for predictable output.
-- Handle pagination where it matters (Asana typically uses `limit` + `offset`).
+- Handle pagination where it matters (Asana uses `limit` + `offset`).
 - Treat 402 responses as “feature not available / premium required” and return a clear error.
 
 ### Code style
@@ -81,15 +94,19 @@ There is no test suite yet. If you change behavior, run at least:
 
 - Rich text uses Asana’s XML-valid HTML conventions (`html_*` fields).
 - Mentions should be paired with follower management when notification delivery matters.
-- Attachment uploads must use `multipart/form-data` and should return both `gid` and `permanent_url` if available.
+- Attachment uploads must use `multipart/form-data` and should return `gid` plus stable links (`permanent_url` when available).
 
 ## Release & publishing
 
-- This skill is published to **ClawdHub** from the skill folder (no GitHub repo required).
+- This skill can be published to **ClawHub** directly from the skill folder (GitHub is optional).
+- First-time publish example:
+
+  `clawhub publish . --slug asana --name "Asana" --version 1.0.0 --tags latest --changelog "Initial release (PAT)"`
+
 - When preparing a release:
-  - Update `README.md` / `SKILL.md` docs if command surface changed
-  - Bump the semver version used during `clawdhub publish`
-  - Validate install into a clean workspace via `clawdhub install <slug>`
+  - Update `README.md` / `SKILL.md` docs if the command surface changed
+  - Bump the semver version used during `clawhub publish`
+  - Validate install into a clean workspace via `clawhub install <slug>`
 
 ## When unsure
 
