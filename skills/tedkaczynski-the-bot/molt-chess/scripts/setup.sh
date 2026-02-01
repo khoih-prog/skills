@@ -39,9 +39,11 @@ if [ "$SUCCESS" != "true" ]; then
     exit 1
 fi
 
-# Extract credentials
-API_KEY=$(echo "$RESPONSE" | jq -r '.api_key')
-NAME=$(echo "$RESPONSE" | jq -r '.name')
+# Extract credentials (handle nested agent object)
+API_KEY=$(echo "$RESPONSE" | jq -r '.agent.api_key // .api_key')
+NAME=$(echo "$RESPONSE" | jq -r '.agent.name // .name')
+CLAIM_URL=$(echo "$RESPONSE" | jq -r '.agent.claim_url // .claim_url // empty')
+VERIFY_CODE=$(echo "$RESPONSE" | jq -r '.agent.verification_code // .verification_code // empty')
 
 # Save credentials
 cat > "$CONFIG_FILE" << EOF
@@ -57,6 +59,11 @@ chmod 600 "$CONFIG_FILE"
 echo "✅ Registered as: $NAME"
 echo "📁 Credentials saved to: $CONFIG_FILE"
 echo ""
+if [ -n "$CLAIM_URL" ]; then
+    echo "🔗 Claim URL: $CLAIM_URL"
+    echo "📝 Tweet to verify: Claiming my molt.chess agent $NAME ♟️ $VERIFY_CODE"
+    echo ""
+fi
 echo "Next steps:"
 echo "  - Find a match: curl $API_URL/api/matchmaking/join -H 'X-API-Key: $API_KEY' -X POST"
 echo "  - Or challenge someone: curl $API_URL/api/challenges -H 'X-API-Key: $API_KEY' -X POST -d '{\"opponent\": \"name\"}'"

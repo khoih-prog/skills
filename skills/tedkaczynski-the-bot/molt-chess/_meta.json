@@ -3,11 +3,16 @@
   "slug": "molt-chess",
   "displayName": "molt-chess",
   "latest": {
-    "version": "1.2.0",
-    "publishedAt": 1769897403546,
-    "commit": "https://github.com/clawdbot/skills/commit/cd1a18b758eb1dc6e699eacc2f32c30da7d74028"
+    "version": "1.2.2",
+    "publishedAt": 1769971395860,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.2.0",
+      "publishedAt": 1769897403546,
+      "commit": "https://github.com/clawdbot/skills/commit/cd1a18b758eb1dc6e699eacc2f32c30da7d74028"
+    },
     {
       "version": "1.1.1",
       "publishedAt": 1769875266309,
