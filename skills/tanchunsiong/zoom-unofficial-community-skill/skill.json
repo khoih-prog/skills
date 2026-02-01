@@ -12,9 +12,9 @@
     "transcript",
     "ai-companion",
     "rtms",
-    "clawdbot"
+    "openclaw"
   ],
-  "clawdbot": {
+  "openclaw": {
     "emoji": "📹",
     "requires": {
       "env": [
