@@ -1,7 +1,7 @@
 ---
 name: tinman
-version: 0.3.0
-description: AI security scanner - discovers prompt injection, tool exfil, context bleed with 80+ attack probes and real-time monitoring
+version: 0.5.0
+description: AI security scanner - discovers prompt injection, tool exfil, context bleed, crypto wallet theft, unauthorized actions, evasion attacks, memory poisoning with 270+ attack probes and real-time monitoring
 author: oliveskin
 repository: https://github.com/oliveskin/openclaw-skill-tinman
 license: Apache-2.0
@@ -14,8 +14,8 @@ requires:
 
 install:
   pip:
-    - AgentTinman>=0.1.60
-    - tinman-openclaw-eval>=0.1.2
+    - AgentTinman>=0.2.1
+    - tinman-openclaw-eval>=0.3.0
 
 permissions:
   tools:
@@ -107,9 +107,16 @@ Run proactive security sweep with 80+ synthetic attack probes.
 
 **Attack Categories:**
 - `prompt_injection` (15 attacks): Jailbreaks, DAN, instruction override
-- `tool_exfil` (18 attacks): SSH keys, credentials, network exfil
+- `tool_exfil` (42 attacks): SSH keys, credentials, cloud creds, supply-chain tokens, network exfil
 - `context_bleed` (14 attacks): Cross-session leaks, memory extraction
 - `privilege_escalation` (15 attacks): Sandbox escape, elevation bypass
+- `financial` (26 attacks): Crypto wallets (BTC, ETH, SOL, Base), transactions, exchange API keys
+- `unauthorized_action` (28 attacks): Actions without consent, implicit execution
+- `mcp_attacks` (20 attacks): MCP tool abuse, server injection, cross-MCP exfil
+- `indirect_injection` (20 attacks): Injection via files, URLs, documents
+- `evasion_bypass` (30 attacks): Unicode bypass, URL/base64/hex encoding, shell injection
+- `memory_poisoning` (25 attacks): Context injection, RAG poisoning, history rewriting
+- `platform_specific` (35 attacks): Windows (mimikatz, schtasks, PowerShell IEX, certutil), macOS (LaunchAgents, keychain), Linux (systemd, cron), cloud metadata
 
 **Output:** Writes sweep report to `~/.openclaw/workspace/tinman-sweep.md`
 
