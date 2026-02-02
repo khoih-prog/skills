@@ -3,9 +3,15 @@
   "slug": "everclaw",
   "displayName": "Everclaw",
   "latest": {
-    "version": "0.3.0",
-    "publishedAt": 1770035295697,
-    "commit": "https://github.com/clawdbot/skills/commit/2dbac4fce1c798793866edddcaed5af24608ce70"
+    "version": "0.6.0",
+    "publishedAt": 1770039520574,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.3.0",
+      "publishedAt": 1770035295697,
+      "commit": "https://github.com/clawdbot/skills/commit/2dbac4fce1c798793866edddcaed5af24608ce70"
+    }
+  ]
 }
