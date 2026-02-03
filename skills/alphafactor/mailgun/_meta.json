@@ -1,0 +1,11 @@
+{
+  "owner": "alphafactor",
+  "slug": "mailgun",
+  "displayName": "Mailgun",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1770088873877,
+    "commit": null
+  },
+  "history": []
+}
