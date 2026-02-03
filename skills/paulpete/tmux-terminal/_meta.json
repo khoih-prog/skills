@@ -1,0 +1,11 @@
+{
+  "owner": "paulpete",
+  "slug": "tmux-terminal",
+  "displayName": "Tmux Terminal",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1770081895205,
+    "commit": null
+  },
+  "history": []
+}
