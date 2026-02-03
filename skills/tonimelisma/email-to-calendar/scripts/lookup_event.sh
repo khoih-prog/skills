@@ -1,14 +1,20 @@
 #!/bin/bash
 # Look up a tracked event by email_id, event_id, or summary
-# Usage: lookup_event.sh --email-id <id> | --event-id <id> | --summary <text>
+# Usage: lookup_event.sh --email-id <id> | --event-id <id> | --summary <text> | --list [--validate]
 #
-# Returns JSON with the event details if found, or empty if not
+# Options:
+#   --validate    Check if the calendar event still exists, remove orphaned entries
+#
+# Returns JSON with the event details if found, or empty array [] if not
 
+SCRIPT_DIR="$(dirname "$0")"
+UTILS_DIR="$SCRIPT_DIR/utils"
 EVENTS_FILE="$HOME/.openclaw/workspace/memory/email-to-calendar/events.json"
 
 # Parse arguments
 SEARCH_TYPE=""
 SEARCH_VALUE=""
+VALIDATE="false"
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -31,9 +37,13 @@ while [[ $# -gt 0 ]]; do
             SEARCH_TYPE="list"
             shift
             ;;
+        --validate)
+            VALIDATE="true"
+            shift
+            ;;
         *)
             echo "Unknown option: $1" >&2
-            echo "Usage: lookup_event.sh --email-id <id> | --event-id <id> | --summary <text> | --list" >&2
+            echo "Usage: lookup_event.sh --email-id <id> | --event-id <id> | --summary <text> | --list [--validate]" >&2
             exit 1
             ;;
     esac
@@ -49,39 +59,9 @@ if [ ! -f "$EVENTS_FILE" ]; then
     exit 0
 fi
 
-python3 << EOF
-import json
-import sys
-
-events_file = "$EVENTS_FILE"
-search_type = "$SEARCH_TYPE"
-search_value = "$SEARCH_VALUE"
-
-try:
-    with open(events_file, 'r') as f:
-        data = json.load(f)
-except (FileNotFoundError, json.JSONDecodeError):
-    print("[]")
-    sys.exit(0)
-
-events = data.get('events', [])
-
-if search_type == "list":
-    # Return all events
-    print(json.dumps(events, indent=2))
-elif search_type == "email_id":
-    # Find by email_id (exact match)
-    results = [e for e in events if e.get('email_id') == search_value]
-    print(json.dumps(results, indent=2))
-elif search_type == "event_id":
-    # Find by event_id (exact match)
-    results = [e for e in events if e.get('event_id') == search_value]
-    print(json.dumps(results, indent=2))
-elif search_type == "summary":
-    # Find by summary (case-insensitive partial match)
-    search_lower = search_value.lower()
-    results = [e for e in events if search_lower in e.get('summary', '').lower()]
-    print(json.dumps(results, indent=2))
-else:
-    print("[]")
-EOF
+# Delegate to Python implementation
+python3 "$UTILS_DIR/event_tracking.py" lookup \
+    --type "$SEARCH_TYPE" \
+    --value "$SEARCH_VALUE" \
+    --validate "$VALIDATE" \
+    --script-dir "$SCRIPT_DIR"

@@ -1,5 +1,101 @@
 # Changelog
 
+## [1.9.1] - 2026-02-02
+
+### Added
+- **Comprehensive Test Suite**: 135 unit tests for all Python utility modules
+  - `tests/test_common.py`: Tests for shared utility functions
+  - `tests/test_date_parser.py`: Tests for date/time parsing
+  - `tests/test_json_store.py`: Tests for JSON file operations
+  - `tests/test_event_tracking.py`: Tests for event tracking operations
+  - `tests/test_pending_ops.py`: Tests for pending invites operations
+  - `tests/test_activity_ops.py`: Tests for activity logging
+  - `tests/test_changelog_ops.py`: Tests for changelog operations
+  - `tests/test_invite_ops.py`: Tests for invite status updates
+  - `tests/test_undo_ops.py`: Tests for undo operations
+- **Test Runner**: `scripts/run_tests.sh` for easy test execution
+- **Zero-Dependency Testing**: All tests use Python's built-in `unittest` module (no pip install required)
+
+### Changed
+- `utils/__init__.py`: Added package init file for proper module imports
+
+## [1.8.0] - 2026-02-02
+
+### Changed
+- **Major Refactoring**: Extracted embedded Python to shared utility modules
+  - `utils/json_store.py`: Common JSON file operations (load_json, save_json, ensure_dir)
+  - `utils/common.py`: Shared utilities (get_day_of_week, format_timestamp, generate_id, time_ago)
+  - `utils/changelog_ops.py`: Changelog logic extracted from changelog.sh
+  - `utils/activity_ops.py`: Activity log logic extracted from activity_log.sh
+  - `utils/pending_ops.py`: Pending invites logic extracted from list_pending.sh
+  - `utils/event_tracking.py`: Event tracking logic consolidated from multiple scripts
+  - `utils/invite_ops.py`: Invite status updates extracted from update_invite_status.sh
+  - `utils/undo_ops.py`: Undo helper functions extracted from undo.sh
+- **Streamlined SKILL.md**: Reduced from 41KB to 10KB (75% reduction)
+  - Removed redundant setup section (now references SETUP.md)
+  - Moved detailed CLI reference to references/gog-commands.md
+  - Consolidated repetitive examples
+- **Refactored Scripts**: Shell scripts now thin wrappers delegating to Python utilities
+  - changelog.sh: 436 → 111 lines
+  - activity_log.sh: 282 → 84 lines
+  - list_pending.sh: 235 → 36 lines
+  - Fixed duplicate get_day_of_week() function in list_pending.sh
+
+### Added
+- **references/gog-commands.md**: Detailed gog CLI reference with recurrence patterns, flags, and advanced syntax
+
+## [1.7.0] - 2026-02-02
+
+### Added
+- **Shared Date Parser**: Extracted date/time parsing to `scripts/utils/date_parser.py` to reduce code duplication (~70 lines removed)
+- **Capability Requirements**: Skill now declares semantic capabilities (`read_email`, `create_calendar_event`, `update_calendar_event`) instead of just binary requirements
+- **Email Scanning Heartbeat**: BOOT.md now includes email scanning section for automatic email checks during heartbeat cycles
+- **Capability Verification**: On first activation, skill verifies agent has required email/calendar capabilities
+
+### Changed
+- **Tool Flexibility**: SKILL.md and SETUP.md now note that `gog` commands are reference examples; agents with alternative tools (MCP servers, other CLIs) can use those instead
+- **package.json**: `requires.capabilities` added alongside `requires.bins`
+- **create_event.sh**: Now uses shared `date_parser.py` instead of inline Python
+- **check_duplicate.sh**: Now uses shared `date_parser.py` instead of inline Python
+
+## [1.6.0] - 2026-02-02
+
+### Added
+- **Smart Onboarding**: Auto-detects Gmail accounts and calendars, presents all 9 settings with smart defaults. User can accept all with Enter or change specific items by number.
+- **Silent Activity Log**: All processing activity logged to `activity.json`. Users can ask "what did you skip?" or "show me activity" to see what happened. New script `activity_log.sh`.
+- **Event Changelog with Undo**: All calendar changes logged to `changelog.json`. Changes can be undone within 24 hours. New scripts `changelog.sh` and `undo.sh`.
+- **Day-of-Week Display**: Events now show day of week for verification (e.g., "Feb 12, Wednesday").
+- **LLM-Based Duplicate Matching**: Semantic matching for duplicates instead of simple keyword matching. Explains updates to user.
+- **Recurring Event Detection**: Detects patterns like "Every Tuesday at 3pm" and creates appropriate RRULE.
+- **Batched Reminders with Dismissal Tracking**: Pending invites are batched, track reminder_count, auto-dismiss after 3 ignored reminders.
+- **Orphaned Event Cleanup**: `--validate` flag on `lookup_event.sh` checks if events still exist in calendar and removes orphaned tracking entries.
+
+### Changed
+- **Email Search Strategy**: Removed `newer_than:1d` filter to catch stale forwards (old emails forwarded today). Now processes all unread emails and relies on "already processed" check.
+- **create_event.sh**: Now logs changes to changelog.json for undo support, captures before/after state for updates.
+- **lookup_event.sh**: Added `--validate` flag for orphan cleanup on 404/410.
+- **list_pending.sh**: Added `--update-reminded` and `--auto-dismiss` flags, shows day-of-week, tracks reminder_count.
+- **SKILL.md**: Major rewrite with smart onboarding flow, activity logging, changelog/undo documentation, LLM matching guidance, recurring event detection.
+- **SETUP.md**: Simplified to reflect smart defaults approach.
+
+### Fixed
+- Stale forward handling: Old emails forwarded today are now properly processed.
+- Orphaned events: Events deleted in Google Calendar are now automatically removed from tracking.
+
+## [1.5.0] - 2026-02-02
+
+### Added
+- **Pending Invites Reminder System**: Events that aren't actioned immediately are tracked and resurfaced during heartbeat cycles
+- **pending_invites.json**: New tracking file for undispositioned events with status tracking (pending/created/dismissed/expired)
+- **list_pending.sh**: Script to list all pending invites (JSON or human-readable summary)
+- **update_invite_status.sh**: Script to update event status after user decisions
+- **BOOT.md**: Self-bootstrapping instructions for ClawHub installations
+- **HEARTBEAT.md integration**: Pending invites are checked during heartbeat cycles
+
+### Changed
+- **create_event.sh**: Now automatically updates pending_invites.json when creating events
+- **SKILL.md**: Added Steps 5.1 and 5.2 for recording and updating pending invites
+
 ## [1.4.0] - 2026-02-02
 
 ### Added
