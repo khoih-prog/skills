@@ -3,11 +3,16 @@
   "slug": "agent-chronicle",
   "displayName": "Agent Chronicle",
   "latest": {
-    "version": "0.3.2",
-    "publishedAt": 1770139106087,
-    "commit": "https://github.com/clawdbot/skills/commit/f4b3aada2b88acd00e9a98ec2fdeae98e7a29245"
+    "version": "0.4.1",
+    "publishedAt": 1770158777909,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.3.2",
+      "publishedAt": 1770139106087,
+      "commit": "https://github.com/clawdbot/skills/commit/f4b3aada2b88acd00e9a98ec2fdeae98e7a29245"
+    },
     {
       "version": "0.3.0",
       "publishedAt": 1769900874056,
