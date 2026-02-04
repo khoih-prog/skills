@@ -3,9 +3,15 @@
   "slug": "evm-wallet",
   "displayName": "EVM Crypto Wallet for Your Agent",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1769831483788,
-    "commit": "https://github.com/clawdbot/skills/commit/db597228287929addc1fb3f3215059e97b457d39"
+    "version": "1.0.3",
+    "publishedAt": 1770176220994,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1769831483788,
+      "commit": "https://github.com/clawdbot/skills/commit/db597228287929addc1fb3f3215059e97b457d39"
+    }
+  ]
 }
