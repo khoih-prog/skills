@@ -1,0 +1,11 @@
+{
+  "owner": "danmaps",
+  "slug": "esri-smells-consumer",
+  "displayName": "Esri Workflow Smell Detector (Consumer)",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770163015481,
+    "commit": null
+  },
+  "history": []
+}
