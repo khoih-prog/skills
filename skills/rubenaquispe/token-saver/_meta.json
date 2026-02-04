@@ -3,9 +3,15 @@
   "slug": "token-saver",
   "displayName": "Token Saver",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1770073844963,
-    "commit": "https://github.com/clawdbot/skills/commit/2b9bd38219f81fbbae2ca9009df8a5552310103a"
+    "version": "2.0.1",
+    "publishedAt": 1770141267321,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1770073844963,
+      "commit": "https://github.com/clawdbot/skills/commit/2b9bd38219f81fbbae2ca9009df8a5552310103a"
+    }
+  ]
 }

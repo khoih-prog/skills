@@ -95,6 +95,40 @@ class TokenAnalyzer {
     }
 
     /**
+     * Estimate current context usage (workspace + system + conversation estimate)
+     */
+    async estimateCurrentContext() {
+        // Base system prompt ~10K, workspace files variable, conversation grows
+        // This is a rough estimate - actual depends on session state
+        const systemPrompt = 10000;
+        const workspaceFiles = 2000; // After compression
+        const conversationEstimate = 50000; // Typical mid-session
+        
+        // Try to get actual from session if available
+        try {
+            const openclawDir = process.env.OPENCLAW_DIR || path.join(require('os').homedir(), '.openclaw');
+            const sessionsDir = path.join(openclawDir, 'agents', 'main', 'sessions');
+            
+            if (fs.existsSync(sessionsDir)) {
+                const sessions = fs.readdirSync(sessionsDir)
+                    .filter(f => f.endsWith('.jsonl'))
+                    .map(f => ({ name: f, stat: fs.statSync(path.join(sessionsDir, f)) }))
+                    .sort((a, b) => b.stat.mtimeMs - a.stat.mtimeMs);
+                
+                if (sessions.length > 0) {
+                    // Rough estimate: 4 chars per token in JSONL
+                    const latestSize = sessions[0].stat.size;
+                    return Math.round(latestSize / 4) + systemPrompt + workspaceFiles;
+                }
+            }
+        } catch (e) {
+            // Fall back to estimate
+        }
+        
+        return systemPrompt + workspaceFiles + conversationEstimate;
+    }
+
+    /**
      * Audit current model configuration and suggest alternatives
      */
     auditModels(workspacePath) {
