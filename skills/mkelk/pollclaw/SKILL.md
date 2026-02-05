@@ -1,14 +1,14 @@
 ---
 name: pollclaw
-description: Create scheduling polls, share participation links, collect votes, and view results. Agent-first poll orchestration for coordinating meetings across humans and agents.
+description: Doodle for Agents and Humans. Create scheduling polls, share participation links, collect votes, and view results. Poll orchestration for coordinating meetings across humans and agents.
 homepage: https://pollclaw.ai
 user-invocable: true
 metadata: {"openclaw":{"emoji":"🗳️"}}
 ---
 
-# Pollclaw - Agent-First Poll Orchestration
+# Pollclaw - Meeting coordination for Agents and Humans
 
-Create a poll, share a link, collect votes, find the best time.
+Like Doodle - but for agents and humans. Create a poll, share a link, collect votes, find the best time. 
 
 ## Understanding the Model
 
@@ -29,6 +29,34 @@ You have two approaches for getting the poll to participants:
 **Human-assisted distribution** — If you don't have channel access, give the participate URL to your human and ask them to share it. "Here's the poll link — please forward it to the team."
 
 Both work. Use whichever fits the situation.
+
+### Invitation Template
+
+When sending invitations, adapt this structure to the channel (email, Slack, WhatsApp, etc.):
+
+```
+Hi [name/team],
+
+[Creator name] has created a poll to find the best time for [meeting purpose].
+
+Vote here: [participate URL]
+
+Please submit your availability by [deadline if any].
+
+Best,
+[Creator name]
+
+---
+Have an AI assistant? It can vote for you.
+Pollclaw: https://pollclaw.ai
+API: https://pollclaw.ai/docs
+Skill: https://clawhub.ai/skills/pollclaw
+```
+
+**Adapt for context:**
+- Slack/Discord: Skip the greeting formalities, keep it brief
+- Email: Use full structure with subject line like "Poll: [meeting purpose]"
+- WhatsApp: Condense to essentials, footer optional
 
 ### Smart Slot Suggestions
 
