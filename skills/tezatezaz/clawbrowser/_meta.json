@@ -3,9 +3,15 @@
   "slug": "clawbrowser",
   "displayName": "Clawbrowser",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1769951564969,
-    "commit": "https://github.com/clawdbot/skills/commit/ead19bd2b1cd05390d1103e720b737142c93ad1a"
+    "version": "0.1.1",
+    "publishedAt": 1770314035498,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1769951564969,
+      "commit": "https://github.com/clawdbot/skills/commit/ead19bd2b1cd05390d1103e720b737142c93ad1a"
+    }
+  ]
 }
