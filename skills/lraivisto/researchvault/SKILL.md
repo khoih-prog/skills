@@ -1,42 +1,63 @@
 ---
-name: vault
-description: "Local research orchestration and state management. Use when starting projects, logging progress, or exporting findings."
+name: researchvault
+description: "High-velocity research orchestration engine. Manages persistent state, synthesis, and autonomous verification for agents."
+metadata:
+  {
+    "openclaw":
+      {
+        "requires": { "python": ">=3.13", "bins": ["uv"] },
+        "install":
+          [
+            {
+              "id": "vault-venv",
+              "kind": "exec",
+              "command": "uv venv && uv pip install -e .",
+              "label": "Initialize ResearchVault Environment",
+            },
+          ],
+      },
+  }
 ---
 
-# Vault
+# ResearchVault 🦞
 
-Local orchestration engine for managing long-running research tasks with high reliability and zero external costs.
+Autonomous state manager for agentic research.
 
-## Core Concepts
+## Core Features
 
-- **The Vault**: A local SQLite database stored in `~/.researchvault/` (configurable via `RESEARCHVAULT_DB`).
-- **Project**: A high-level research goal.
-- **Instrumentation**: Every event tracks confidence (0.0-1.0), source, and tags.
+- **The Vault**: Local SQLite persistence for `artifacts`, `findings`, and `links`.
+- **Divergent Reasoning**: Create `branches` and `hypotheses` to explore parallel research paths.
+- **Synthesis Engine**: Automated link-discovery using local embeddings.
+- **Active Verification**: Self-correcting agents via `verification_missions`.
+- **MCP Server**: Native support for cross-agent collaboration.
+- **Watchdog Mode**: Continuous background monitoring of URLs and queries.
 
 ## Workflows
 
-### 1. Initialize a Project
+### 1. Project Initialization
 ```bash
-python3 scripts/vault.py init --id "proj-v1" --objective "Project goal"
+uv run python scripts/vault.py init --id "metal-v1" --name "Suomi Metal" --objective "Rising underground bands"
 ```
 
-### 2. Multi-Source Research
-Use the unified scuttle command with SSRF protection:
+### 2. Multi-Source Ingestion
 ```bash
-python3 scripts/vault.py scuttle "https://example.com" --id "proj-v1"
+uv run python scripts/vault.py scuttle "https://reddit.com/r/metal" --id "metal-v1"
 ```
 
-### 3. Monitoring & Summary
+### 3. Synthesis & Verification
 ```bash
-python3 scripts/vault.py summary --id "proj-v1"
-python3 scripts/vault.py status --id "proj-v1"
+# Link related findings
+uv run python scripts/vault.py synthesize --id "metal-v1"
+
+# Plan verification for low-confidence data
+uv run python scripts/vault.py verify plan --id "metal-v1"
 ```
 
-### 4. Export
+### 4. MCP Server
 ```bash
-python3 scripts/vault.py export --id "proj-v1" --format markdown --output summary.md
+uv run python scripts/vault.py mcp --transport stdio
 ```
 
-## Maintenance
+## Environment
 
-The database is local and excluded from version control.
+Requires Python 3.13 and `uv`.

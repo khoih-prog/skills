@@ -2,6 +2,7 @@ import sqlite3
 import os
 import uuid
 import json
+import sys
 
 # Path to the research database
 DEFAULT_DB_PATH = os.path.expanduser("~/.researchvault/research_vault.db")
@@ -44,13 +45,17 @@ def _run_migrations(cursor):
     migrations = [
         _migration_v1, # Initial schema
         _migration_v2, # Add artifacts, findings, links
-        _migration_v3  # Backfill insights -> findings
+        _migration_v3, # Backfill insights -> findings
+        _migration_v4, # Divergent reasoning: branches + hypotheses + branch_id backfill
+        _migration_v5, # Synthesis engine: local embeddings + synthesis link constraints
+        _migration_v6, # Active verification: missions table
+        _migration_v7  # Watchdog mode: watch targets + run state
     ]
 
     for i, migration_fn in enumerate(migrations):
         version = i + 1
         if version > current_version:
-            print(f"Running migration v{version}...")
+            print(f"Running migration v{version}...", file=sys.stderr)
             migration_fn(cursor)
             if current_version == 0:
                 cursor.execute("INSERT INTO schema_version (version) VALUES (?)", (version,))
@@ -111,3 +116,165 @@ def _migration_v3(cursor):
         cursor.execute('''INSERT INTO findings (id, project_id, title, content, evidence, confidence, tags, created_at)
                           VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
                        (finding_id, project_id, title, content, evidence, 1.0, tags, timestamp))
+
+def _migration_v4(cursor):
+    """Add branches/hypotheses and branch_id columns for divergent reasoning."""
+    import re
+    from datetime import datetime
+
+    def _safe(s: str) -> str:
+        return re.sub(r"[^a-zA-Z0-9_-]", "_", (s or "").strip())
+
+    def _default_branch_id(project_id: str) -> str:
+        # Deterministic to allow safe re-runs and easy interoperability.
+        return f"br_{_safe(project_id)}_main"
+
+    now = datetime.now().isoformat()
+
+    cursor.execute(
+        """CREATE TABLE IF NOT EXISTS branches (
+            id TEXT PRIMARY KEY,
+            project_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            parent_id TEXT,
+            hypothesis TEXT DEFAULT '',
+            status TEXT DEFAULT 'active',
+            created_at TEXT,
+            FOREIGN KEY(project_id) REFERENCES projects(id),
+            FOREIGN KEY(parent_id) REFERENCES branches(id),
+            UNIQUE(project_id, name)
+        )"""
+    )
+
+    cursor.execute(
+        """CREATE TABLE IF NOT EXISTS hypotheses (
+            id TEXT PRIMARY KEY,
+            branch_id TEXT NOT NULL,
+            statement TEXT NOT NULL,
+            rationale TEXT DEFAULT '',
+            confidence REAL DEFAULT 0.5,
+            status TEXT DEFAULT 'open',
+            created_at TEXT,
+            updated_at TEXT,
+            FOREIGN KEY(branch_id) REFERENCES branches(id)
+        )"""
+    )
+
+    def _add_column_if_missing(table: str, column: str, decl: str) -> None:
+        cursor.execute(f"PRAGMA table_info({table})")
+        existing = {r[1] for r in cursor.fetchall()}
+        if column in existing:
+            return
+        cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {decl}")
+
+    _add_column_if_missing("events", "branch_id", "TEXT")
+    _add_column_if_missing("findings", "branch_id", "TEXT")
+    _add_column_if_missing("artifacts", "branch_id", "TEXT")
+
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_branches_project ON branches(project_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_hypotheses_branch ON hypotheses(branch_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_events_project_branch ON events(project_id, branch_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_findings_project_branch ON findings(project_id, branch_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_artifacts_project_branch ON artifacts(project_id, branch_id)")
+
+    # Create a default "main" branch per existing project and backfill NULL branch_id.
+    cursor.execute("SELECT id FROM projects")
+    for (project_id,) in cursor.fetchall():
+        branch_id = _default_branch_id(project_id)
+        cursor.execute(
+            "INSERT OR IGNORE INTO branches (id, project_id, name, parent_id, hypothesis, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (branch_id, project_id, "main", None, "", "active", now),
+        )
+        cursor.execute(
+            "UPDATE events SET branch_id = ? WHERE project_id = ? AND (branch_id IS NULL OR branch_id = '')",
+            (branch_id, project_id),
+        )
+        cursor.execute(
+            "UPDATE findings SET branch_id = ? WHERE project_id = ? AND (branch_id IS NULL OR branch_id = '')",
+            (branch_id, project_id),
+        )
+        cursor.execute(
+            "UPDATE artifacts SET branch_id = ? WHERE project_id = ? AND (branch_id IS NULL OR branch_id = '')",
+            (branch_id, project_id),
+        )
+
+def _migration_v5(cursor):
+    """Add embeddings storage and synthesis link constraints."""
+    cursor.execute(
+        """CREATE TABLE IF NOT EXISTS embeddings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            entity_type TEXT NOT NULL,
+            entity_id TEXT NOT NULL,
+            model TEXT NOT NULL,
+            dims INTEGER NOT NULL,
+            vector BLOB NOT NULL,
+            content_hash TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE(entity_type, entity_id, model)
+        )"""
+    )
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_embeddings_entity ON embeddings(entity_type, entity_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_embeddings_model ON embeddings(model)")
+
+    # Uniqueness only for the new synthesis link type to avoid breaking legacy datasets.
+    cursor.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS uniq_links_synthesis_pair ON links(source_id, target_id) WHERE link_type='SYNTHESIS_SIMILARITY'"
+    )
+
+def _migration_v6(cursor):
+    """Add verification mission queue for low-confidence findings."""
+    cursor.execute(
+        """CREATE TABLE IF NOT EXISTS verification_missions (
+            id TEXT PRIMARY KEY,
+            project_id TEXT NOT NULL,
+            branch_id TEXT NOT NULL,
+            finding_id TEXT NOT NULL,
+            mission_type TEXT NOT NULL,
+            query TEXT NOT NULL,
+            query_hash TEXT NOT NULL,
+            question TEXT DEFAULT '',
+            rationale TEXT DEFAULT '',
+            status TEXT DEFAULT 'open',
+            priority INTEGER DEFAULT 0,
+            result_meta TEXT DEFAULT '',
+            last_error TEXT DEFAULT '',
+            created_at TEXT,
+            updated_at TEXT,
+            completed_at TEXT,
+            dedup_hash TEXT NOT NULL,
+            FOREIGN KEY(project_id) REFERENCES projects(id),
+            FOREIGN KEY(branch_id) REFERENCES branches(id),
+            FOREIGN KEY(finding_id) REFERENCES findings(id),
+            UNIQUE(dedup_hash)
+        )"""
+    )
+
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_missions_project_status ON verification_missions(project_id, status)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_missions_branch_status ON verification_missions(branch_id, status)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_missions_finding ON verification_missions(finding_id)")
+
+def _migration_v7(cursor):
+    """Add watch targets for background scuttling/search."""
+    cursor.execute(
+        """CREATE TABLE IF NOT EXISTS watch_targets (
+            id TEXT PRIMARY KEY,
+            project_id TEXT NOT NULL,
+            branch_id TEXT NOT NULL,
+            target_type TEXT NOT NULL,
+            target TEXT NOT NULL,
+            tags TEXT DEFAULT '',
+            interval_s INTEGER DEFAULT 3600,
+            status TEXT DEFAULT 'active',
+            last_run_at TEXT,
+            last_result_hash TEXT DEFAULT '',
+            last_error TEXT DEFAULT '',
+            created_at TEXT,
+            updated_at TEXT,
+            dedup_hash TEXT NOT NULL,
+            FOREIGN KEY(project_id) REFERENCES projects(id),
+            FOREIGN KEY(branch_id) REFERENCES branches(id),
+            UNIQUE(dedup_hash)
+        )"""
+    )
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_watch_project_status ON watch_targets(project_id, status)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_watch_branch_status ON watch_targets(branch_id, status)")
