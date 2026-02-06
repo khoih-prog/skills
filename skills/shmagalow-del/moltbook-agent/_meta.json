@@ -1,0 +1,11 @@
+{
+  "owner": "shmagalow-del",
+  "slug": "moltbook-agent",
+  "displayName": "Moltbook Agent",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770305669972,
+    "commit": null
+  },
+  "history": []
+}
