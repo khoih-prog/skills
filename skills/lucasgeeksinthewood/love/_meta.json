@@ -3,11 +3,16 @@
   "slug": "love",
   "displayName": "Love",
   "latest": {
-    "version": "1.4.0",
-    "publishedAt": 1770237096838,
-    "commit": "https://github.com/clawdbot/skills/commit/cf697fcf8547dff7ed698fc50b747f9f99fa169b"
+    "version": "1.4.1",
+    "publishedAt": 1770394467424,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.4.0",
+      "publishedAt": 1770237096838,
+      "commit": "https://github.com/clawdbot/skills/commit/cf697fcf8547dff7ed698fc50b747f9f99fa169b"
+    },
     {
       "version": "1.2.0",
       "publishedAt": 1770189239214,
