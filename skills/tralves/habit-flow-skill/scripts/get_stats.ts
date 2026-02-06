@@ -41,8 +41,9 @@ program
         const dailyCompletions = getLastLogPerDay(logs);
 
         // Filter by period
+        // period = 1 means "just today", period = 7 means "last 7 days including today"
         const periodStart = new Date();
-        periodStart.setDate(periodStart.getDate() - options.period);
+        periodStart.setDate(periodStart.getDate() - (options.period - 1));
         const periodStartStr = periodStart.toISOString().split('T')[0];
 
         const periodCompletions = dailyCompletions.filter(

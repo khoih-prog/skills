@@ -90,8 +90,19 @@ program
             const [hour, minute] = time.split(':');
             const cronExpression = `${minute} ${hour} * * *`;
 
-            const message = habit.reminderSettings.message ||
-              `🎯 Reminder: Time for your ${habit.name}\n\nTarget: ${habit.targetCount} ${habit.targetUnit || 'session'}\nCurrent streak: ${habit.currentStreak} days 🔥\n\nQuick log: Reply 'done', 'skipped', or 'missed'`;
+            // Build the reminder message with completion check
+            const customMessage = habit.reminderSettings.message;
+            const defaultReminderText = `🎯 Reminder: Time for your ${habit.name}\n\nTarget: ${habit.targetCount} ${habit.targetUnit || 'session'}\n\nQuick log: Reply 'done', 'skipped', or 'missed'`;
+            
+            // Message includes a check to skip if habit already completed today
+            const message = `Antes de enviar o lembrete, verifica se o hábito já foi completado hoje:
+
+cd "${SKILL_DIR}" && npx tsx scripts/get_stats.ts --habit-id ${habit.id} --period 1 --format json
+
+Analisa o resultado JSON. Se "completedDays" for 1 (já completo hoje), NÃO envies nada - responde apenas NO_REPLY.
+
+Se "completedDays" for 0 (ainda não completo), envia este lembrete de forma simpática e breve:
+${customMessage || defaultReminderText}`;
 
             try {
               // Determine delivery method (priority: habit settings > config > default)

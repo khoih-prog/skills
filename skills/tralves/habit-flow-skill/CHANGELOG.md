@@ -2,6 +2,12 @@
 
 All notable changes to HabitFlow skill will be documented in this file.
 
+## [1.4.1] - 2026-02-04
+
+### Changed
+- Fix: `get_stats` now includes data through today
+- Feat: skip reminders when habit already completed today
+
 ## [1.4.0] - 2026-01-29
 
 ### Changed - Agent Skills Specification Compliance
