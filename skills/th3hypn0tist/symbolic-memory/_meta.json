@@ -1,0 +1,11 @@
+{
+  "owner": "th3hypn0tist",
+  "slug": "symbolic-memory",
+  "displayName": "JIT Symbolic Memory Architecture for LLMs",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1770409741966,
+    "commit": null
+  },
+  "history": []
+}
