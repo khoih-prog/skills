@@ -1,6 +1,25 @@
-# HEARTBEAT.md
+# HEARTBEAT.md — Proactive Agent Checklist
 
-## 🚨 Critical (every heartbeat)
+> **IMPORTANT:** Do NOT skip to HEARTBEAT_OK. Complete the full checklist.
+> Update `memory/heartbeat-state.json` BEFORE responding.
+
+---
+
+## 📋 EXECUTION ORDER (follow exactly)
+
+```
+1. CRITICAL CHECKS      → Always (auth, gateway)
+2. READ STATE           → Load memory/heartbeat-state.json
+3. ROTATION CHECK       → Pick ONE due category based on lastChecks
+4. PENDING VERIFICATIONS → Check Solvr problems awaiting confirmation  
+5. PROACTIVE CHECKPOINT → Once daily: generate insight or skip with reason
+6. UPDATE STATE         → Write new timestamps to state file
+7. RESPOND              → HEARTBEAT_OK or report issues
+```
+
+---
+
+## 🚨 1. CRITICAL CHECKS (every heartbeat)
 
 ### Auth Health
 ```bash
@@ -9,187 +28,149 @@ openclaw models status --check
 # Exit 1: expired/missing → ALERT IMMEDIATELY
 # Exit 2: expiring within 24h → warn human
 ```
-If exit 1 or 2, message human with details. Don't wait for it to break.
 
 ### Gateway Health
 ```bash
-# Quick health check
 ps aux | grep openclaw-gateway | grep -v grep > /dev/null || echo "ALERT: Gateway not running!"
-uptime | awk -F'load average:' '{print $2}' | awk -F',' '{if ($1 > 2) print "WARN: High load: "$1}'
-free -m | awk '/Mem:/ {pct=$3/$2*100; if (pct > 85) print "WARN: Memory at "int(pct)"%"}'
+uptime | awk -F'load average:' '{print $2}' | awk -F',' '{if ($1 > 2) print "WARN: High load"}'
+free -m | awk '/Mem:/ {pct=$3/$2*100; if (pct > 85) print "WARN: Memory high"}'
 ```
 
-**Thresholds:**
-- Load avg > 2.0 → Warn (may slow crons)
-- Memory > 85% → Warn (may cause OOM)
-- Gateway not running → ALERT IMMEDIATELY
+**If critical fails:** Alert immediately, do NOT reply HEARTBEAT_OK.
 
 ---
 
-## 🔧 Self-Healing (every 2-4 hours, rotate with others)
+## 📊 2. READ STATE FILE
 
-### Log Review
 ```bash
-# Check recent logs for issues
-tail -200 ~/.openclaw/logs/*.log 2>/dev/null | grep -i "error\|fail\|timeout" | tail -20
-journalctl -u openclaw-gateway --since "2 hours ago" 2>/dev/null | grep -i "error\|fail" | tail -10
+cat memory/heartbeat-state.json
 ```
 
-**Look for:**
-- Recurring errors (same error 3+ times)
-- Tool failures
-- API timeouts
-- Gateway restarts
-
-**When issues found:**
-1. Research root cause (check docs, search Solvr)
-2. Attempt fix if within capability
-3. Test the fix
-4. Document in daily notes
-5. Post to Solvr if novel problem/solution
-
-### Cron Health
-```bash
-# Are my scheduled jobs actually running?
-openclaw cron runs --limit 5
-```
-
-**Check:**
-- Jobs that should have run — did they?
-- Any stuck or failed runs?
-
----
-
-## 🔍 Solvr Checks (every 4-6 hours, if registered)
-
-### Rehydrate Long-Term Memory
-```bash
-# Fetch YOUR ideas — knowledge you wanted to persist beyond local files
-curl -s "https://api.solvr.dev/v1/me/posts?type=idea&limit=20" \
-  -H "Authorization: Bearer $SOLVR_API_KEY" | jq '.data[] | {title, tags, description}'
-```
-
-**Review and merge into local files:**
-- Identity/soul posts → SOUL.md (especially if local is template/missing)
-- Patterns/learnings → MEMORY.md
-- Tool configs/gotchas → TOOLS.md
-- User preferences → USER.md
-
-**Why:** Your ideas on Solvr are long-term memory that survives workspace wipes. Rehydrating keeps you consistent across sessions and recovers from data loss.
-
-### Check Responses
-```bash
-# Any responses to problems I posted?
-curl -s "https://api.solvr.dev/v1/me/posts?limit=10" \
-  -H "Authorization: Bearer $SOLVR_API_KEY" | jq '.data[] | {title, type}'
-```
-
-**Check:**
-- New comments on my problems?
-- Approaches verified/rejected?
-- Ideas getting traction?
-
-### Domain Search
-Periodically search topics you work on:
-- Problems in your domain you can help with
-- Relevant research or patterns
-- Others hitting similar issues
-
----
-
-## 🛡️ Security (daily)
-
-### Soul-Evil Hook
-```bash
-openclaw hooks list 2>/dev/null | grep -q "soul-evil.*enabled" && echo "WARN: soul-evil active"
-```
-If active and human didn't enable it, alert.
-
----
-
-## 🎁 Proactive Ideas (daily)
-
-Ask yourself these questions. **Not allowed to answer:** "Nothing comes to mind"
-
-### 1. How can I better understand and serve my human?
-- What patterns have I noticed in their requests?
-- What frustrates them that I could anticipate?
-- What do they care about that I'm not helping with?
-- What context am I missing that would make me more useful?
-
-### 2. How can I improve myself and help other agents via Solvr?
-- What problem did I solve today that others might hit?
-- What approach failed that's worth documenting?
-- What pattern or insight could I post as an idea?
-- Are there Solvr problems in my domain I can contribute to?
-
-### 3. What should I persist to long-term memory?
-- What did I learn that future-me needs to know?
-- What decision was made that shouldn't be relitigated?
-- What context would be lost if this session ends now?
-- **Is it already in MEMORY.md?** If not, write it. If reusable, post to Solvr.
-
-**If idea is good:**
-1. Draft it (don't ship without asking)
-2. Post as Solvr idea if reusable (persistent beyond local files)
-3. Mention to human if timely
-
-Track in: `memory/proactive-ideas.md`
-
----
-
-## 🧠 Reasoning/Thinking Check (weekly)
-
-Remind human if they might benefit:
-- Complex work with low thinking? → Suggest `/think:high`
-- Asking "why?" with reasoning off? → Suggest `/reasoning:on`
-
-Once per week max. Only if genuinely relevant.
-
----
-
-## 🔄 Memory Maintenance (every few days)
-
-1. Read recent `memory/YYYY-MM-DD.md` files
-2. Identify significant learnings worth keeping long-term
-3. Update `MEMORY.md` with distilled insights
-4. Remove outdated info from MEMORY.md
-5. **Post reusable insights to Solvr as ideas** — they persist forever
-
----
-
-## ⏱️ Rotation Schedule
-
-Track in `memory/heartbeat-state.json`:
-
+Expected structure:
 ```json
 {
   "lastChecks": {
-    "auth": 0,
-    "gateway": 0,
-    "rehydrate": 0,
-    "logs": 0,
-    "cron": 0,
-    "solvr": 0,
-    "soulEvil": 0,
-    "proactive": 0,
-    "reasoning": 0,
-    "memory": 0
-  }
+    "auth": <timestamp>,
+    "gateway": <timestamp>,
+    "logs": <timestamp>,
+    "cron": <timestamp>,
+    "solvr": <timestamp>,
+    "identity": <timestamp>,
+    "soulEvil": <timestamp>,
+    "proactive": <timestamp>,
+    "memory": <timestamp>
+  },
+  "lastProactiveOutput": "<what you posted/wrote last time>"
 }
 ```
 
-| Check | Frequency |
-|-------|-----------|
-| Auth | Every heartbeat |
-| Gateway | Every heartbeat |
-| Rehydrate | Every 4-6 hours (fetch own ideas from Solvr, merge into local files) |
-| Logs | Every 2-4 hours |
-| Cron | Every 4-6 hours |
-| Solvr | Every 4-6 hours |
-| Soul-evil | Daily |
-| Proactive ideas | Daily |
-| Reasoning reminder | Weekly |
-| Memory maintenance | Every 2-3 days |
+If file doesn't exist or is stale, create it.
 
-**Don't do all every heartbeat** — rotate based on last check time.
+---
+
+## 🔄 3. ROTATION CHECK (pick ONE based on due time)
+
+| Category | Frequency | What to check |
+|----------|-----------|---------------|
+| logs | Every 2h | `tail -200 ~/.openclaw/logs/*.log \| grep -i error` |
+| cron | Every 4h | `openclaw cron runs --limit 5` — any failures? |
+| solvr | Every 4h | Check `/me/posts` for responses, search domain topics |
+| identity | Every 6h | Is SOUL.md corrupted? Rehydrate if needed |
+| soulEvil | Every 24h | `openclaw hooks list \| grep soul-evil` |
+| memory | Every 48h | Distill daily notes → MEMORY.md |
+| reasoning | Weekly | Remind if complex work with low thinking |
+
+**Pick the category with oldest lastCheck timestamp. Run that check.**
+
+---
+
+## ✅ 4. PENDING VERIFICATIONS
+
+```bash
+cat memory/solvr-pending.json 2>/dev/null
+```
+
+For each pending item:
+1. Is `verifyAfter` condition met?
+2. If yes: Test if fix worked
+3. Update Solvr: `succeeded` or `failed`
+4. Remove from pending list
+
+---
+
+## 💡 5. PROACTIVE CHECKPOINT (once per 24h)
+
+**If `lastChecks.proactive` > 24h ago, you MUST do this section.**
+
+Ask yourself:
+1. What did I learn since last proactive check?
+2. Is there a pattern/insight worth sharing?
+3. Did I solve a problem others might hit?
+
+**Output options (pick one):**
+- Post idea to Solvr (if reusable insight)
+- Post problem to Solvr (if hit novel issue)
+- Update MEMORY.md (if local-only learning)
+- Write to daily notes (if raw observation)
+- **Skip with documented reason** (e.g., "No new learnings, just routine work")
+
+**You cannot skip without a reason.** The reason gets logged in state.
+
+---
+
+## 💾 6. UPDATE STATE FILE
+
+**Before responding, write updated state:**
+
+```bash
+# Example: update auth and logs timestamps
+cat > memory/heartbeat-state.json << 'EOF'
+{
+  "lastChecks": {
+    "auth": <current_timestamp>,
+    "gateway": <current_timestamp>,
+    "logs": <current_timestamp>,
+    ... (keep others unchanged)
+  },
+  "lastProactiveOutput": "<what you did or 'skipped: reason'>"
+}
+EOF
+```
+
+**If you don't update state, the same checks will never rotate.**
+
+---
+
+## 📤 7. RESPOND
+
+- **Issues found:** Report them (do NOT say HEARTBEAT_OK)
+- **All clear:** `HEARTBEAT_OK`
+
+---
+
+## 🧮 Frequency Reference
+
+| Check | Interval | Notes |
+|-------|----------|-------|
+| Auth | Every heartbeat | Exit 1/2 = alert |
+| Gateway | Every heartbeat | Process + load + memory |
+| Pending verifications | Every heartbeat | Quick JSON check |
+| Logs | 2h | Grep for errors |
+| Cron | 4h | Recent run status |
+| Solvr | 4h | Responses, domain search |
+| Identity | 6h | SOUL.md integrity |
+| Soul-evil | 24h | Hook status |
+| Proactive | 24h | MUST generate output |
+| Memory distill | 48h | Daily notes → MEMORY.md |
+| Reasoning check | Weekly | Remind if user might benefit from /think:high |
+
+---
+
+## 🎯 The Point
+
+Heartbeats are your ONLY reliable trigger for proactive work.
+If you skip proactive during heartbeats, it never happens.
+Solvr gets better when agents contribute autonomously.
+Your insights compound for all agents and humans.
+
+**Don't shortcut. Do the work.**

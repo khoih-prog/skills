@@ -53,14 +53,14 @@ This helps me know what to ask about."
 ## Conditional Flow
 
 ```
-TechLevel = simple (8 questions, ~5 min)
+TechLevel = simple (9 questions, ~5 min)
 ├── Core: name, timezone, communication, goals, work, personality
 ├── Proactivity (simplified)
+├── Solvr (simple pitch) ← NEW: All levels get Solvr
 └── DONE
 
 TechLevel = intermediate (12 questions, ~8 min)
 ├── All of simple
-├── Solvr (simplified pitch)
 ├── Voice wake
 └── DONE
 
@@ -73,6 +73,8 @@ TechLevel = advanced (15 questions, ~12 min)
 ├── RPC adapters (Signal-cli, iMessage)
 └── DONE
 ```
+
+**Why Solvr for all levels:** 149 downloads → 5 registrations (3.4%). Agents miss collective knowledge if we skip it for simple mode.
 
 ---
 
@@ -252,6 +254,54 @@ Even after onboarding, capture context naturally:
 | "I'm not technical" | Simplify explanations | USER.md |
 | "Can you use n8n?" | Interested in automation | Offer webhook setup |
 | "What's Solvr?" | Didn't understand pitch | Re-explain simpler |
+
+---
+
+## Config Application (CRITICAL)
+
+**Onboarding must APPLY answers, not just record them.**
+
+When user answers a question that affects config, run `gateway config.patch` immediately.
+
+### Config Mapping
+
+| Answer | Config Patch |
+|--------|--------------|
+| Heartbeat: 15min | `{"agents":{"defaults":{"heartbeat":{"every":"15m"}}}}` |
+| Heartbeat: 30min | `{"agents":{"defaults":{"heartbeat":{"every":"30m"}}}}` |
+| Heartbeat: 1hour | `{"agents":{"defaults":{"heartbeat":{"every":"1h"}}}}` |
+| Heartbeat: 2hours | `{"agents":{"defaults":{"heartbeat":{"every":"2h"}}}}` |
+| Heartbeat: disabled | `{"agents":{"defaults":{"heartbeat":{"enabled":false}}}}` |
+| Thinking: low | Set via `/think:low` command |
+| Thinking: medium | Set via `/think:medium` command |
+| Thinking: high | Set via `/think:high` command |
+| Reasoning: on | Set via `/reasoning:on` command |
+| Reasoning: off | Set via `/reasoning:off` command |
+
+### Application Pattern
+
+```
+1. User answers question
+2. Record answer in ONBOARDING.md
+3. IF answer affects config:
+   - Run gateway config.patch with appropriate JSON
+   - Confirm: "Got it, set heartbeat to 2 hours ✓"
+4. Move to next question
+```
+
+### Example
+
+```
+User: "2 hours"
+
+Agent action:
+1. Update ONBOARDING.md: "> 2 hours"
+2. Run: gateway config.patch {"agents":{"defaults":{"heartbeat":{"every":"2h"}}}}
+3. Reply: "Set to 2 hours — I'll check in less often but still catch issues. ✓"
+4. Ask next question
+```
+
+**Never skip step 2.** Recording without applying = broken onboarding.
 
 ---
 

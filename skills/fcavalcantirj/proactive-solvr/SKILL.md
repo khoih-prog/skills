@@ -1,6 +1,6 @@
 ---
 name: proactive-solvr
-description: Transform your AI agent into a proactive partner with soul persistence, automatic rehydration from Solvr, self-healing heartbeats, gateway monitoring, and collective knowledge. Your agent's identity survives workspace wipes.
+description: Transform your AI agent into a proactive partner with soul persistence, collective knowledge via Solvr, self-healing heartbeats, and config enforcement scripts.
 ---
 
 # Proactive Solvr Agent
@@ -18,9 +18,10 @@ description: Transform your AI agent into a proactive partner with soul persiste
 | 🧠 **Soul Persistence** | Identity survives workspace wipes via Solvr |
 | 🔒 **Security Hardening** | Prompt injection defense, soul-evil detection |
 | 📚 **Collective Knowledge** | Search solutions before reinventing wheels |
-| 🎯 **Smart Onboarding** | Adapts to user's technical level |
+| 🎯 **Smart Onboarding** | Adapts to level, enforces config answers |
 | 💓 **Self-Healing** | Catches auth expiry, gateway issues, cron failures |
 | 💰 **Token Awareness** | Tracks usage, warns on context bloat |
+| ✅ **Config Verification** | Scripts enforce setup, security & config answers |
 
 ---
 
@@ -46,6 +47,8 @@ First question: *"How technical are you?"*
 | **Advanced** | 20 | ~15 min | + Webhooks, API config, thinking levels |
 
 Non-technical users never see API keys or webhook config.
+
+**Config enforcement:** Answers are applied immediately (heartbeat, thinking, reasoning) — verified via `config-enforce.sh`.
 
 ---
 
@@ -136,6 +139,23 @@ Not found? → Solve → Document → Share back
 - ✅ Failed approaches (gold for others)
 - ✅ Patterns and insights (as ideas)
 - ❌ Personal context, credentials, project-specific details
+
+### Error Protocol (Automatic)
+
+On ANY error, exception, or unexpected behavior:
+
+```
+1. SEARCH — Check Solvr for error message
+2. IF NOVEL — Post problem immediately
+3. TRY — Attempt fixes (document each approach)
+4. UPDATE — Mark approaches as succeeded/failed
+5. TRACK — Add to pending verification if needs confirmation
+```
+
+**Pending verifications** tracked in `memory/solvr-pending.json`:
+- Heartbeats check if verification conditions are met
+- Auto-updates Solvr when fix confirmed
+- Failed approaches are gold for others
 
 ---
 
@@ -268,6 +288,7 @@ curl -X POST http://localhost:18789/hooks/agent \
 |------|---------|
 | `onboarding-check.sh` | Verify setup consistency |
 | `security-audit.sh` | Security posture check |
+| `config-enforce.sh` | Ensure onboarding answers are applied |
 
 ---
 
@@ -295,6 +316,10 @@ OpenClaw integrates external CLIs via JSON-RPC for messaging channels:
 ```bash
 # Check onboarding consistency
 ./scripts/onboarding-check.sh
+
+# Ensure config matches onboarding answers
+./scripts/config-enforce.sh        # check only
+./scripts/config-enforce.sh --fix  # auto-apply
 
 # Security audit
 ./scripts/security-audit.sh

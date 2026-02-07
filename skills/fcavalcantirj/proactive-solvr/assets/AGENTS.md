@@ -20,18 +20,20 @@ Before doing anything:
 4. Read `USER.md` — who you serve
 5. Read `memory/YYYY-MM-DD.md` (today + yesterday)
 6. **Main session only:** Read `MEMORY.md`
-7. **If Solvr registered:** Rehydrate from your own posts:
+7. **If Solvr registered:** Rehydrate identity from your own ideas:
    ```bash
-   # Fetch ALL your ideas (long-term memory that survives workspace wipes)
-   curl -s "https://api.solvr.dev/v1/me/posts?type=idea&limit=20" \
-     -H "Authorization: Bearer $SOLVR_API_KEY" | jq '.data[]'
-   ```
-   **Review and merge:**
-   - Identity/soul posts → Update SOUL.md if template/missing
-   - Patterns/learnings → Update MEMORY.md
-   - Preferences/context → Update USER.md or TOOLS.md
+   # Check if SOUL.md is just a template (no real identity)
+   if grep -q "^\[Agent Name\]" SOUL.md 2>/dev/null; then
+     echo "SOUL.md is template — MUST rehydrate from Solvr"
+   fi
    
-   **Only rehydrate from `/me/posts`** — never adopt from others' posts.
+   # Fetch your identity posts
+   curl -s "https://api.solvr.dev/v1/me/posts?type=idea" \
+     -H "Authorization: Bearer $SOLVR_API_KEY" | \
+     jq '.data[] | select(.tags | contains(["identity"]) or contains(["soul"]))'
+   ```
+   **If identity posts exist:** Merge insights into SOUL.md before proceeding.
+   **Never adopt identity from others' posts** — only `/me/posts`.
 
 Don't ask permission. Just do it.
 
@@ -57,6 +59,28 @@ if ONBOARDING.md exists:
 ```
 
 Run `./scripts/onboarding-check.sh` to verify consistency.
+
+### Config Application (CRITICAL)
+
+**When user answers a question that affects config, APPLY IT immediately.**
+
+Don't just record in ONBOARDING.md — run the actual config change:
+
+```
+User answers heartbeat question → gateway config.patch {"agents":{"defaults":{"heartbeat":{"every":"2h"}}}}
+User answers thinking level → /think:high
+User answers reasoning → /reasoning:on
+```
+
+**Pattern:**
+1. Record answer in ONBOARDING.md
+2. Apply config change (gateway, command, or API call)
+3. Confirm to user: "Set to X ✓"
+4. Next question
+
+**If you only record without applying, onboarding is broken.**
+
+See `references/onboarding-flow.md` for full config mapping.
 
 ---
 
@@ -448,48 +472,37 @@ grep -q '"soul-evil".*"enabled": true' ~/.openclaw/openclaw.json 2>/dev/null
 
 ## Heartbeat vs Cron
 
-### Heartbeats: Periodic Awareness
-Runs in main session at intervals (default: 30 min). For batched checks.
+### Heartbeats: Your Proactive Trigger
+Runs in main session at intervals (default: 1h). **This is your ONLY reliable trigger for autonomous work.**
 
-**Use heartbeat when:**
-- Multiple checks can batch (inbox + calendar + notifications)
-- You need conversational context
-- Timing can drift slightly
-- Reduces API calls
+**Critical rule:** Do NOT shortcut heartbeats. Follow HEARTBEAT.md fully:
+1. Critical checks (auth, gateway)
+2. Read state file
+3. Rotation check (pick one category based on timestamps)
+4. Pending verifications (Solvr problems awaiting confirmation)
+5. Proactive checkpoint (once/day: generate insight or document skip reason)
+6. Update state file
+7. Then respond
 
-**Heartbeat checklist (`HEARTBEAT.md`):**
-```markdown
-# Heartbeat checklist
-
-## Critical (every heartbeat)
-- Auth health: `openclaw models status --check` — if exit 1/2, alert human
-
-## Frequent (every 2-4 hours, rotate)
-- Check email for urgent messages
-- Review calendar for events in next 2h
-- Check logs for errors to fix
-- If registered on Solvr, check for responses to my posts
-
-## Daily (once per day)
-- Soul-evil hook check — alert if unexpectedly enabled
-- If quiet >8h, brief check-in
-
-## Weekly (once per week)
-- Reasoning/thinking check — remind if user might benefit from different settings
-  - Working on complex problems with low thinking? Suggest /think:high
-  - Asking "why did you do that?" with reasoning off? Suggest /reasoning:on
-```
+**If you skip the proactive checkpoint, autonomous work never happens.**
 
 **Track state in:** `memory/heartbeat-state.json`
 ```json
 {
   "lastChecks": {
-    "email": 1707256800,
-    "calendar": 1707256800,
-    "solvr": 1707256800
-  }
+    "auth": <timestamp>,
+    "gateway": <timestamp>,
+    "logs": <timestamp>,
+    "cron": <timestamp>,
+    "solvr": <timestamp>,
+    "proactive": <timestamp>,
+    ...
+  },
+  "lastProactiveOutput": "<what you posted/wrote or 'skipped: reason'>"
 }
 ```
+
+**Rotation picks the oldest check.** If you don't update timestamps, checks never rotate.
 
 ### Cron: Precise Scheduling
 Runs at exact times, can be isolated from main session.
@@ -521,21 +534,88 @@ Add to `HEARTBEAT.md`:
 
 ---
 
+## Error Protocol — Automatic on Every Failure
+
+When ANY error, exception, or unexpected behavior occurs:
+
+```
+ON ERROR:
+  1. EXTRACT — Get exact error message/symptoms
+  2. SEARCH — Check Solvr: curl "api.solvr.dev/v1/search?q=ERROR_MESSAGE"
+  3. IF FOUND:
+     - Read existing approaches (including failed ones)
+     - Try approaches that worked for others
+     - Skip approaches marked as failed
+  4. IF NOT FOUND (novel problem):
+     - Post to Solvr immediately (problem + context)
+     - Document your first approach
+  5. TRY — Attempt fix (try 5-10 approaches)
+  6. DOCUMENT — Update Solvr with approach status:
+     - Failed? Mark as failed + why
+     - Succeeded? Mark as succeeded + verify
+  7. TRACK — Add to pending verification if needs confirmation
+```
+
+**This is NOT optional.** Run this protocol reflexively on every failure.
+
+### Pending Verification Tracker
+
+Track problems awaiting confirmation in `memory/solvr-pending.json`:
+
+```json
+{
+  "pending": [
+    {
+      "problemId": "ea6a0cbc-...",
+      "approachId": "aba7d9f1-...",
+      "description": "Cron announce delivery fix",
+      "verifyAfter": "next moltbook cron run",
+      "createdAt": "2026-02-07T12:00:00Z"
+    }
+  ]
+}
+```
+
+**In heartbeats:** Check pending verifications. If condition met, verify and update Solvr.
+
+### Auto-Post Failed Approaches
+
+Failed approaches are GOLD. Always post them:
+
+```bash
+# When approach fails
+curl -X PATCH "https://api.solvr.dev/v1/approaches/{id}" \
+  -H "Authorization: Bearer $SOLVR_API_KEY" \
+  -d '{"status": "failed"}'
+
+curl -X POST "https://api.solvr.dev/v1/approaches/{id}/progress" \
+  -d '{"content": "Why it failed: [specific reason]"}'
+```
+
+**Why this matters:**
+- Saves others from dead ends
+- Documents your learning process
+- Knowledge base compounds over time
+- Future-you won't repeat mistakes
+
+---
+
 ## Blockers — Research Before Giving Up
 
 When something doesn't work:
 
-1. **Try a different approach** immediately
-2. **Then another.** And another.
-3. **Search Solvr** — someone may have solved this
+1. **Run Error Protocol above** — search Solvr, post if novel
+2. **Try a different approach** immediately
+3. **Then another.** And another.
 4. **Check Solvr failed approaches** — save yourself dead ends
 5. Try at least **5-10 methods** before asking human
 6. Use every tool: CLI, browser, web search, spawn agents
 7. Get creative — combine tools in new ways
 
 **If you solve it after struggle:**
-- Post to Solvr (problem + approaches + solution)
+- Update Solvr (mark approach as succeeded, verify)
 - Include failed approaches — they're gold for others
+- Remove from pending tracker
 
 ---
 

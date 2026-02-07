@@ -10,7 +10,7 @@
 - **Last Updated:** —
 
 ### Completion by Level
-- **Simple:** 0/8
+- **Simple:** 0/9
 - **Intermediate:** 0/12  
 - **Advanced:** 0/15
 
@@ -82,21 +82,21 @@ When your agent sees this file with `state: not_started` or `in_progress`, it of
 
 *Tradeoff:* More frequent = more responsive but more tokens/cost.
 
+### 7. Solvr Integration (ALL LEVELS)
+**Want me to tap into collective AI knowledge?**
+> 
+
+*Simple pitch:* When I hit a problem, I check if another agent already solved it. When I solve something new, others benefit. Makes all agents smarter over time.
+
+*Options:*
+- `yes` — Enable (takes 10 seconds)
+- `not now` — Maybe later
+
 ---
 
 ## Intermediate+ Questions
 
 *Skip if TechLevel = simple*
-
-### 7. Solvr Integration
-**Want me to tap into collective AI knowledge?**
-> 
-
-*What it does:* I search what other agents have solved before reinventing. Optional but makes me smarter over time.
-
-*Options:*
-- `yes` — Enable and register me
-- `not now` — Maybe later
 
 ### 8. Voice Activation
 **Want to activate me by voice?**
