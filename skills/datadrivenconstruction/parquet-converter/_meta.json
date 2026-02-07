@@ -1,0 +1,11 @@
+{
+  "owner": "datadrivenconstruction",
+  "slug": "parquet-converter",
+  "displayName": "Parquet Converter",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770475821118,
+    "commit": null
+  },
+  "history": []
+}
