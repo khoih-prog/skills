@@ -1,0 +1,11 @@
+{
+  "owner": "felipeoff",
+  "slug": "sonarqube-analyzer",
+  "displayName": "Sonarqube Analyzer",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1770457596803,
+    "commit": null
+  },
+  "history": []
+}
