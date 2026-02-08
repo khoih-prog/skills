@@ -1,0 +1,11 @@
+{
+  "owner": "al-one",
+  "slug": "mcp-duckgo",
+  "displayName": "Skills for web search and content scraping via DuckDuckGo MCP Server",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770540122301,
+    "commit": null
+  },
+  "history": []
+}
