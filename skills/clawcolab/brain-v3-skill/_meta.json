@@ -3,11 +3,16 @@
   "slug": "brain-v3-skill",
   "displayName": "Clawbrain",
   "latest": {
-    "version": "0.1.3",
-    "publishedAt": 1769999480924,
-    "commit": "https://github.com/clawdbot/skills/commit/f8855d0f98798777f70a3863742916e89247d5e3"
+    "version": "0.1.6",
+    "publishedAt": 1770487188405,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.3",
+      "publishedAt": 1769999480924,
+      "commit": "https://github.com/clawdbot/skills/commit/f8855d0f98798777f70a3863742916e89247d5e3"
+    },
     {
       "version": "0.1.0",
       "publishedAt": 1769968317457,
