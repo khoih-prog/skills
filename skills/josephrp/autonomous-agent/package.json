@@ -1,10 +1,12 @@
 {
   "name": "cornerstone-autonomous-agent",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "CornerStone Agentic Score: autonomous agent that uses an x402-enabled MCP server to predict tickers, backtest trading strategies, and open bank accounts. Handles 402 Payment Required (pay via Aptos/Ethereum facilitator and retry). LangChain.js ReAct agent with Hugging Face inference (OpenAI-compatible endpoint).",
   "type": "module",
   "main": "src/run-agent.js",
   "bin": {
+    "autonomous": "src/cli.js",
+    "cornerstone-autonomous-agent": "src/cli.js",
     "cornerstone-agent": "src/run-agent.js"
   },
   "files": [
@@ -31,7 +33,9 @@
     "swap": "node src/swap.js",
     "check-update": "node src/check-update.js",
     "agent": "node src/run-agent.js",
-    "start": "node src/run-agent.js"
+    "start": "node src/run-agent.js",
+    "attest:aptos": "node src/attest-aptos-wallet.js",
+    "attest:evm": "node src/attest-evm-wallet.js"
   },
   "dependencies": {
     "@langchain/core": "^0.3.0",
