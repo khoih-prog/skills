@@ -51,7 +51,7 @@ BAIDU_API_KEY=xxx python3 scripts/ppt_theme_list.py
 - `query`: ppt title or user query（required）
 - `resource_url`: the url of the resource file, such as pdf, word, txt, etc.
 - `page_range`: the page range of the ppt file, just include enumerations, 1-10、11-20、21-30、31-40、40+
-- `layout`: the layout of the ppt file, optional values: 1,2 (1: Minimalist mode, 2: Professional Mode)
+- `layout`: the layout of the ppt file, optional values: "1","2" ("1": Minimalist mode, "2": Professional Mode)
 - `language_option`: the language option of the ppt file, optional values: zh, en (zh: Chinese, en: English)
 - `gen_mode`: the generation mode of the ppt, optional values: 1,2 (1: Intelligent touch-ups, 2: Creative Mode)
 
@@ -70,8 +70,8 @@ BAIDU_API_KEY=xxx python3 scripts/ppt_outline_generate.py --query "generate a pp
 - `outline`: ppt outline from PPTOutlineGenerate API return，must be in markdown format.Users can make appropriate modifications to the content, adding, modifying or deleting parts of the outline.（required）
 - `query`: user orgin query（required）
 - `title`: ppt title from PPTOutlineGenerate API return（required）
-- `style_id`: ppt stype id from PPTThemeQuery API return（required）
-- `tpl_id`: ppt template id from PPTThemeQuery API return（required）
+- `style_id`: ppt stype id from PPTThemeQuery API return,default 0（required）
+- `tpl_id`: ppt template id from PPTThemeQuery API return,default 40（required）
 - `resource_url`: the url of the resource file, such as pdf, word, txt, etc.
 - `custom_tpl_url`: The path of the user-defined PPT template must be downloadable
 - `gen_mode`: the generation mode of the ppt, optional values: 1,2 (1: Intelligent touch-ups, 2: Creative Mode)
