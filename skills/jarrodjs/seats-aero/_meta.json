@@ -1,11 +1,17 @@
 {
   "owner": "jarrodjs",
   "slug": "seats-aero",
-  "displayName": "Seats.aero Award Search",
+  "displayName": "Seats Aero",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770312949058,
-    "commit": "https://github.com/clawdbot/skills/commit/53c391e06996316e0ed986a5de6e54a141ac44c2"
+    "version": "0.1.0",
+    "publishedAt": 1770313629020,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770312949058,
+      "commit": "https://github.com/clawdbot/skills/commit/53c391e06996316e0ed986a5de6e54a141ac44c2"
+    }
+  ]
 }
