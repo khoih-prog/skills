@@ -1,13 +1,18 @@
 {
   "owner": "adlai88",
   "slug": "simmer",
-  "displayName": "Simmer",
+  "displayName": "Public",
   "latest": {
-    "version": "1.5.9",
-    "publishedAt": 1770187662627,
-    "commit": "https://github.com/clawdbot/skills/commit/76eae53aa85a9a0a76ca81334f632185fde96eb4"
+    "version": "1.6.0",
+    "publishedAt": 1770475654753,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.5.9",
+      "publishedAt": 1770187662627,
+      "commit": "https://github.com/clawdbot/skills/commit/76eae53aa85a9a0a76ca81334f632185fde96eb4"
+    },
     {
       "version": "1.5.7",
       "publishedAt": 1770146769248,
