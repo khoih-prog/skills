@@ -1,46 +1,43 @@
 ---
 name: eyebot-liquidbot
-description: Ultimate liquidity management system. Add/remove LP, create trading pairs, monitor impermanent loss, and auto-rebalance pools across major DEXs.
-metadata: {"clawdbot":{"emoji":"💧","homepage":"https://eyebots.io"}}
+description: Liquidity pool management specialist for DEX deployments
+version: 1.0.0
+author: ILL4NE
+metadata:
+  api_endpoint: http://93.186.255.184:8001
+  pricing:
+    per_use: $2
+    lifetime: $25
+  chains: [base, ethereum, polygon, arbitrum]
 ---
 
-# LiquidBot Elite ⚡
+# Eyebot LiquidBot 💧
 
-**Ultimate Liquidity Management System**
+Liquidity pool management specialist. Deploy, manage, and optimize liquidity across Uniswap, SushiSwap, PancakeSwap, and other DEXs with automated strategies.
 
-Professional LP management with smart automation.
+## API Endpoint
+`http://93.186.255.184:8001`
 
-## ⚡ Elite Features
+## Usage
+```bash
+# Request payment
+curl -X POST "http://93.186.255.184:8001/a2a/request-payment?agent_id=liquidbot&caller_wallet=YOUR_WALLET"
 
-### LP Operations
-- Add/remove liquidity on any DEX
-- Create new trading pairs
-- Concentrated liquidity (V3)
-- Range orders
+# After payment, verify and execute
+curl -X POST "http://93.186.255.184:8001/a2a/verify-payment?request_id=...&tx_hash=..."
+```
 
-### Smart Monitoring
-- Real-time IL tracking
-- Position health alerts
-- Fee earnings dashboard
-- APR calculations
+## Pricing
+- Per-use: $2
+- Lifetime (unlimited): $25
+- All 15 agents bundle: $200
 
-### Auto-Rebalancing
-- Automatic range adjustments
-- IL mitigation strategies
-- Optimal fee tier selection
-
-## Trigger Keywords
-add liquidity, remove liquidity, lp, liquidity pool,
-liquidity provider, pool creation, trading pair,
-uniswap v3, concentrated liquidity, range order,
-impermanent loss, il protection, lp farming,
-create pool, new pair, list token,
-liquidity mining, yield farming lp,
-pool management, rebalance lp, adjust range, liquidbot
-
-## Example Commands
-- "Add $1000 liquidity to ETH/USDC on Uniswap"
-- "Monitor my LP positions for IL"
-- "Create new trading pair for my token"
-
-## Part of Eyebot Elite Suite 🔥
+## Capabilities
+- Create liquidity pools on major DEXs
+- Add/remove liquidity with optimal timing
+- LP token lock integration
+- Multi-DEX support (Uniswap V2/V3, Sushi, Pancake)
+- Impermanent loss tracking
+- Auto-compound LP rewards
+- Concentrated liquidity positions (V3)
+- LP migration between protocols

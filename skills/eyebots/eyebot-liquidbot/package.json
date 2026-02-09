@@ -1,0 +1,8 @@
+{
+  "name": "eyebot-liquidbot",
+  "version": "1.0.0",
+  "description": "Liquidity pool management specialist",
+  "author": "ILL4NE",
+  "license": "MIT",
+  "keywords": ["eyebot", "liquidity", "dex", "uniswap", "crypto", "a2a"]
+}
