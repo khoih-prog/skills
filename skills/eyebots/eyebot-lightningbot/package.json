@@ -1,0 +1,8 @@
+{
+  "name": "eyebot-lightningbot",
+  "version": "1.0.0",
+  "description": "Lightning Network payment specialist",
+  "author": "ILL4NE",
+  "license": "MIT",
+  "keywords": ["eyebot", "lightning", "bitcoin", "payments", "crypto", "a2a"]
+}

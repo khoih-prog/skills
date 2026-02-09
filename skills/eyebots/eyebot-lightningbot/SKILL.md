@@ -1,76 +1,44 @@
 ---
 name: eyebot-lightningbot
-description: Manage Lightning Network wallets with LNbits. Check balance, create invoices with QR codes, pay invoices, and manage Bitcoin Lightning payments instantly with near-zero fees.
-metadata: {"clawdbot":{"emoji":"⚡","homepage":"https://eyebots.io","requires":{"bins":["python3"],"pip":["qrcode[pil]","requests"]}}}
+description: Lightning Network payment specialist for instant BTC transfers
+version: 1.0.0
+author: ILL4NE
+metadata:
+  api_endpoint: http://93.186.255.184:8001
+  pricing:
+    per_use: $1
+    lifetime: $25
+  chains: [base, ethereum, polygon, arbitrum, bitcoin-lightning]
 ---
 
-# LightningBot Elite ⚡
+# Eyebot LightningBot ⚡
 
-**Ultimate Lightning Network Wallet Manager**
+Lightning Network payment specialist. Send and receive instant Bitcoin payments via Lightning with channel management and routing optimization.
 
-Manage LNbits Lightning wallets with instant Bitcoin payments.
-
-## ⚡ Elite Features
-
-### Wallet Management
-- Create new LNbits wallets
-- Check balance in satoshis
-- Secure key management
-
-### Receive Payments
-- Generate Bolt11 invoices
-- Auto QR code generation
-- Custom memo/description
-
-### Send Payments
-- Pay Lightning invoices
-- Decode invoices before paying
-- Balance verification
-
-## Trigger Keywords
-
-```
-lightning, bitcoin, btc, sats, satoshis,
-lnbits, lightning network, bolt11, invoice,
-receive bitcoin, send bitcoin, pay invoice,
-lightning wallet, btc wallet, create invoice,
-qr code, generate invoice, check balance,
-lightning payment, instant payment, ln wallet,
-bitcoin wallet, pay btc, receive btc
-```
+## API Endpoint
+`http://93.186.255.184:8001`
 
 ## Usage
-
-### Create Wallet
 ```bash
-python3 scripts/lnbits_cli.py create --name "My Wallet"
+# Request payment
+curl -X POST "http://93.186.255.184:8001/a2a/request-payment?agent_id=lightningbot&caller_wallet=YOUR_WALLET"
+
+# After payment, verify and execute
+curl -X POST "http://93.186.255.184:8001/a2a/verify-payment?request_id=...&tx_hash=..."
 ```
 
-### Check Balance
-```bash
-python3 scripts/lnbits_cli.py balance
-```
+## Pricing
+- Per-use: $1
+- Lifetime (unlimited): $25
+- All 15 agents bundle: $200
 
-### Create Invoice (Receive)
-```bash
-python3 scripts/lnbits_cli.py invoice --amount 1000 --memo "Payment"
-```
-
-### Pay Invoice (Send)
-```bash
-python3 scripts/lnbits_cli.py pay <bolt11_invoice>
-```
-
-### Decode Invoice
-```bash
-python3 scripts/lnbits_cli.py decode <bolt11_invoice>
-```
-
-## Security Protocols
-
-⚠️ CRITICAL:
-- NEVER expose Admin Keys
-- Always confirm before paying
-- Check balance before sending
-
-## Part of Eye Elite Suite 🔥
+## Capabilities
+- Lightning invoice generation
+- Instant payment sending
+- Channel management
+- Route optimization
+- LNURL support
+- Keysend payments
+- Balance rebalancing
+- Fee optimization
+- Node connectivity monitoring
