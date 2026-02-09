@@ -3,11 +3,16 @@
   "slug": "boiling-point",
   "displayName": "Boiling Point",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1770218882971,
-    "commit": "https://github.com/clawdbot/skills/commit/90b58f52e56459a5574b256253bb03a8e336eb29"
+    "version": "1.0.8",
+    "publishedAt": 1770646218785,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1770218882971,
+      "commit": "https://github.com/clawdbot/skills/commit/90b58f52e56459a5574b256253bb03a8e336eb29"
+    },
     {
       "version": "1.0.2",
       "publishedAt": 1770169088151,
