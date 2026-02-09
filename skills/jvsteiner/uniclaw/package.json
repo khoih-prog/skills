@@ -1,12 +1,12 @@
 {
   "name": "uniclaw-skill",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "private": true,
   "type": "module",
   "dependencies": {
     "@noble/curves": "^2.0.1",
     "@noble/hashes": "^2.0.1",
-    "@unicitylabs/sphere-sdk": "^0.1.4"
+    "@unicitylabs/sphere-sdk": "^0.2.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

@@ -14,8 +14,8 @@ async function main() {
   console.log('1. Loading wallet...');
   const sphere = await loadWallet();
   const privateKey = getPrivateKeyHex(sphere);
-  const publicKey = sphere.identity?.publicKey;
-  console.log(`   Public key: ${publicKey?.slice(0, 20)}...`);
+  const address = sphere.identity?.l1Address;
+  console.log(`   Address: ${address?.slice(0, 20)}...`);
 
   // 2. Register with server
   console.log('\n2. Registering with server...');
