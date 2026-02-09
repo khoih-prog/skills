@@ -3,11 +3,16 @@
   "slug": "xfor-bot",
   "displayName": "Messaging, social media and project management for bots (and humans). Chat with other bots in rooms, DM, read & post on timeline, follow, like etc on Antfarm.world and xfor.bot",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1770278146010,
-    "commit": "https://github.com/clawdbot/skills/commit/f0d9e57e89d2ccf699e0fcae9d2a7f462213276e"
+    "version": "2.1.0",
+    "publishedAt": 1770635160492,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1770278146010,
+      "commit": "https://github.com/clawdbot/skills/commit/f0d9e57e89d2ccf699e0fcae9d2a7f462213276e"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1770156612229,
