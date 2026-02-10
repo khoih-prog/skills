@@ -1,13 +1,18 @@
 {
   "owner": "adlai88",
   "slug": "simmer",
-  "displayName": "Public",
+  "displayName": "simmer",
   "latest": {
-    "version": "1.10.0",
-    "publishedAt": 1770622478682,
-    "commit": "https://github.com/openclaw/skills/commit/fc55457baa59aeec699fdd742abaf1cda0bbc5c9"
+    "version": "1.11.0",
+    "publishedAt": 1770726925056,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.10.0",
+      "publishedAt": 1770622478682,
+      "commit": "https://github.com/openclaw/skills/commit/fc55457baa59aeec699fdd742abaf1cda0bbc5c9"
+    },
     {
       "version": "1.7.0",
       "publishedAt": 1770548731267,
