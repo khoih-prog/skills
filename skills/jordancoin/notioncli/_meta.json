@@ -1,0 +1,11 @@
+{
+  "owner": "jordancoin",
+  "slug": "notioncli",
+  "displayName": "Notion",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1770695125482,
+    "commit": null
+  },
+  "history": []
+}
