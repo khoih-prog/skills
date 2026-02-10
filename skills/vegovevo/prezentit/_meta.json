@@ -3,11 +3,16 @@
   "slug": "prezentit",
   "displayName": "Prezentit",
   "latest": {
-    "version": "1.0.10",
-    "publishedAt": 1770408992121,
-    "commit": "https://github.com/openclaw/skills/commit/4f1261539e61d6c7b0cd9c9e3179804d59265933"
+    "version": "1.0.11",
+    "publishedAt": 1770753087531,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.10",
+      "publishedAt": 1770408992121,
+      "commit": "https://github.com/openclaw/skills/commit/4f1261539e61d6c7b0cd9c9e3179804d59265933"
+    },
     {
       "version": "1.0.9",
       "publishedAt": 1770287918349,
