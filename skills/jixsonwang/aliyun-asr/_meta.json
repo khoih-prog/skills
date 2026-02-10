@@ -1,11 +1,17 @@
 {
   "owner": "jixsonwang",
   "slug": "aliyun-asr",
-  "displayName": "Aliyun ASR",
+  "displayName": "Aliyun Asr",
   "latest": {
-    "version": "1.0.8",
-    "publishedAt": 1770704025709,
-    "commit": "https://github.com/openclaw/skills/commit/4c88a42b9000bb3f6133aecd68d598b5df0d568d"
+    "version": "1.0.9",
+    "publishedAt": 1770728329630,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.8",
+      "publishedAt": 1770704025709,
+      "commit": "https://github.com/openclaw/skills/commit/4c88a42b9000bb3f6133aecd68d598b5df0d568d"
+    }
+  ]
 }

@@ -1,6 +1,6 @@
 {
   "name": "aliyun-asr",
-  "version": "1.0.2",
+  "version": "1.0.9",
   "description": "Pure Aliyun ASR skill for voice message transcription - converts voice messages to text across Feishu, Telegram, WhatsApp and other channels",
   "main": "index.js",
   "scripts": {

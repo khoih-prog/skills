@@ -1,5 +1,5 @@
 ---
-name: Aliyun ASR
+name: aliyun-asr
 description: "Pure Aliyun ASR skill for voice message transcription, supports multiple channels including Feishu"
 metadata:
   {
