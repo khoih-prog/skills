@@ -1,0 +1,11 @@
+{
+  "owner": "vidarbrekke",
+  "slug": "ollama-memory-embeddings",
+  "displayName": "Ollama Memory Embeddings",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1770747527476,
+    "commit": null
+  },
+  "history": []
+}
