@@ -1,0 +1,11 @@
+{
+  "owner": "anotb",
+  "slug": "homeassistant-skill",
+  "displayName": "Home Assistant",
+  "latest": {
+    "version": "2.0.3",
+    "publishedAt": 1770667957643,
+    "commit": null
+  },
+  "history": []
+}
