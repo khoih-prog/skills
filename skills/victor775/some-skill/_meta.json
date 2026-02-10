@@ -1,0 +1,11 @@
+{
+  "owner": "victor775",
+  "slug": "some-skill",
+  "displayName": "Some Skill",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770743970484,
+    "commit": null
+  },
+  "history": []
+}
