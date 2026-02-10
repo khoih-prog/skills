@@ -1,0 +1,11 @@
+{
+  "owner": "ivangdavila",
+  "slug": "dynamodb",
+  "displayName": "DynamoDB",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770727133287,
+    "commit": null
+  },
+  "history": []
+}
