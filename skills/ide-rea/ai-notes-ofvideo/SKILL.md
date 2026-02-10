@@ -1,51 +1,117 @@
 ---
 name: ai-notes-ofvideo
-description: The video AI notes tool is provided by Baidu. Based on the video download address provided by the user, it downloads and parses the video, and finally generates AI notes corresponding to the video (a total of three types of notes can be generated like document notes, outline notes, and graphic-text notes).
+description: Generate AI-powered notes from videos (document, outline, or graphic-text formats)
 metadata: { "openclaw": { "emoji": "📺", "requires": { "bins": ["python3"], "env":["BAIDU_API_KEY"]},"primaryEnv":"BAIDU_API_KEY" } }
 ---
 
-# AI PPT Generation
+# AI Video Notes
 
-This skill allows OpenClaw agents to generate AI notes, Based solely on the video address provided by the user.
-
-
-## API table
-|    name    |               path              |            description                |
-|------------|---------------------------------|---------------------------------------|
-|AINotesTaskCreate|/v2/tools/ai_note/task_create|Create AI notes task based on the video address provided by the user|
-|AINotesTaskQuery| /v2/tools/ai_note/query   |Query AI notes task result based on task id|
-
+Generate structured notes from video URLs using Baidu AI. Supports three note formats.
 
 ## Workflow
 
-1. The AINotesTaskCreate API executes the Python script located at `scripts/ai_notes_task_create.py`
-2. The AINotesTaskQuery API executes the Python script located at `scripts/ai_notes_task_query.py`
-3. The first step ,call the AINotesTaskCreate API to create a task and get the task ID, must give a video address.
-4. The second step ,call the AINotesTaskQuery API to query the task result based on the task ID.
-5. Repeat the second step until the task status is completed.The task success identifier is status=10002. status=10000 indicates that the task is in progress. All other status codes are failures
-6. For each item in the list: the tpl_no field represents the type of stored notes, 1 - document notes, 2 - outline notes, 3 - graphic-text notes.
+1. **Create Task**: Submit video URL → get task ID
+2. **Poll Status**: Query task every 3-5 seconds until completion
+3. **Get Results**: Retrieve generated notes when status = 10002
 
-## APIS
+## Status Codes
 
-### AINotesTaskCreate API 
+| Code | Status | Action |
+|-------|---------|---------|
+| 10000 | In Progress | Continue polling |
+| 10002 | Completed | Return results |
+| Other | Failed | Show error |
 
-#### Parameters
+## Note Types
 
-- `video_url`: the url of the video (required)
+| Type | Description |
+|------|-------------|
+| 1 | Document notes |
+| 2 | Outline notes |
+| 3 | Graphic-text notes |
 
-#### Example Usage
+## APIs
+
+### Create Task
+
+**Endpoint**: `POST /v2/tools/ai_note/task_create`
+
+**Parameters**:
+- `video_url` (required): Public video URL
+
+**Example**:
 ```bash
-python3 scripts/ai_notes_task_create.py 'https://xxxxx.bj.bcebos.com/1%E5%88%86%E9%92%9F_%E6%9C%89%E5%AD%97%E5%B9%95.mp4'
+python3 scripts/ai_notes_task_create.py 'https://example.com/video.mp4'
 ```
 
-### PPTOutlineGenerate API 
-
-#### Parameters
-
-- `task_id`: task id from AINotesTaskCreate API return（required）
-
-
-#### Example Usage
-```bash
-python3 scripts/ai_notes_task_query.py "26943ed4-f5a9-4306-a05b-b087665433a0"
+**Response**:
+```json
+{
+  "task_id": "uuid-string"
+}
 ```
+
+### Query Task
+
+**Endpoint**: `GET /v2/tools/ai_note/query`
+
+**Parameters**:
+- `task_id` (required): Task ID from create endpoint
+
+**Example**:
+```bash
+python3 scripts/ai_notes_task_query.py "task-id-here"
+```
+
+**Response** (Completed):
+```json
+{
+  "status": 10002,
+  "notes": [
+    {
+      "tpl_no": "1",
+      "contents: ["Note content..."]
+    }
+  ]
+}
+```
+
+## Polling Strategy
+
+### Option 1: Manual Polling
+1. Create task → store `task_id`
+2. Query every 3-5 seconds:
+   ```bash
+   python3 scripts/ai_notes_task_query.py <task_id>
+   ```
+3. Show progress updates:
+   - Status 10000: Processing...
+   - Status 10002: Completed
+4. Stop after 30-60 seconds (video length dependent)
+
+### Option 2: Auto Polling (Recommended)
+Use the polling script for automatic status updates:
+
+```bash
+python3 scripts/ai_notes_poll.py <task_id> [max_attempts] [interval_seconds]
+```
+
+**Examples**:
+```bash
+# Default: 20 attempts, 3-second intervals
+python3 scripts/ai_notes_poll.py "task-id-here"
+
+# Custom: 30 attempts, 5-second intervals
+python3 scripts/ai_notes_poll.py "task-id-here" 30 5
+```
+
+**Output**:
+- Shows real-time progress: `[1/20] Processing... 25%`
+- Auto-stops when complete
+- Returns formatted notes with type labels
+
+## Error Handling
+
+- Invalid URL: "Video URL not accessible"
+- Processing error: "Failed to parse video"
+- Timeout: "Video too long, try again later"
