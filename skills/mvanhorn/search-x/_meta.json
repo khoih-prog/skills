@@ -3,11 +3,16 @@
   "slug": "search-x",
   "displayName": "Clawdbot Skill Search X",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1770777660433,
-    "commit": "https://github.com/openclaw/skills/commit/9512ba3862296d012dc08b3048117a98685927a8"
+    "version": "1.0.3",
+    "publishedAt": 1770779232557,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1770777660433,
+      "commit": "https://github.com/openclaw/skills/commit/9512ba3862296d012dc08b3048117a98685927a8"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1769196247403,
