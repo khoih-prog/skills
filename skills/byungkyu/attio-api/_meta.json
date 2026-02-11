@@ -3,11 +3,16 @@
   "slug": "attio-api",
   "displayName": "Attio",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770380250629,
-    "commit": "https://github.com/openclaw/skills/commit/884990150b52dc915a077bcc67ca124b2f1f4343"
+    "version": "1.0.3",
+    "publishedAt": 1770756531682,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770380250629,
+      "commit": "https://github.com/openclaw/skills/commit/884990150b52dc915a077bcc67ca124b2f1f4343"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1770350740686,
