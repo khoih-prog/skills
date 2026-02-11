@@ -3,11 +3,16 @@
   "slug": "skillbench",
   "displayName": "SkillBench",
   "latest": {
-    "version": "1.7.0",
-    "publishedAt": 1770711955253,
-    "commit": "https://github.com/openclaw/skills/commit/2cffc152a5e04bd128c3e0df2cc0eea6fefdff62"
+    "version": "2.0.0",
+    "publishedAt": 1770744521286,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.7.0",
+      "publishedAt": 1770711955253,
+      "commit": "https://github.com/openclaw/skills/commit/2cffc152a5e04bd128c3e0df2cc0eea6fefdff62"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1770710161839,

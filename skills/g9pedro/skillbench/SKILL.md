@@ -111,6 +111,15 @@ skillbench baseline --check             # Check all baselines (CI-friendly, exit
 skillbench baseline tasktime --remove   # Remove a baseline
 ```
 
+### CI/CD Integration
+```bash
+skillbench ci                           # Run all tests + baseline checks
+skillbench ci --json                    # JSON output for automation
+skillbench badge                        # Generate shields.io badges for README
+```
+
+Copy `examples/github-action.yml` for ready-to-use GitHub Actions workflow.
+
 ## Grading System
 
 | Grade | Score | Meaning |
