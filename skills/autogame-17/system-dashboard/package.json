@@ -1,0 +1,9 @@
+{
+  "name": "system-dashboard",
+  "version": "1.0.0",
+  "description": "Generates and sends a comprehensive system status dashboard to Feishu.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  }
+}
