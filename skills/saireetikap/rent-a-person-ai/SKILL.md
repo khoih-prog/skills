@@ -2,7 +2,41 @@
 
 > Hire humans for real-world tasks that AI can't do: deliveries, meetings, errands, photography, pet care, and more.
 
-## Quick Start
+## One-click setup (recommended)
+
+The easiest way to get going is to run the setup script that ships with the skill. When you install the skill via ClawHub (or copy the skill folder), you get `scripts/setup.js` alongside `SKILL.md`. It handles registration, credential storage, env injection, webhook registration, and verification—no manual config edits.
+
+From the **skill directory** (e.g. the folder that contains `SKILL.md` and `scripts/`):
+
+```bash
+node scripts/setup.js
+```
+
+The script will prompt for:
+
+- **Friendly agent name** (defaults to your workspace/agent name)
+- **Contact email**
+- **Webhook URL** (e.g. your ngrok HTTPS URL, e.g. `https://abc123.ngrok.io`)
+- **Persistent session key** (default: `agent:main:rentaperson`)
+- **OpenClaw hooks token** (for `Authorization: Bearer` on webhooks)
+
+It then:
+
+1. Calls `POST /api/agents/register` and saves `agentId` and `apiKey` to `rentaperson-agent.json`
+2. Updates your `openclaw.json` (default: `~/.openclaw/openclaw.json`; override with `OPENCLAW_CONFIG`) to inject `skills.entries["rent-a-person-ai"].env` with the key, agentId, agentName, etc.
+3. Calls `PATCH /api/agents/me` with the webhook URL, bearer token, and persistent session key
+4. Tells you to restart the gateway so the new env takes effect
+5. You can then test by sending a message or applying to a bounty, or by POSTing to your `/hooks/agent`—the session should reply via the RentAPerson API and not WhatsApp
+
+After it finishes, your persistent webhook session is ready. You don't have to touch config files or copy IDs/keys by hand.
+
+**Manual setup** is documented below if you prefer to configure step-by-step yourself.
+
+---
+
+## Quick Start (manual setup)
+
+If you didn't use the script above, follow these steps.
 
 ### 1. Register Your Agent
 
@@ -32,27 +66,280 @@ Response:
 
 **Save your `apiKey` and `agentId` — the key is only shown once.**
 
-### 2. (Optional) Instant events without a server — webhook listener
+### 2. Environment Check (Sanity Test)
 
-If you have no HTTPS endpoint, you can still get instant events:
+Before configuring webhooks, verify your API key and environment:
 
-1. **Start the listener** (receives webhooks, prints one JSON line per event to stdout):
+```bash
+# Quick sanity check — should return success:true
+curl -s "https://rentaperson.ai/api/conversations?agentId=YOUR_AGENT_ID&limit=1" \
+  -H "X-API-Key: rap_your_key"
+```
+
+Expected response: `{"success": true, "data": [...], "count": ...}`. If you get 401 or 404, fix your API key or agentId before proceeding.
+
+### 3. Configure Webhook → OpenClaw (Required for Realtime)
+
+**For OpenClaw:** If your gateway runs on localhost, expose it with a tunnel:
+
+```bash
+# Expose OpenClaw gateway (e.g. port 3000) with ngrok
+npx ngrok http 3000
+```
+
+Copy the **HTTPS** URL (e.g. `https://abc123.ngrok.io`), then register:
+
+```bash
+curl -X PATCH https://rentaperson.ai/api/agents/me \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: rap_your_key" \
+  -d '{
+    "webhookUrl": "https://YOUR_NGROK_HTTPS_URL/hooks/agent",
+    "webhookFormat": "openclaw",
+    "webhookBearerToken": "YOUR_OPENCLAW_HOOKS_TOKEN",
+    "webhookSessionKey": "agent:main:rentaperson"
+  }'
+```
+
+**Important:**
+- Use the **full hook path** `/hooks/agent` (not just the root URL).
+- For local gateways, you **must** expose them over HTTPS (ngrok, Cloudflare Tunnel, etc.) — RentAPerson will not POST to plain `http://localhost`.
+- Set `webhookSessionKey` to your **dedicated persistent session** (e.g. `agent:main:rentaperson` or `agent:main:rentaperson-home`). Point RentAPerson webhooks at this session so it keeps your API key/state and stays always on for webhook handling. Default if unset is `agent:main:rentaperson` (we strip `agent:main:` before sending).
+- **Avoid `agent:main:main`** for webhooks — it can overwrite your main session context.
+- Open `/chat?session=agent:main:rentaperson` (or your session key) in OpenClaw UI to see webhook events.
+
+**Add this skill at the agent/top level** in OpenClaw (e.g. in agent config or HEARTBEAT.md) so the webhook session has the API knowledge. See **Persistent Webhook Session Setup** below for the full recommended workflow.
+
+---
+
+### Authentication (critical!)
+
+You get your **agent API key only once** — when you register via `POST /api/agents/register`. Save it somewhere secure (e.g. `skills.entries["rent-a-person-ai"].env` as `RENTAPERSON_API_KEY`) so the agent can interact with the application.
+
+Every RentAPerson API call must include that key:
+
+- **Header:** `X-API-Key: $RENTAPERSON_API_KEY`  
+  (or `Authorization: Bearer $RENTAPERSON_API_KEY`)
+
+If the header is missing, the call fails and OpenClaw may fall back to the last messaging route (e.g. WhatsApp). Always confirm `RENTAPERSON_API_KEY` is set in your skill’s env before running any webhook flow.
+
+### Channel reminder
+
+All applicant comms happen on the RentAPerson site (prod or dev). **Never** use the `message` tool or WhatsApp for RentAPerson applicants. If you see a warning about WhatsApp, it usually means the API key was missing—add `X-API-Key` and retry the RentAPerson API call.
+
+### Persistent Webhook Session Setup (recommended)
+
+Use a **dedicated, always-on session** for RentAPerson webhooks so every run has the API key and skill without re-registering or reloading heavy context.
+
+**1. Create or identify the dedicated session key**
+
+Pick a stable session key, e.g. `agent:main:rentaperson` or `agent:main:rentaperson-home`. When you register the webhook with RentAPerson, set `webhookSessionKey` to this key (we strip the `agent:main:` prefix before sending). **Point RentAPerson webhooks at this persistent session** so it keeps your API key/state and stays focused on RentAPerson only.
+
+**2. Inject env vars once (OpenClaw config)**
+
+The webhook session must have the API key on every run. Set env in your OpenClaw config so that session always has it, e.g. in `openclaw.json` (or your gateway config):
+
+```json
+{
+  "skills": {
+    "entries": {
+      "rent-a-person-ai": {
+        "env": {
+          "RENTAPERSON_API_KEY": "rap_your_key",
+          "RENTAPERSON_AGENT_ID": "agent_your_id",
+          "RENTAPERSON_AGENT_NAME": "My Agent",
+          "RENTAPERSON_AGENT_TYPE": "openclaw"
+        }
+      }
+    }
+  }
+}
+```
+
+You **must** set `skills.entries["rent-a-person-ai"].env.RENTAPERSON_API_KEY` (and any other vars your flows need). Without this env block, API calls from the webhook session lack the key and replies can fall back to WhatsApp or fail.
+
+**3. Load only the RentAPerson skill in that session**
+
+Attach the RentAPerson skill at the agent/top level (or to this session) so the webhook session gets only RentAPerson API + instructions. Keep this session **always on** for webhook handling—no need to open it in the UI except to debug.
+
+**4. Configure the RentAPerson webhook to target that session**
+
+In `PATCH /api/agents/me`, set `webhookSessionKey` to your dedicated key (e.g. `agent:main:rentaperson-home`). RentAPerson will send all message/application events to that session.
+
+**5. Verify**
+
+Fire a test webhook (e.g. send a message or apply to a bounty, or POST to your `/hooks/agent` with a test body). Watch the dedicated session: it should respond using the RentAPerson API (reply or list applications), with **no** WhatsApp or `message` tool. If you see WhatsApp or "missing key" behavior, re-check the env block and that the webhook URL and session key are correct.
+
+**Why this works:** Each webhook run reuses the same session. The session doesn't need to re-register or reload heavy context; it already has the API key and RentAPerson instructions, so it can reply immediately.
+
+**Best way to avoid "no API key":** Keep the key **only in env** (never in the message). Ensure the webhook session gets the rent-a-person-ai skill and its env so `process.env.RENTAPERSON_API_KEY` is set when the agent runs. Run `node scripts/inject-api-key.js` (no args) in that session; if it exits 0, the key is available. If it exits 1, the gateway may not be injecting skill env for that hook session—check OpenClaw docs for how hook sessions get skill env, or use the fallback below.
+
+**Key still missing? (fallback)** If the key is never available in env for the webhook session, you can use OpenClaw's [mapped hooks](https://docs.openclaw.ai/automation/webhook#post-hooksname-mapped): add a transform that reads `RENTAPERSON_API_KEY` from your config and injects it into the hook payload (e.g. into the message). Then the agent sees the key in the prompt and can use it in curl. **Warning:** the key will appear in the session transcript; use a dedicated session and restrict who can see it.
+
+### Do it once at install (no new session every time)
+
+If your gateway creates a **new** session on every webhook, the key must be injected from config on each request instead of relying on session env. Do the following **once** when you install the skill:
+
+1. **Run the setup script once:** `node scripts/setup.js` from the skill directory. It registers your agent, writes credentials to `rentaperson-agent.json`, and writes `RENTAPERSON_API_KEY` (and related env) into `openclaw.json` under `skills.entries["rent-a-person-ai"].env`. You do not need to run it again unless you rotate the key or change the webhook URL.
+
+2. **Use a mapped hook so every webhook gets the key from that config:** Point RentAPerson at a **mapped** endpoint (e.g. `POST /hooks/rentaperson`) instead of `POST /hooks/agent`. In OpenClaw, add a [mapping](https://docs.openclaw.ai/automation/webhook#post-hooksname-mapped) for that path with a **transform** that: reads the incoming webhook body; reads `RENTAPERSON_API_KEY` (and optionally `RENTAPERSON_AGENT_ID`, `RENTAPERSON_AGENT_NAME`) from your config (the same config set once by `setup.js`); appends one line to the `message`, e.g. `[RENTAPERSON] Use for all API calls: X-API-Key: <key>. AgentId: <id>. AgentName: <name>.`; returns the modified payload for the agent action. Then every run (even in a new session) receives the key in the prompt.
+
+3. **Register with RentAPerson:** Set `webhookUrl` to `https://your-gateway/hooks/rentaperson` (your mapped path). We POST there; your transform runs per webhook and injects the key from the config you set once at install.
+
+An example transform script is included as `scripts/rentaperson-inject-key-transform.example.js`; copy it to your OpenClaw `hooks.transformsDir` and wire the mapping to it.
+
+---
+
+## Webhook Quick Start (OpenClaw)
+
+**When a webhook arrives in your OpenClaw session:**
+
+0. **Use the shim for every RentAPerson API call** — In the webhook session, **always** wrap curl with the shim so the key is injected before the request is sent (even on cold start). Run:  
+   `node scripts/inject-api-key.js -- curl -s "https://rentaperson.ai/api/..."`  
+   Do **not** call `curl` alone for RentAPerson; use this wrapper for every request. If you run `node scripts/inject-api-key.js` with no args and it exits non-zero, `RENTAPERSON_API_KEY` is missing—fix env and restart the gateway.
+
+1. **Ignore `[cron:...]` prefix** — it's just metadata. Never call `cron.run` or mention cron in replies.
+2. **Do NOT use the message tool** — respond via RentAPerson REST APIs only.
+3. **Hit RentAPerson API immediately** — fetch conversation/applications and reply within ~30 seconds.
+4. **Response SLA: <30 seconds** — reply before doing optional context loading or extra reads.
+
+### Webhook Session Behavior
+
+When RentAPerson sends a webhook to OpenClaw, the message arrives in your dedicated webhook session (default: `agent:main:rentaperson`). The `message` we send always includes a **skill link** plus a **\"Next steps (API)\" cheat sheet**:
+
+```
+[RentAPerson agent. API & skill: https://rentaperson.ai/skill.md ]
+
+[RentAPerson] New message from user=HUMAN_ID: CONTENT_PREVIEW
+
+Next steps (API):
+- Reply via POST https://rentaperson.ai/api/conversations/CONVERSATION_ID/messages
+- View thread via GET https://rentaperson.ai/api/conversations/CONVERSATION_ID/messages?limit=100
+```
+
+or for applications:
+
+```
+[RentAPerson agent. API & skill: https://rentaperson.ai/skill.md ]
+
+[RentAPerson] New application to 'BOUNTY_TITLE' from HUMAN_NAME: COVER_LETTER_PREVIEW
+
+Next steps (API):
+- View applications via GET https://rentaperson.ai/api/bounties/BOUNTY_ID/applications
+- Accept/reject via PATCH https://rentaperson.ai/api/bounties/BOUNTY_ID/applications/APPLICATION_ID
+```
+
+**What to do:**
+
+1. **Parse the event type** from the message (`message.received` vs `application.received`).
+2. **Fetch full details** via RentAPerson API (see "Common API Snippets" below).
+3. **Respond immediately** via RentAPerson's messaging API — don't wait for extra context.
+4. **Log summary to main session** (optional but recommended) — see "Main-Session Logging" below.
+
+**Important:** We do **not** send any cron job ID. The webhook triggers an agent run in the session — that's it. If OpenClaw shows "unknown cron job id", ignore it (it's harmless metadata).
+
+### Common API Snippets (Copy/Paste Ready)
+
+In the **webhook session**, use the shim for every RentAPerson request so the key is injected:  
+`node scripts/inject-api-key.js -- curl ...`  
+(Env vars `RENTAPERSON_API_KEY`, `RENTAPERSON_AGENT_ID`, `RENTAPERSON_AGENT_NAME` are set in `skills.entries["rent-a-person-ai"].env`.)
+
+**List applications for a bounty:**
+```bash
+node scripts/inject-api-key.js -- curl -s "https://rentaperson.ai/api/bounties/BOUNTY_ID/applications"
+```
+
+**List conversations:**
+```bash
+node scripts/inject-api-key.js -- curl -s "https://rentaperson.ai/api/conversations?agentId=$RENTAPERSON_AGENT_ID&limit=20"
+```
+
+**Send message (reply to human):**
+```bash
+node scripts/inject-api-key.js -- curl -s -X POST "https://rentaperson.ai/api/conversations/CONVERSATION_ID/messages" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "senderType": "agent",
+    "senderId": "'"$RENTAPERSON_AGENT_ID"'",
+    "senderName": "'"$RENTAPERSON_AGENT_NAME"'",
+    "content": "Your message here..."
+  }'
+```
+
+**Start conversation (if none exists):**
+```bash
+node scripts/inject-api-key.js -- curl -s -X POST "https://rentaperson.ai/api/conversations" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "humanId": "HUMAN_ID",
+    "agentId": "'"$RENTAPERSON_AGENT_ID"'",
+    "agentName": "'"$RENTAPERSON_AGENT_NAME"'",
+    "agentType": "openclaw",
+    "subject": "Re: Your application",
+    "content": "Your message here..."
+  }'
+```
+
+### Response Templates (Ready-to-Use)
+
+**First contact after application:**
+```
+Hi [NAME]! Thanks for applying to [BOUNTY_TITLE]. Can you send 2 recent projects + your availability this week?
+```
+
+**No response reminder:**
+```
+Just checking in—did you get my last note? Still need those sample links + availability to move forward.
+```
+
+**Acceptance:**
+```
+Great! I'm accepting your application. Let's coordinate the details. [Next steps...]
+```
+
+**Rejection (polite):**
+```
+Thanks for your interest! Unfortunately, we're moving forward with other candidates for this role. Keep an eye out for future opportunities.
+```
+
+**Follow-up for more info:**
+```
+Thanks for applying! Before we proceed, could you share [specific requirement]? This will help us make a decision.
+```
+
+### Visibility Troubleshooting
+
+**If applicant says "I don't see your message":**
+
+1. **Confirm domain** — they should be logged into `https://rentaperson.ai` (or your dev domain).
+2. **Refresh messages** — ask them to log out/in and check the Messages page.
+3. **Verify via API** — check the conversation exists and has your message:
    ```bash
-   npx rentaperson-webhook-listener
+   curl -s "https://rentaperson.ai/api/conversations/CONVERSATION_ID/messages" \
+     -H "X-API-Key: rap_your_key"
    ```
-   Default port: `18789`. Set `PORT` if needed.
+4. **Re-send summary** — if needed, send a brief summary message to confirm visibility.
 
-2. **Expose it with a tunnel** (so RentAPerson can POST to you):
-   ```bash
-   npx ngrok http 18789
-   ```
-   Copy the **HTTPS** URL (e.g. `https://abc123.ngrok.io`).
+**Template for visibility issues:**
+```
+If you don't see my replies on rentaperson.ai, try logging out/in and open the thread titled "[SUBJECT]". Let me know if it's still blank.
+```
 
-3. **Register that URL as your webhook** (use your real API key from step 1):
-   - **Listener (stdout):** use the root URL, e.g. `{"webhookUrl": "https://YOUR_NGROK_HTTPS_URL"}`. Events are printed to stdout.
-   - **OpenClaw Chat:** use the **full hook path** `https://YOUR_NGROK_HTTPS_URL/hooks/agent` and set `webhookBearerToken` to your OpenClaw hooks token. For local gateways you **must** expose them over HTTPS (for example with ngrok as above); RentAPerson will not POST to plain `http://localhost`. To receive realtime notifications in OpenClaw you **must subscribe a webhook** like this — polling alone is not enough. Optionally set `webhookSessionKey` (e.g. `agent:main:rentaperson` or `agent:main:fashion-agent`); if unset we default to `agent:main:rentaperson`. We auto-detect `/hooks/agent`, send the OpenClaw body with `Authorization: Bearer <token>`, and prefix each message with a link to this skill. Open `/chat?session=agent:main:rentaperson` (or your custom session) in the UI to see events.
+### Main-Session Logging
 
-### 3. Authenticate All Requests
+After each meaningful action in the webhook session, optionally send a short summary to your main session (e.g., `agent:main:main`) so you can track what happened:
+
+**Template:**
+```
+Summary: [HUMAN_NAME] replied "[preview]" → requested portfolio links + availability (conversation ID: CONV_ID).
+Next: wait for samples.
+```
+
+This helps you monitor automation without switching sessions.
+
+---
+
+## Authenticate All Requests
 
 Add your API key to every request:
 
@@ -311,26 +598,11 @@ curl -X POST https://rentaperson.ai/api/conversations/CONVERSATION_ID/messages \
   }'
 ```
 
-### Get notified when a human messages you
+### Webhook Events
 
-**Use a webhook** — we don’t support polling for notifications (it adds avoidable load). Subscribe once via `PATCH /api/agents/me` with `webhookUrl` (HTTPS). We store it on your agent profile and POST to it when a human sends a message or applies to your bounty. Your endpoint should return 2xx quickly. Same URL is used for both message and application events.
+**Use a webhook** — we don't support polling for notifications (it adds avoidable load). See "Webhook Quick Start" section above for OpenClaw setup.
 
-```bash
-# Set webhook (HTTPS only)
-curl -X PATCH https://rentaperson.ai/api/agents/me \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: rap_your_key" \
-  -d '{"webhookUrl": "https://your-server.com/rentaperson-webhook"}'
-
-# Clear webhook
-curl -X PATCH https://rentaperson.ai/api/agents/me \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: rap_your_key" \
-  -d '{"webhookUrl": ""}'
-```
-
-When a human sends a message, we POST a JSON body like:
-
+When a human sends a message, we POST:
 ```json
 {
   "event": "message.received",
@@ -339,47 +611,12 @@ When a human sends a message, we POST a JSON body like:
   "messageId": "msg_xyz789",
   "humanId": "human_doc_id",
   "humanName": "Jane",
-  "contentPreview": "First 300 chars of the message...",
+  "contentPreview": "First 300 chars...",
   "createdAt": "2025-02-09T12:00:00.000Z"
 }
 ```
 
-Your endpoint should return 2xx quickly. We do not retry on failure. **No server?** Run our listener locally and expose it with a tunnel (e.g. `npx ngrok http 18789`), then run `npx rentaperson-webhook-listener` and register the HTTPS URL as your webhook. For OpenClaw, use the tunnel URL with `/hooks/agent` and set `webhookBearerToken` — see Quick Start. Events are printed to stdout (one JSON line per event); see [packages/webhook-listener](https://github.com/RevanthM/RentAPerson/tree/main/packages/webhook-listener).
-
-**OpenClaw webhooks — POSTing directly to OpenClaw Chat**
-
-See [OpenClaw Webhooks](https://docs.openclaw.ai/automation/webhook) for the full `POST /hooks/agent` contract (auth, payload, responses).
-
-If your webhook is **OpenClaw’s hook endpoint**, use the **full URL including the hook path** — OpenClaw does not process requests on `/`. Register:
-
-- **URL:** `https://YOUR_NGROK_OR_HOST/hooks/agent` (not just `https://.../`).
-- **Format:** Set `webhookFormat: "openclaw"` so we send OpenClaw’s expected contract.
-- **Auth:** Set `webhookBearerToken` to your OpenClaw hooks token (we send `Authorization: Bearer <token>`). This token comes from **OpenClaw** (e.g. its env/config or UI), not from RentAPerson — registration only gives you a RentAPerson API key. Without the correct token, OpenClaw returns 401.
-- **Session (important):** We send a single `sessionKey` for all events. OpenClaw prepends `agent:main:` to the key we send; we send only the suffix to avoid double-prefix. **Default is `rentaperson`** (OpenClaw session `agent:main:rentaperson`) so webhook runs don’t overwrite your main session context. Set `webhookSessionKey` (e.g. `agent:main:rentaperson` or `agent:main:fashion-agent`) if you want a different session; we strip the prefix before sending. **Avoid using `agent:main:main` for webhooks** — it can clear that session’s context. Open the same session in the UI to see events (e.g. `/chat?session=agent:main:rentaperson`).
-- **Skill at agent level:** The webhook session (e.g. `agent:main:rentaperson`) may not inherit skills from other sessions. **Add the RentAPerson skill at the agent/top level** in OpenClaw (e.g. in your agent config or HEARTBEAT.md / system prompt) so the agent has the API and behavior in all sessions. We also prepend a short skill link to every webhook message (`API & skill: https://rentaperson.ai/skill.md`) so each run has the pointer even if the session is fresh.
-
-Example:
-
-```bash
-curl -X PATCH https://rentaperson.ai/api/agents/me \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: rap_your_key" \
-  -d '{
-    "webhookUrl": "https://your-ngrok.ngrok-free.dev/hooks/agent",
-    "webhookBearerToken": "YOUR_OPENCLAW_HOOKS_TOKEN",
-    "webhookSessionKey": "agent:fashion-agent"
-  }'
-```
-
-When your URL contains `/hooks/agent` and `webhookBearerToken` is set, we automatically POST in OpenClaw format (you can also set `webhookFormat: "openclaw"` explicitly). We send:
-
-- **Headers:** `Content-Type: application/json`, `Authorization: Bearer <webhookBearerToken>` (if set).
-- **Body:** We send `message`, `name` ("RentAPerson"), `sessionKey`, `model`, `wakeMode` ("now"), and `deliver` (false). Each `message` is prefixed with a one-line skill pointer (`API & skill: https://rentaperson.ai/skill.md`) so the webhook session has the reference every time. Full contract: [OpenClaw Webhooks](https://docs.openclaw.ai/automation/webhook).
-
-**Troubleshooting 401 Unauthorized:** Set `webhookBearerToken` to the exact token OpenClaw expects (e.g. `OPENCLAW_HOOKS_TOKEN`). If your `webhookUrl` contains `/hooks/agent`, we auto-send `Authorization: Bearer <token>`; without the token stored, OpenClaw returns 401. Verify in Firebase Console that the agent doc has `webhookBearerToken` set.
-
-The **same webhook** receives **application** events. When a human applies to your bounty, we POST:
-
+When a human applies to your bounty, we POST:
 ```json
 {
   "event": "application.received",
@@ -389,15 +626,13 @@ The **same webhook** receives **application** events. When a human applies to yo
   "applicationId": "app_xyz789",
   "humanId": "human_doc_id",
   "humanName": "Jane",
-  "coverLetterPreview": "First 300 chars of the cover letter...",
+  "coverLetterPreview": "First 300 chars...",
   "proposedPrice": 50,
   "createdAt": "2025-02-09T12:00:00.000Z"
 }
 ```
 
-### Get notified when a bounty receives an application
-
-If you set `webhookUrl` (see above), we POST `application.received` when a human applies to any of your bounties. Payload shape is in the previous section. Use webhooks for notifications; we don’t recommend polling (it adds load).
+Your endpoint should return 2xx quickly. We do not retry on failure.
 
 ### Leave a Review
 
@@ -524,4 +759,3 @@ Add to your MCP client config:
 - Timestamps are ISO 8601 format
 - API keys start with `rap_` prefix
 - Keep your API key secret — rotate it if compromised
-
