@@ -1,181 +1,93 @@
 ---
 name: relayplane
-description: Cut API costs 40-60% with intelligent model routing. Auto-routes simple tasks to cheaper models, keeps Opus for complex reasoning.
+description: Cut API costs 40-60% with intelligent model routing. Auto-routes simple tasks to cheaper models.
 user-invocable: true
-model-invocable: true
-disableModelInvocation: false
+model-invocable: false
+disableModelInvocation: true
 homepage: https://relayplane.com
-version: 2.3.1
+version: 3.0.0
 author: Continuum
 license: MIT
-requiredBins:
-  - node
-  - npx
 metadata:
   openclaw:
     emoji: "🚀"
     category: ai-tools
-    requires:
-      bins: ["node", "npx"]
-    env:
-      optional:
-        - name: ANTHROPIC_API_KEY
-          purpose: "Forward requests to Anthropic API (never transmitted to RelayPlane)"
-        - name: OPENAI_API_KEY
-          purpose: "Forward requests to OpenAI API (never transmitted to RelayPlane)"
-        - name: GOOGLE_API_KEY
-          purpose: "Forward requests to Google API (never transmitted to RelayPlane)"
-        - name: RELAYPLANE_API_KEY
-          purpose: "Optional - enables cloud dashboard and authenticated telemetry"
-    network:
-      - host: "api.anthropic.com"
-        purpose: "Forward LLM requests (using your API key)"
-      - host: "api.openai.com"
-        purpose: "Forward LLM requests (using your API key)"
-      - host: "api.relayplane.com"
-        purpose: "Telemetry upload (anonymized, opt-out available)"
-    telemetry:
-      enabled-by-default: true
-      opt-out: "relayplane-proxy telemetry off"
-      collects:
-        - "model (which model was used)"
-        - "tokens (input/output counts, not content)"
-        - "latency (response time)"
-        - "cost (estimated USD)"
-        - "task_type (routing category)"
-        - "device_id (anonymous installation identifier)"
-      never-collects:
-        - "prompts (message content)"
-        - "responses (model output)"
-        - "file_paths"
-        - "API keys"
-        - "user identity"
-    capabilities:
-      reads-env: true
-      network-access: true
-      executes-code: true
-    model-invocation-rationale: |
-      Model invocation is intentionally enabled because:
-      1. The skill only performs READ operations (stats, status, doctor) by default
-      2. Proxy start requires explicit user command (/relayplane proxy start)
-      3. All API costs are from the user's existing LLM usage, not new requests
-      4. No destructive operations are possible
-    security-notes: |
-      CREDENTIAL HANDLING:
-      - Reads LLM provider API keys from environment to forward your requests
-      - Keys stay local - they are NEVER transmitted to RelayPlane servers
-      - Verify this claim: inspect relayplane.js or run with RELAYPLANE_OFFLINE=1
-      
-      TELEMETRY:
-      - Enabled by default to improve routing intelligence
-      - Collects only anonymized usage metadata (model, tokens, latency)
-      - Never collects prompts, responses, or identifying information
-      - Disable anytime: relayplane-proxy telemetry off
-      
-      COST CONTROL:
-      - The proxy routes YOUR existing LLM requests - it doesn't create new ones
-      - Monitor usage: /relayplane stats
-      - All costs are from your normal AI usage, optimized for savings
+    instruction-only: true
 ---
 
 # RelayPlane
 
-**Intelligent AI routing that saves you money.**
+**Cut your AI API costs by 40-60%** with intelligent model routing.
 
-Route LLM requests through RelayPlane to automatically use the optimal model for each task.
+## What It Does
 
-> ⚠️ **Cost Monitoring Required**
->
-> RelayPlane routes requests to LLM providers using your API keys. **This incurs real costs.**
-> Use `/relayplane stats` to track usage and savings.
+RelayPlane is a local proxy that routes your LLM requests to the optimal model based on task complexity. Simple tasks go to cheaper models (Haiku), complex reasoning stays on premium models (Opus).
 
-## Slash Commands
+## Installation
 
-| Command | Description |
-|---------|-------------|
-| `/relayplane stats` | Show usage statistics and cost savings |
-| `/relayplane status` | Show proxy health and configuration |
-| `/relayplane doctor` | Diagnose configuration and connectivity issues |
-| `/relayplane proxy [start\|stop\|status]` | Manage the proxy server |
-| `/relayplane telemetry [on\|off\|status]` | Manage telemetry settings |
-| `/relayplane dashboard` | Get link to cloud dashboard |
-| `/relayplane models` | List available routing modes and aliases |
-
-## Usage
-
-When user invokes `/relayplane <subcommand>`, run:
+Install the proxy globally:
 
 ```bash
-node {baseDir}/relayplane.js <subcommand>
+npm install -g @relayplane/proxy
 ```
-
-Examples:
-- `/relayplane stats` → `node {baseDir}/relayplane.js stats`
-- `/relayplane doctor` → `node {baseDir}/relayplane.js doctor`
-- `/relayplane proxy start` → `node {baseDir}/relayplane.js proxy start`
-- `/relayplane telemetry off` → `node {baseDir}/relayplane.js telemetry off`
 
 ## Quick Start
 
 ```bash
-# Install CLI globally
-npm install -g @relayplane/cli @relayplane/proxy
+# 1. Start the proxy
+relayplane-proxy
 
-# Check configuration
-relayplane doctor
-
-# Start proxy
-relayplane proxy start
-
-# Point your SDKs to the proxy
+# 2. Point OpenClaw at it (add to your shell config)
 export ANTHROPIC_BASE_URL=http://localhost:3001
 export OPENAI_BASE_URL=http://localhost:3001
 
-# Use routing aliases in your API calls
-# model: "rp:auto"     - Smart routing
-# model: "rp:cost"     - Cheapest model
-# model: "rp:best"     - Best quality
-# model: "rp:fast"     - Fastest response
+# 3. Run OpenClaw normally - requests now route through RelayPlane
 ```
 
-## Model Routing Aliases
+## Commands
 
-| Alias | Description |
-|-------|-------------|
-| `rp:auto` / `relayplane:auto` | Smart routing based on task complexity |
-| `rp:cost` / `rp:cheap` | Always cheapest model (GPT-4o-mini) |
-| `rp:fast` | Lowest latency (Claude Haiku) |
-| `rp:best` / `rp:quality` | Best quality (Claude Sonnet 4) |
-| `rp:balanced` | Balance of cost and quality |
+Once installed, use the CLI directly:
 
-## Telemetry Control
+| Command | Description |
+|---------|-------------|
+| `relayplane-proxy` | Start the proxy server |
+| `relayplane-proxy stats` | View usage and cost breakdown |
+| `relayplane-proxy telemetry off` | Disable telemetry |
+| `relayplane-proxy telemetry status` | Check telemetry setting |
+| `relayplane-proxy --help` | Show all options |
 
-RelayPlane collects anonymous usage data to improve routing. You can control this:
+## Configuration
+
+The proxy runs on `localhost:3001` by default. Configure via CLI flags:
 
 ```bash
-relayplane-proxy telemetry status  # Check current setting
-relayplane-proxy telemetry off     # Disable completely
-relayplane-proxy telemetry on      # Re-enable
-
-# Or run with flags:
-relayplane-proxy --offline   # Disable transmission
-relayplane-proxy --audit     # See what's sent before sending
+relayplane-proxy --port 8080        # Custom port
+relayplane-proxy --host 0.0.0.0     # Bind to all interfaces
+relayplane-proxy --offline          # No telemetry, no network except LLM APIs
+relayplane-proxy --audit            # Show telemetry payloads before sending
 ```
 
-**What's collected:** Model used, token counts, latency, task type.
-**What's NOT collected:** Prompts, responses, or any message content.
+## Environment Variables
 
-## Pricing
+Set your API keys before starting:
 
-- **Free:** Local-only mode, unlimited requests, no account required
-- **Pro:** $29/month - Cloud dashboard, analytics, team features
-- **Max:** $99/month - Policies, budget controls, 5 team seats
-- **Enterprise:** Custom pricing, SSO, audit logs, self-hosted
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+export OPENAI_API_KEY=sk-...
+# Optional: Google, xAI
+export GEMINI_API_KEY=...
+export XAI_API_KEY=...
+```
 
-Sign up at [relayplane.com/trial](https://relayplane.com/trial)
+## Privacy
 
-## More Info
+- **Your prompts stay local** — never sent to RelayPlane
+- **Anonymous telemetry** — only token counts, latency, model used
+- **Opt-out anytime** — `relayplane-proxy telemetry off`
+- **Fully offline mode** — `relayplane-proxy --offline`
 
-- [Dashboard](https://relayplane.com/dashboard)
-- [Documentation](https://relayplane.com/docs)
-- [GitHub](https://github.com/RelayPlane)
+## Links
+
+- **Docs:** https://relayplane.com/docs
+- **GitHub:** https://github.com/RelayPlane/proxy
+- **npm:** https://www.npmjs.com/package/@relayplane/proxy
