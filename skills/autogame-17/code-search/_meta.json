@@ -3,9 +3,15 @@
   "slug": "code-search",
   "displayName": "Code Search",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1770790830087,
-    "commit": "https://github.com/openclaw/skills/commit/4154578d6b091635b53bfb74f46b4f265b360be1"
+    "version": "1.0.1",
+    "publishedAt": 1770791145315,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1770790830087,
+      "commit": "https://github.com/openclaw/skills/commit/4154578d6b091635b53bfb74f46b4f265b360be1"
+    }
+  ]
 }
