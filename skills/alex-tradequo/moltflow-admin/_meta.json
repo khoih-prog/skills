@@ -1,0 +1,11 @@
+{
+  "owner": "alex-tradequo",
+  "slug": "moltflow-admin",
+  "displayName": "Moltflow Admin",
+  "latest": {
+    "version": "1.6.0",
+    "publishedAt": 1770797705832,
+    "commit": null
+  },
+  "history": []
+}
