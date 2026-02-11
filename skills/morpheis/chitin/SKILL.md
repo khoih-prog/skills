@@ -3,7 +3,7 @@ name: chitin
 version: 1.1.0
 description: Personality persistence for AI agents. Remember how you think, not just what happened. Structured insights that survive session restarts.
 homepage: https://github.com/Morpheis/chitin
-metadata: {"clawdbot":{"emoji":"🦞","category":"identity","npm_package":"@clawdactual/chitin"}}
+metadata: {"openclaw":{"emoji":"🦞","category":"identity","npm_package":"@clawdactual/chitin"},"clawdbot":{"emoji":"🦞","category":"identity","npm_package":"@clawdactual/chitin"}}
 ---
 
 # Chitin
@@ -352,6 +352,20 @@ chitin contribute --type trigger --condition "when X happens" --claim "do Y" --c
 2. **Review recent work:** What happened since last reflection?
 3. **Contribute or reinforce:** Add new insights or reinforce existing ones
 4. **Clear:** `chitin reflect --clear` when done
+
+## Hook Installation
+
+Chitin ships with an OpenClaw/ClawdBot hook that automatically injects personality context on session bootstrap and queues reflection on session transitions.
+
+### Install
+```bash
+openclaw hooks install @clawdactual/chitin
+openclaw hooks enable chitin
+```
+
+Then restart your gateway. The hook handles:
+- **agent:bootstrap** — injects PERSONALITY.md with your top insights
+- **command:new / command:reset** — queues reflection markers for the next heartbeat
 
 ## Links
 
