@@ -3,11 +3,16 @@
   "slug": "skill-scaffold",
   "displayName": "Skill Scaffold",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1770220748302,
-    "commit": "https://github.com/clawdbot/skills/commit/1c363db9d7fd97d0f7ef7671428a6a8242bda430"
+    "version": "1.0.4",
+    "publishedAt": 1770799050273,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1770220748302,
+      "commit": "https://github.com/clawdbot/skills/commit/1c363db9d7fd97d0f7ef7671428a6a8242bda430"
+    },
     {
       "version": "0.1.0",
       "publishedAt": 1770050345111,

@@ -1,8 +1,8 @@
 ---
 name: skill-scaffold
-description: AI agent skill scaffolding CLI. Create OpenClaw, Moltbot, Claude, and MCP skills instantly. npx skill-scaffold. Perfect for vibe coding.
+description: AI agent skill scaffolding CLI. Create skills for OpenClaw, Moltbot, Claude, Cursor, ChatGPT, Copilot instantly. Vibe-coding ready. MCP compatible.
 author: NextFrontierBuilds
-version: 1.0.2
+version: 1.0.4
 keywords:
   - ai
   - ai-agent
@@ -12,16 +12,22 @@ keywords:
   - generator
   - openclaw
   - moltbot
-  - openclaw
   - mcp
   - claude
   - claude-code
+  - chatgpt
   - cursor
   - copilot
+  - github-copilot
   - vibe-coding
   - cli
   - devtools
   - agentic
+  - ai-tools
+  - developer-tools
+  - typescript
+  - llm
+  - automation
 ---
 
 # Skill Scaffold

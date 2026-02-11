@@ -1,7 +1,7 @@
 {
   "name": "skill-scaffold",
-  "version": "1.0.3",
-  "description": "AI agent skill scaffolding CLI. Create OpenClaw, Moltbot, Claude, and MCP skills instantly. Vibe coding ready.",
+  "version": "1.0.4",
+  "description": "AI agent skill scaffolding CLI. Create skills for OpenClaw, Moltbot, Claude, Cursor, ChatGPT, Copilot instantly. Vibe-coding ready. MCP compatible.",
   "main": "bin/skill-scaffold.js",
   "bin": {
     "skill-scaffold": "bin/skill-scaffold.js",
@@ -12,15 +12,17 @@
   },
   "keywords": [
     "ai",
-    "agent",
+    "ai-agent",
     "skill",
     "scaffold",
     "scaffolding",
     "openclaw",
     "moltbot",
-    "openclaw",
     "claude",
     "cursor",
+    "chatgpt",
+    "copilot",
+    "github-copilot",
     "mcp",
     "vibe-coding",
     "cli",
@@ -30,8 +32,10 @@
     "automation",
     "llm",
     "gpt",
-    "copilot",
-    "devtools"
+    "devtools",
+    "ai-tools",
+    "developer-tools",
+    "typescript"
   ],
   "author": "tytaninc7",
   "license": "MIT",
