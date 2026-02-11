@@ -3,11 +3,16 @@
   "slug": "agent-step-sequencer",
   "displayName": "Agent Step Sequencer",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1770677934880,
-    "commit": "https://github.com/openclaw/skills/commit/6e0cca468b1fba9abd4b978750380889eb81fef5"
+    "version": "1.1.0",
+    "publishedAt": 1770759073965,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1770677934880,
+      "commit": "https://github.com/openclaw/skills/commit/6e0cca468b1fba9abd4b978750380889eb81fef5"
+    },
     {
       "version": "1.0.3",
       "publishedAt": 1770664157883,
