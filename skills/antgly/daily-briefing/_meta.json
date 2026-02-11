@@ -3,11 +3,16 @@
   "slug": "daily-briefing",
   "displayName": "Daily Briefing",
   "latest": {
-    "version": "1.0.4",
-    "publishedAt": 1770494510772,
-    "commit": "https://github.com/openclaw/skills/commit/7bf9ed8bd3df8b079cc38598181361c9dd66014f"
+    "version": "1.0.5",
+    "publishedAt": 1770788775942,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.4",
+      "publishedAt": 1770494510772,
+      "commit": "https://github.com/openclaw/skills/commit/7bf9ed8bd3df8b079cc38598181361c9dd66014f"
+    },
     {
       "version": "1.0.3",
       "publishedAt": 1770336743058,
