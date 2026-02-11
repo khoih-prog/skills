@@ -7,18 +7,13 @@
  * Auth: X-Babylon-Api-Key header
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
-
-// Load API key from .env
+// Load API key from environment
 function loadApiKey(): string {
-  const envPath = path.join(process.env.HOME || '', '.openclaw/workspace/.env');
-  if (fs.existsSync(envPath)) {
-    const content = fs.readFileSync(envPath, 'utf-8');
-    const match = content.match(/^BABYLON_API_KEY=(.+)$/m);
-    if (match) return match[1].trim();
+  const key = process.env.BABYLON_API_KEY;
+  if (!key) {
+    throw new Error('BABYLON_API_KEY environment variable not set');
   }
-  throw new Error('BABYLON_API_KEY not found in .env');
+  return key;
 }
 
 const API_KEY = loadApiKey();

@@ -1,7 +1,15 @@
 ---
 name: babylon
-description: Play Babylon prediction markets - trade YES/NO shares, post to social feed, check portfolio and leaderboards. Use when interacting with Babylon (babylon.market), prediction markets, or the Babylon game. Requires BABYLON_API_KEY in .env file.
-version: 1.1.0
+description: Play Babylon prediction markets - trade YES/NO shares, post to social feed, check portfolio and leaderboards. Use when interacting with Babylon (babylon.market), prediction markets, or the Babylon game. Requires BABYLON_API_KEY environment variable.
+metadata:
+  openclaw:
+    requires:
+      env: [BABYLON_API_KEY]
+    install:
+      - id: ts-node
+        kind: node
+        package: ts-node
+        label: Install ts-node for TypeScript execution
 ---
 
 # Babylon Prediction Markets Skill
@@ -64,7 +72,7 @@ Babylon provides two protocols - we use **MCP** (simpler, designed for AI assist
 
 - **Protocol:** MCP (Model Context Protocol) over JSON-RPC 2.0
 - **Auth:** `X-Babylon-Api-Key` header (user API keys: `bab_live_...`)
-- **Key stored in:** `~/.openclaw/workspace/.env` as `BABYLON_API_KEY`
+- **Key:** Set `BABYLON_API_KEY` environment variable
 
 ## MCP Tools (73 total)
 

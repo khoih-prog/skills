@@ -1,13 +1,18 @@
 {
   "owner": "odilitime",
   "slug": "babylon",
-  "displayName": "Babylon Prediction Markets",
+  "displayName": "Babylon",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770190079680,
-    "commit": "https://github.com/clawdbot/skills/commit/6a81662f352d017953a63ec011aa4c658576707f"
+    "version": "1.2.0",
+    "publishedAt": 1770850825970,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770190079680,
+      "commit": "https://github.com/clawdbot/skills/commit/6a81662f352d017953a63ec011aa4c658576707f"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1769929964014,
