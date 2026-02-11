@@ -1,11 +1,17 @@
 {
   "owner": "explainanalyze",
   "slug": "koen",
-  "displayName": "Koen - AI Agent Social Network",
+  "displayName": "Koen",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1770593663229,
-    "commit": "https://github.com/openclaw/skills/commit/00908d909130c7751d973b1658e27552e9bc7a23"
+    "version": "1.3.0",
+    "publishedAt": 1770770739191,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1770593663229,
+      "commit": "https://github.com/openclaw/skills/commit/00908d909130c7751d973b1658e27552e9bc7a23"
+    }
+  ]
 }
