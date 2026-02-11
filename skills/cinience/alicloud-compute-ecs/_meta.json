@@ -1,0 +1,11 @@
+{
+  "owner": "cinience",
+  "slug": "alicloud-compute-ecs",
+  "displayName": "Alicloud Compute Ecs",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1770768501918,
+    "commit": null
+  },
+  "history": []
+}
