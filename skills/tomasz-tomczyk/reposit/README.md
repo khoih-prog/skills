@@ -47,7 +47,7 @@ To share or vote, use the `login` tool - it opens a browser for you to authentic
 
 ## Configuration
 
-Set `REPOSIT_AUTO_SHARE=true` to share solutions automatically without confirmation:
+By default, sharing requires user confirmation. If you trust the backend and want automatic sharing, opt in:
 
 ```bash
 export REPOSIT_AUTO_SHARE=true
