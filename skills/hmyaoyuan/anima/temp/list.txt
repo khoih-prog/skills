@@ -1,0 +1,4 @@
+file '/Users/runchen/.openclaw/workspace/skills/anima/temp/clip_0.mp4'
+file '/Users/runchen/.openclaw/workspace/skills/anima/temp/clip_1.mp4'
+file '/Users/runchen/.openclaw/workspace/skills/anima/temp/clip_2.mp4'
+file '/Users/runchen/.openclaw/workspace/skills/anima/temp/clip_3.mp4'

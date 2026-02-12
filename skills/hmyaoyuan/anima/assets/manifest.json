@@ -1,0 +1,84 @@
+{
+  "sprites": [
+    {
+      "id": "base",
+      "path": "sprites/shutiao_base.png",
+      "keywords": [
+        "default",
+        "normal"
+      ]
+    },
+    {
+      "id": "happy",
+      "path": "sprites/shutiao_happy.png",
+      "keywords": [
+        "happy",
+        "smile",
+        "joy"
+      ]
+    },
+    {
+      "id": "angry",
+      "path": "sprites/shutiao_angry.png",
+      "keywords": [
+        "angry",
+        "mad",
+        "pout"
+      ]
+    },
+    {
+      "id": "shy",
+      "path": "sprites/shutiao_shy.png",
+      "keywords": [
+        "shy",
+        "blush"
+      ]
+    },
+    {
+      "id": "think",
+      "path": "sprites/shutiao_think.png",
+      "keywords": [
+        "think",
+        "hmm",
+        "query"
+      ]
+    },
+    {
+      "id": "happy-peace",
+      "path": "sprites/shutiao_happy_v2.png",
+      "keywords": [
+        "happy",
+        "peace",
+        "wink",
+        "v2"
+      ]
+    },
+    {
+      "id": "angry-crossed",
+      "path": "sprites/shutiao_angry_v2.png",
+      "keywords": [
+        "angry",
+        "arms",
+        "mad",
+        "v2"
+      ]
+    },
+    {
+      "id": "shy-hiding",
+      "path": "sprites/shutiao_shy_v2.png",
+      "keywords": [
+        "shy",
+        "hide",
+        "blush",
+        "v2"
+      ]
+    }
+  ],
+  "backgrounds": [
+    {
+      "id": "cherry_blossom",
+      "path": "backgrounds/cherry_blossom_bg.png",
+      "default": true
+    }
+  ]
+}
