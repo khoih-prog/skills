@@ -3,11 +3,16 @@
   "slug": "content-refresher",
   "displayName": "Content Refresher",
   "latest": {
-    "version": "0.1.1",
-    "publishedAt": 1770739552743,
-    "commit": "https://github.com/openclaw/skills/commit/06ce8dbd3636911d57083398a1a4003775b3d926"
+    "version": "0.1.2",
+    "publishedAt": 1770824269256,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.1",
+      "publishedAt": 1770739552743,
+      "commit": "https://github.com/openclaw/skills/commit/06ce8dbd3636911d57083398a1a4003775b3d926"
+    },
     {
       "version": "0.1.0",
       "publishedAt": 1770559590562,
