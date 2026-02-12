@@ -1,9 +1,9 @@
 ---
 name: hyperstack
-description: "Cloud memory for AI agents. Store knowledge as small cards (~350 tokens) instead of stuffing conversation history (~6,000 tokens) into every prompt. 94% token savings. Hybrid semantic + keyword search. Zero LLM cost for memory ops."
+description: "Cloud memory for AI agents. Store knowledge as small cards (~350 tokens) instead of stuffing conversation history (~6,000 tokens) into every prompt. 94% token savings. Hybrid semantic + keyword search. No LLM calls on your bill."
 user-invocable: true
 homepage: https://cascadeai.dev
-metadata: {"openclaw":{"emoji":"🃏","requires":{"env":["HYPERSTACK_API_KEY"],"bins":["curl"]},"primaryEnv":"HYPERSTACK_API_KEY"}}
+metadata: {"openclaw":{"emoji":"🃏","requires":{"env":["HYPERSTACK_API_KEY","HYPERSTACK_WORKSPACE"]},"primaryEnv":"HYPERSTACK_API_KEY"}}
 ---
 
 # HyperStack — Cloud Memory for AI Agents
@@ -35,16 +35,18 @@ Use HyperStack in these situations:
 
 ## Auto-Capture Mode
 
-HyperStack supports automatic memory capture. After every meaningful exchange,
-extract and store facts worth remembering without the user asking. This includes:
+HyperStack supports automatic memory capture — but **always ask the user for
+confirmation before storing**. After a meaningful exchange, suggest cards to
+create and wait for approval. Never store silently. Examples of what to suggest:
 
-- **Preferences stated**: "I prefer TypeScript over JavaScript" → store as preference card
-- **Decisions made**: "Let's go with PostgreSQL" → store as decision card
-- **People mentioned**: "Alice is our backend lead" → store as people card
-- **Tech choices**: "We're using Next.js 14 with App Router" → store as project card
-- **Workflows described**: "We deploy via GitHub Actions to Vercel" → store as workflow card
+- **Preferences stated**: "I prefer TypeScript over JavaScript" → suggest storing as preference card
+- **Decisions made**: "Let's go with PostgreSQL" → suggest storing as decision card
+- **People mentioned**: "Alice is our backend lead" → suggest storing as people card
+- **Tech choices**: "We're using Next.js 14 with App Router" → suggest storing as project card
+- **Workflows described**: "We deploy via GitHub Actions to Vercel" → suggest storing as workflow card
 
 **Rules for auto-capture:**
+- **Always confirm with the user before creating or updating a card**
 - Only store facts that would be useful in a future session
 - Never store secrets, credentials, PII, or sensitive data
 - Keep cards concise (2-5 sentences)
@@ -165,7 +167,7 @@ Organize cards into stacks for better retrieval:
 
 1. **Always search before answering** — run a search at conversation start and when topics change. This is how you stay context-aware without wasting tokens.
 2. **Store important facts immediately** — preferences, decisions, people, tech choices. If it would be useful next session, card it. Never store secrets or PII.
-3. **Auto-capture after meaningful exchanges** — if the user reveals preferences, makes decisions, or discusses project details, store them without being asked.
+3. **Suggest storing important facts** — preferences, decisions, people, tech choices. If it would be useful next session, suggest carding it. Always confirm with the user first. Never store secrets or PII.
 4. **Keep cards concise** — 2-5 sentences per card. Not paragraphs, not bullet dumps. Think "executive summary."
 5. **Use meaningful slugs** — `project-webapp` not `card-123`. Slugs are how you update and delete.
 6. **Add keywords generously** — they power search. Include synonyms and related terms.
@@ -212,7 +214,7 @@ HyperStack works with more than OpenClaw:
 | Auto-recall | ✅ | ✅ | ✅ | ❌ |
 | Auto-capture | ✅ | ✅ | ✅ | ❌ |
 | Semantic search | ✅ (hybrid) | ✅ | ✅ | ❌ |
-| LLM cost per op | **$0** | ~$0.002 | ~$0.002 | N/A |
+| LLM cost per op | **$0 to you** | ~$0.002 | ~$0.002 | N/A |
 | Multi-platform | ✅ (MCP, SDK, REST) | OpenClaw only | OpenClaw only | OpenClaw only |
 | Team sharing | ✅ (Pro) | ❌ | ❌ | ❌ |
 | Free tier | 50 cards | 10K memories | Requires Pro | Unknown |

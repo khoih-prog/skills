@@ -47,7 +47,7 @@ npm install hyperstack-sdk   # JavaScript
 
 Works with any language. Just `curl` and go.
 
-**One env var. No Docker. No LLM costs. Just set your API key.**
+**One env var. No Docker. No LLM calls on your bill. Just set your API key.**
 
 ```bash
 export HYPERSTACK_API_KEY=hs_your_key    # Get free at cascadeai.dev
@@ -95,7 +95,7 @@ Auto-extract       → POST /api/ingest     (pipe raw text, get cards back)
 |  | HyperStack | Mem0 | Zep | Letta |
 |--|------------|------|-----|-------|
 | Setup | 1 env var | 6+ env vars | SDK required | Own server |
-| LLM cost per op | **$0** | ~$0.002 | ~$0.002 | ~$0.002 |
+| LLM cost per op | **$0 to you** | ~$0.002 | ~$0.002 | ~$0.002 |
 | Docker required | **No** | Yes (self-hosted) | No | Yes |
 | Setup time | **30 seconds** | 5-10 minutes | 5 minutes | 10-15 minutes |
 | MCP server | ✅ | Partial | ❌ | Partial |
