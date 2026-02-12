@@ -1,7 +1,7 @@
 ---
 name: agent-memory-ultimate
-version: 2.0.3
-description: Complete memory system for AI agents. Human-like architecture with daily logs, sleep consolidation, SQLite + FTS5, importers for WhatsApp/ChatGPT/VCF. Everything an agent needs to remember across sessions.
+version: 2.0.4
+description: AI agent persistent memory with SQLite, session recall, and long-term memory. Human-like architecture with daily logs, sleep consolidation, FTS5 search, importers for WhatsApp/ChatGPT/VCF. Everything an agent needs to remember across sessions.
 homepage: https://github.com/globalcaos/clawdbot-moltbot-openclaw
 repository: https://github.com/globalcaos/clawdbot-moltbot-openclaw
 ---
