@@ -6,6 +6,11 @@ compatibility: Requires network access and valid Maton API key
 metadata:
   author: maton
   version: "1.0"
+  clawdbot:
+    emoji: 🧠
+    requires:
+      env:
+        - MATON_API_KEY
 ---
 
 # Todoist
@@ -635,9 +640,7 @@ task = response.json()
 | 429 | Rate limited |
 | 4xx/5xx | Passthrough error from Todoist API |
 
-### Troubleshooting: Invalid API Key
-
-**When you receive a "Invalid API key" error, ALWAYS follow these steps before concluding there is an issue:**
+### Troubleshooting: API Key Issues
 
 1. Check that the `MATON_API_KEY` environment variable is set:
 
@@ -656,9 +659,18 @@ print(json.dumps(json.load(urllib.request.urlopen(req)), indent=2))
 EOF
 ```
 
+### Troubleshooting: Invalid App Name
+
+1. Ensure your URL path starts with `todoist`. For example:
+
+- Correct: `https://gateway.maton.ai/todoist/rest/v2/tasks`
+- Incorrect: `https://gateway.maton.ai/rest/v2/tasks`
+
 ## Resources
 
 - [Todoist REST API v2 Documentation](https://developer.todoist.com/rest/v2)
 - [Todoist API v1 Documentation](https://developer.todoist.com/api/v1)
 - [Todoist Filter Syntax](https://todoist.com/help/articles/introduction-to-filters)
 - [Todoist OAuth Documentation](https://developer.todoist.com/guides/#oauth)
+- [Maton Community](https://discord.com/invite/dBfFAcefs2)
+- [Maton Support](mailto:support@maton.ai)
