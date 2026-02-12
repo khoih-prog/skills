@@ -1,179 +1,186 @@
 ---
 name: soul-in-sapphire
-description: Generic long-term memory (LTM) operations for OpenClaw using Notion (2025-09-03 data_sources). Bootstrap a Notion LTM database, write durable memories (decisions/preferences/gotchas), and search/recall them later.
+description: Generic long-term memory (LTM) operations for OpenClaw using Notion (2025-09-03 data_sources). Use for durable memory writes/search, emotion-state ticks, journal writes, and model-controlled subagent spawn planning via local JSON presets.
 ---
 
 # soul-in-sapphire (Notion LTM)
 
-Use this skill when you want the agent to **persist durable memories** (decisions, preferences, environment facts, gotchas, procedures) into a **Notion LTM database**, and later **search/recall** them.
+Use this skill to persist and retrieve durable memory in Notion, and to maintain emotion/state + journal records.
 
-This is meant to be **project-agnostic** (unlike `lorairo-mem`).
+## Core intent (do not lose this)
+
+This skill is not only a storage utility. Its core purpose is:
+
+1. Capture meaningful emotional/state shifts from real work and conversations.
+2. Preserve those shifts as durable memory (not just raw logs).
+3. Reuse recalled memory to improve future judgments and behavior.
+
+In short: record -> recall -> adapt.
+The goal is continuity and growth, not archival volume.
 
 ## Requirements
 
-- Notion token in env: `NOTION_API_KEY` (or `NOTION_TOKEN`).
-- Notion API version: `2025-09-03` (data_sources).
-- Recommended Notion skill dependency (ClawHub): `notion-api-automation` (install with `clawhub install notion-api-automation`).
-- A Notion database for LTM entries.
+- Notion token: `NOTION_API_KEY` (or `NOTION_TOKEN`)
+- Notion API version: `2025-09-03`
+- Local config: `~/.config/soul-in-sapphire/config.json`
 
-## Notion LTM database schema (expected)
+## Required Notion databases and schema
 
-Create a Notion database with these properties (names must match):
+Create (or let setup create) these databases under the same parent page:
 
-- `Title` (title)
+- `<base>-mem`
+- `<base>-events`
+- `<base>-emotions`
+- `<base>-state`
+- `<base>-journal`
+
+### 1) `<base>-mem` (durable memory)
+
+Purpose: store high-signal long-term memory.
+
+Properties:
+
+- `Name` (title)
 - `Type` (select): `decision|preference|fact|procedure|todo|gotcha`
 - `Tags` (multi-select)
 - `Content` (rich_text)
-- `Source` (url) (optional)
-- `Confidence` (select): `high|medium|low` (optional)
-- `CreatedAt` (date) (optional)
+- `Source` (url, optional)
+- `Confidence` (select: `high|medium|low`, optional)
 
-## Config
+### 2) `<base>-events` (what happened)
 
-Config file is created automatically by bootstrap and stored at:
+Purpose: record meaningful triggers from work/conversation.
 
-- `~/.config/soul-in-sapphire/config.json`
+Properties:
 
-It contains:
+- `Name` (title)
+- `when` (date)
+- `importance` (select: `1..5`)
+- `trigger` (select): `progress|boundary|ambiguity|external_action|manual`
+- `context` (rich_text)
+- `source` (select): `discord|cli|cron|heartbeat|other`
+- `link` (url, optional)
+- `uncertainty` (number)
+- `control` (number)
+- `emotions` (relation -> `<base>-emotions`)
+- `state` (relation -> `<base>-state`)
 
-- `ltm_db_name` (string)
-- `data_source_id` (string)
-- `database_id` (string)
+### 3) `<base>-emotions` (felt response)
 
-## Quick start
+Purpose: attach one or more emotion axes to one event.
 
-1) 初期設定（DB名を聞いて、存在しなければ作成→IDsを保存）:
+Properties:
+
+- `Name` (title)
+- `axis` (select): `arousal|valence|focus|confidence|stress|curiosity|social|solitude|joy|anger|sadness|fun|pain`
+- `level` (number)
+- `comment` (rich_text)
+- `weight` (number)
+- `body_signal` (multi-select): `tension|relief|fatigue|heat|cold`
+- `need` (select): `safety|progress|recognition|autonomy|rest|novelty`
+- `coping` (select): `log|ask|pause|act|defer`
+- `event` (relation -> `<base>-events`)
+
+### 4) `<base>-state` (snapshot after interpretation)
+
+Purpose: save the current interpreted state after events/emotions.
+
+Properties:
+
+- `Name` (title)
+- `when` (date)
+- `state_json` (rich_text)
+- `reason` (rich_text)
+- `source` (select): `event|cron|heartbeat|manual`
+- `mood_label` (select): `clear|wired|dull|tense|playful|guarded|tender`
+- `intent` (select): `build|fix|organize|explore|rest|socialize|reflect`
+- `need_stack` (select): `safety|stability|belonging|esteem|growth`
+- `need_level` (number)
+- `avoid` (multi-select): `risk|noise|long_tasks|external_actions|ambiguity`
+- `event` (relation -> `<base>-events`)
+
+### 5) `<base>-journal` (daily synthesis)
+
+Purpose: keep a durable daily reflection and world context.
+
+Properties:
+
+- `Name` (title)
+- `when` (date)
+- `body` (rich_text)
+- `worklog` (rich_text)
+- `session_summary` (rich_text)
+- `mood_label` (select)
+- `intent` (select)
+- `future` (rich_text)
+- `world_news` (rich_text)
+- `tags` (multi-select)
+- `source` (select): `cron|manual`
+
+## Core commands
+
+### 1) Setup
 
 ```bash
 node skills/soul-in-sapphire/scripts/setup_ltm.js --parent "<Notion parent page url>" --base "Valentina" --yes
 ```
 
-2) Write memory:
+### 2) LTM write
 
 ```bash
 echo '{
-  "title": "Decision: Notion API uses /v1/data_sources",
-  "type": "decision",
-  "tags": ["notion", "openclaw"],
-  "content": "Use POST /v1/data_sources/{id}/query (Not /v1/databases).",
-  "source": "https://docs.openclaw.ai/concepts/agent-workspace",
-  "confidence": "high"
+  "title":"Decision: use data_sources API",
+  "type":"decision",
+  "tags":["notion","openclaw"],
+  "content":"Use /v1/data_sources/{id}/query.",
+  "confidence":"high"
 }' | python3 skills/soul-in-sapphire/scripts/ltm_write.py
 ```
 
-3) Search/recall:
+### 3) LTM search
 
 ```bash
 python3 skills/soul-in-sapphire/scripts/ltm_search.py --query "data_sources" --limit 5
 ```
 
-## Notes
-
-- This skill no longer depends on `skills/notionkit/*`.
-- Notion API operations are handled by local helpers in this skill (`scripts/notion_client.js`, `scripts/notion_http.py`) and the recommended external dependency is `skills/notion-api-automation` (`scripts/notionctl.mjs`) for operational tooling.
-- Keep writes **high-signal**: prefer fewer, clearer entries over dumping chat logs.
-
-
-### Fallback: IDだけ拾う(既存DBがある場合)
-
-```bash
-python3 skills/soul-in-sapphire/scripts/bootstrap_config.py --name "Valentina-mem"
-```
-
-
-Note: Notion search is fuzzy; these scripts require an **exact title match** to avoid accidentally selecting the wrong database.
-
-## Valentina emotion-state system
-
-This skill can also manage a small "emotion/state" model using three Notion databases:
-
-- `Valentina-events`
-- `Valentina-emotions`
-- `Valentina-state`
-
-These should live under your OpenClaw page.
-
-### Tick (event -> emotions -> state)
-
-Create one event, attach multiple emotions, then write a new state snapshot:
+### 4) Emotion/state tick
 
 ```bash
 cat <<'JSON' | node skills/soul-in-sapphire/scripts/emostate_tick.js
 {
-  "event": {
-    "title": "...",
-    "importance": 3,
-    "trigger": "progress",
-    "context": "...",
-    "source": "discord",
-    "uncertainty": 5,
-    "control": 5
-  },
-  "emotions": [
-    {"axis": "joy", "level": 7, "comment": "..."},
-    {"axis": "pain", "level": 3, "comment": "...", "body_signal": ["tension"], "need": "rest", "coping": "pause"}
-  ],
-  "state": {
-    "mood_label": "clear",
-    "intent": "build",
-    "need_stack": "growth",
-    "need_level": 6,
-    "avoid": ["noise"],
-    "reason": "..."
-  }
+  "event": {"title":"..."},
+  "emotions": [{"axis":"joy","level":6}],
+  "state": {"mood_label":"clear","intent":"build","reason":"..."}
 }
 JSON
 ```
 
-### Config keys
-
-`~/.config/soul-in-sapphire/config.json` needs the following keys (setup will fill them when possible):
-
-- `valentina_events_database_id`
-- `valentina_emotions_database_id`
-- `valentina_state_database_id`
-- `valentina_state_data_source_id`
-
-(If setup cannot discover them due to Notion search limitations, you can fill them manually from the DB URLs.)
-
-
-## JS entrypoints (preferred)
-
-- Setup: `node skills/soul-in-sapphire/scripts/setup_ltm.js --parent <page-url>`
-- Tick: `node skills/soul-in-sapphire/scripts/emostate_tick.js` (JSON on stdin)
-
-Python scripts are kept for reference/legacy.
-
-
-## Journal (sleep reflection)
-
-If you created `<base>-journal`, you can write an entry with:
+### 5) Journal write
 
 ```bash
 echo '{"body":"...","source":"cron"}' | node skills/soul-in-sapphire/scripts/journal_write.js
 ```
 
+## Subagent spawn planning (use shared builder skill)
 
-## OpenClaw integration (cron / heartbeat)
+Use the shared skill `subagent-spawn-command-builder` to generate `sessions_spawn` payload JSON.
+Do not use `soul-in-sapphire` local planner scripts for this anymore.
 
-### Cron: 01:00 journal
+- Template: `skills/subagent-spawn-command-builder/state/spawn-profiles.template.json`
+- Active preset: `skills/subagent-spawn-command-builder/state/spawn-profiles.json`
+- Builder usage (skill-level):
+  - Call `subagent-spawn-command-builder`
+  - Use profile `<heartbeat|journal>`
+  - Provide the run-specific task text
 
-Recommended: create a cron job that runs daily at 01:00 JST and writes a journal entry.
-The job should:
+Output is ready-to-use JSON for `sessions_spawn`.
 
-- ALWAYS write an entry
-- include emotional reflection (primary) + worklog/session summary (secondary)
-- include 1-2 world news items from today (use `web_search`) with brief thoughts
-- include future intent
-- write tags based on your configured vocab (see `~/.config/soul-in-sapphire/config.json` -> `journal.tag_vocab`)
+Builder log file:
 
-Implementation target (local):
-- `node /home/altair/clawd/skills/soul-in-sapphire/scripts/journal_write.js`
+- `skills/subagent-spawn-command-builder/state/build-log.jsonl`
 
-### Heartbeat: fuzzy emotion/state capture
+## Operational notes
 
-On heartbeat runs, optionally write an emostate tick when something "emotionally moved" you.
-This should be fuzzy and self-throttling (avoid spamming writes when nothing mattered).
-
-Implementation target:
-- `node /home/altair/clawd/skills/soul-in-sapphire/scripts/emostate_tick.js`
+- Keep writes high-signal (avoid dumping full chat logs).
+- If heartbeat is comment-only, emotion tick may be skipped.
+- If periodic emostate is required regardless of heartbeat context, add a dedicated cron job for `emostate_tick.js`.
