@@ -1,0 +1,11 @@
+{
+  "owner": "melvin2016",
+  "slug": "webscraper-pulpminer",
+  "displayName": "PulpMiner Web Scraper - Convert Any Webpage to Realtime JSON API",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1770827596232,
+    "commit": null
+  },
+  "history": []
+}
