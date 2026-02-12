@@ -1,7 +1,7 @@
 ---
 name: elevenlabs
 description: Text-to-speech, sound effects, music generation, voice management, and quota checks via the ElevenLabs API. Use when generating audio with ElevenLabs or managing voices.
-version: 1.1.3
+version: 1.2.1
 homepage: https://github.com/odrobnik/elevenlabs-skill
 metadata:
   {
@@ -128,7 +128,7 @@ Create instant voice clones from audio samples.
 **Security:** by default this script will only read files from:
 - `~/.openclaw/elevenlabs/voiceclone-samples/`
 
-Copy your samples there (or pass `--sample-dir`). Reading arbitrary paths is blocked unless you explicitly opt in with `--unsafe-allow-any-path`.
+Copy your samples there (or pass `--sample-dir`). Reading files outside the sample directory is blocked.
 
 ```bash
 # Clone from audio files (put samples into ~/.openclaw/elevenlabs/voiceclone-samples)
