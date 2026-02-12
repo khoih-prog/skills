@@ -3,11 +3,16 @@
   "slug": "deepdub-tts",
   "displayName": "Deepdub TTS",
   "latest": {
-    "version": "0.1.4",
-    "publishedAt": 1770794016885,
-    "commit": "https://github.com/openclaw/skills/commit/3e6ecbb0c2b69a1dcda3a45c34aa695173c4f58b"
+    "version": "0.1.5",
+    "publishedAt": 1770886292645,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.4",
+      "publishedAt": 1770794016885,
+      "commit": "https://github.com/openclaw/skills/commit/3e6ecbb0c2b69a1dcda3a45c34aa695173c4f58b"
+    },
     {
       "version": "0.1.0",
       "publishedAt": 1770303527111,

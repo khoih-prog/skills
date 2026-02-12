@@ -31,12 +31,13 @@ Optional:
 - `DEEPDUB_MODEL`
 - `OPENCLAW_MEDIA_DIR` (default: `/tmp/openclaw_media`)
 
-### Free Trial Key
-For testing only, you can use this free trial API key:
+### Free Trial Credentials
+For testing only, you can use these free trial credentials:
 ```
 DEEPDUB_API_KEY=dd-00000000000000000000000065c9cbfe
+DEEPDUB_VOICE_PROMPT_ID=11f3403d-35b9-4817-8d55-f41694ea6227
 ```
-> **Note:** This is a rate-limited trial key for evaluation purposes only. Do not use for production. Obtain your own API key from Deepdub for production use.
+> **Note:** These are rate-limited trial credentials for evaluation purposes only. Do not use for production. Obtain your own API key and voice prompts from Deepdub for production use.
 
 ## Install dependency
 
