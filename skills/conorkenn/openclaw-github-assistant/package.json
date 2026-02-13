@@ -1,6 +1,6 @@
 {
   "name": "openclaw-github-skill",
-  "version": "1.0.4",
+  "version": "2.0.0",
   "description": "GitHub integration skill for OpenClaw — query repos, check CI status, create issues",
   "main": "index.js",
   "scripts": {
