@@ -3,11 +3,16 @@
   "slug": "tiered-memory",
   "displayName": "Tiered Memory",
   "latest": {
-    "version": "2.0.0",
-    "publishedAt": 1770726090104,
-    "commit": "https://github.com/openclaw/skills/commit/f98eac4a74108d46ef0a1c220a26fea841786209"
+    "version": "2.1.0",
+    "publishedAt": 1770970459153,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.0.0",
+      "publishedAt": 1770726090104,
+      "commit": "https://github.com/openclaw/skills/commit/f98eac4a74108d46ef0a1c220a26fea841786209"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1770605699333,

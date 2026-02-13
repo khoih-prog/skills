@@ -23,7 +23,7 @@
   "tree": {
     "max_nodes": 50,
     "max_depth": 4,
-    "max_size_bytes": 2048
+    "max_size_bytes": 4096
   },
   "distillation": {
     "aggression": 0.7,

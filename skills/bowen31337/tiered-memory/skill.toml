@@ -1,0 +1,13 @@
+[skill]
+name = "tiered-memory"
+version = "2.1.0"
+description = "EvoClaw Tiered Memory Architecture v2.1.0 - LLM-powered three-tier memory system with structured metadata extraction, URL preservation, validation, and cloud-first sync. Enhanced to prevent loss of URLs and technical details during distillation."
+author = "Alex Chen"
+license = "MIT"
+repository = "https://github.com/clawinfra/evoclaw"
+
+[skill.requirements]
+# No external dependencies - uses Python stdlib + urllib
+
+[skill.tags]
+tags = ["memory", "evoclaw", "llm", "distillation", "metadata", "validation"]

@@ -41,9 +41,17 @@ def search_keyword(tree, query, top_k=5):
         if path == 'root':
             continue
         
+        # Handle both dict nodes (warm memory) and string nodes (cold memory)
+        if isinstance(node, dict):
+            desc = node.get('desc', '')
+        elif isinstance(node, str):
+            desc = node
+        else:
+            continue
+        
         # Extract words from path and description
         path_words = set(re.split(r'[/_\-\s]', path.lower()))
-        desc_words = set(node.get('desc', '').lower().split())
+        desc_words = set(desc.lower().split())
         all_words = path_words | desc_words
         
         # Calculate overlap

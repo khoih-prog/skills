@@ -1,14 +1,36 @@
 ---
 name: tiered-memory
-description: "EvoClaw Tiered Memory Architecture v2.0 - LLM-powered three-tier memory system with distillation, reasoning-based retrieval, and cloud-first sync. Replaces linear MEMORY.md with human-like memory organization."
-version: "2.0.0"
+description: "EvoClaw Tiered Memory Architecture v2.1.0 - LLM-powered three-tier memory system with structured metadata extraction, URL preservation, validation, and cloud-first sync. Enhanced to prevent loss of URLs and technical details during distillation."
+version: "2.1.0"
 ---
 
-# Tiered Memory System v2.0
+# Tiered Memory System v2.1.0
 
 > *A mind that remembers everything is as useless as one that remembers nothing. The art is knowing what to keep.* 🧠
 
 EvoClaw-compatible three-tier memory system inspired by human cognition and PageIndex tree retrieval.
+
+## What's New in v2.1.0
+
+🎯 **Structured Metadata Extraction**
+- Automatic extraction of URLs, shell commands, and file paths from facts
+- Preserved during distillation and consolidation
+- Searchable by URL fragment
+
+✅ **Memory Completeness Validation**
+- Check daily notes for missing URLs, commands, and next steps
+- Proactive warnings for incomplete information
+- Actionable suggestions for improvement
+
+🔍 **Enhanced Search**
+- Search facts by URL fragment
+- Get all stored URLs from warm memory
+- Metadata-aware fact storage
+
+🛡️ **URL Preservation**
+- URLs explicitly preserved during LLM distillation
+- Fallback metadata extraction if LLM misses them
+- Command-line support for adding metadata manually
 
 ## Architecture
 
@@ -494,6 +516,125 @@ memory_cli.py store \
   --category "projects/evoclaw/deployment" \
   --importance 0.85 \
   --db-url "$TURSO_URL" --auth-token "$TURSO_TOKEN"
+
+# Store with explicit metadata (v2.1.0+)
+memory_cli.py store \
+  --text "Z-Image ComfyUI model for photorealistic images" \
+  --category "tools/image-generation" \
+  --importance 0.8 \
+  --url "https://docs.comfy.org/tutorials/image/z-image/z-image" \
+  --command "huggingface-cli download Tongyi-MAI/Z-Image" \
+  --path "/home/user/models/"
+```
+
+### Validate (v2.1.0)
+
+```bash
+memory_cli.py validate [--file PATH] [--agent-id default]
+```
+
+**Purpose:** Check daily notes for incomplete information (missing URLs, commands, next steps).
+
+**Example:**
+```bash
+# Validate today's daily notes
+memory_cli.py validate
+
+# Validate specific file
+memory_cli.py validate --file memory/2026-02-13.md
+```
+
+**Output:**
+```json
+{
+  "status": "warning",
+  "warnings_count": 2,
+  "warnings": [
+    "Tool 'Z-Image' mentioned without URL/documentation link",
+    "Action 'install' mentioned without command example"
+  ],
+  "suggestions": [
+    "Add URLs for mentioned tools/services",
+    "Include command examples for setup/installation steps",
+    "Document next steps after decisions"
+  ]
+}
+```
+
+### Extract Metadata (v2.1.0)
+
+```bash
+memory_cli.py extract-metadata --file PATH
+```
+
+**Purpose:** Extract structured metadata (URLs, commands, paths) from a file.
+
+**Example:**
+```bash
+memory_cli.py extract-metadata --file memory/2026-02-13.md
+```
+
+**Output:**
+```json
+{
+  "file": "memory/2026-02-13.md",
+  "metadata": {
+    "urls": [
+      "https://docs.comfy.org/tutorials/image/z-image/z-image",
+      "https://github.com/Lightricks/LTX-Video"
+    ],
+    "commands": [
+      "huggingface-cli download Tongyi-MAI/Z-Image",
+      "git clone https://github.com/Lightricks/LTX-Video.git"
+    ],
+    "paths": [
+      "/home/peter/ai-stack/comfyui/models",
+      "./configs/ltx-video-2-config.yaml"
+    ]
+  },
+  "summary": {
+    "urls_count": 2,
+    "commands_count": 2,
+    "paths_count": 2
+  }
+}
+```
+
+### Search by URL (v2.1.0)
+
+```bash
+memory_cli.py search-url --url FRAGMENT [--limit 5] [--agent-id default]
+```
+
+**Purpose:** Search facts by URL fragment.
+
+**Example:**
+```bash
+# Find all facts with comfy.org URLs
+memory_cli.py search-url --url "comfy.org"
+
+# Find GitHub repos
+memory_cli.py search-url --url "github.com" --limit 10
+```
+
+**Output:**
+```json
+{
+  "query": "comfy.org",
+  "results_count": 1,
+  "results": [
+    {
+      "id": "abc123",
+      "text": "Z-Image ComfyUI model for photorealistic images",
+      "category": "tools/image-generation",
+      "metadata": {
+        "urls": ["https://docs.comfy.org/tutorials/image/z-image/z-image"],
+        "commands": ["huggingface-cli download Tongyi-MAI/Z-Image"],
+        "paths": []
+      }
+    }
+  ]
+}
 ```
 
 ### Retrieve
@@ -912,6 +1053,32 @@ tree_search.py --query "..." --tree-file memory/memory-tree.json --mode llm --ll
 3. Initialize cold storage (optional): `memory_cli.py cold --init --db-url ... --auth-token ...`
 4. Configure agent to use new commands (see Integration section)
 
+## Migration from v2.0 to v2.1
+
+**Fully backward compatible:** Existing memory files work without changes.
+
+**What's new:**
+- ✅ Metadata automatically extracted from existing facts when loaded
+- ✅ New commands: `validate`, `extract-metadata`, `search-url`
+- ✅ `store` command now accepts `--url`, `--command`, `--path` flags
+- ✅ Distillation preserves URLs and technical details
+- ✅ No action required - just update and use new features
+
+**Testing the upgrade:**
+```bash
+# Update skill
+clawhub update tiered-memory
+
+# Test metadata extraction
+memory_cli.py extract-metadata --file memory/2026-02-13.md
+
+# Validate your recent notes
+memory_cli.py validate
+
+# Search by URL
+memory_cli.py search-url --url "github.com"
+```
+
 ## References
 
 - **Design:** `/docs/TIERED-MEMORY.md` (EvoClaw)
@@ -920,4 +1087,4 @@ tree_search.py --query "..." --tree-file memory/memory-tree.json --mode llm --ll
 
 ---
 
-*v2.0.0 — A mind that remembers everything is as useless as one that remembers nothing. The art is knowing what to keep.* 🧠🌲
+*v2.1.0 — A mind that remembers everything is as useless as one that remembers nothing. The art is knowing what to keep. Now with structured metadata to remember HOW, not just WHAT.* 🧠🌲🔗
