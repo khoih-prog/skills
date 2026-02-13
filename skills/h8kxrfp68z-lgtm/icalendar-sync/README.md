@@ -2,7 +2,7 @@
 
 **Professional iCloud Calendar integration with enterprise-grade security**
 
-[![Version](https://img.shields.io/badge/version-2.2.12-blue.svg)](https://github.com/h8kxrfp68z-lgtm/OpenClaw/releases)
+[![Version](https://img.shields.io/badge/version-2.3.0-blue.svg)](https://github.com/h8kxrfp68z-lgtm/iCalendar-Sync/releases)
 [![Security Rating](https://img.shields.io/badge/security-A-brightgreen.svg)](SECURITY.md)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
@@ -10,32 +10,30 @@
 
 ---
 
-## 🎉 New in v2.2.12 (Feb 12, 2026)
+## 🎉 New in v2.3.0 (Feb 13, 2026)
 
-- **📋 Enhanced Registry Metadata**: Added clawhub.json and REGISTRY.yaml for maximum ClawHub compatibility
-- **🔍 Multiple Metadata Formats**: Now 6 different metadata files to ensure ClawHub recognition
-- **✅ Explicit Environment Declarations**: Required env vars declared in all possible formats
+- **✨ UPDATE Command**: Modify existing events without breaking UID integrity
+- **🔁 Smart Recurrence Handling**: Update single instance, all instances, or future instances
+- **📅 Exception Support**: RECURRENCE-ID for creating exceptions in recurring series
+- **🎯 Granular Control**: `--mode single/all/future` for precise updates
+- **🔧 Series Management**: Split recurring series or update master rules
 
-## Previous: v2.2.11 (Feb 12, 2026)
+## Key Features
 
-- **🌍 Cyrillic Support**: Fixed calendar name validation to support Unicode (Cyrillic, Chinese, Arabic, etc.)
-- **🔧 Headless Configuration**: Added `--username` and `--non-interactive` flags for automated setup
-- **✅ RuntimeWarning Fixed**: Suppressed module import warnings when using `python -m icalendar_sync`
-- **🙏 Field-Tested**: All fixes validated by real OpenClaw users (thanks Alfred!)
+- **🌍 Multi-language Support**: Cyrillic, Chinese, Arabic calendar names
+- **🔐 Secure Credentials**: OS keyring storage (Keychain/Credential Manager/Secret Service)
+- **🐳 Docker/CI Ready**: Environment variables and secrets manager support
+- **📅 Full CalDAV Support**: List, get, create, delete events with recurrence
 
-[See BUGFIX_NOTES.md for details](BUGFIX_NOTES.md)
-
-[See full CHANGELOG](CHANGELOG.md) | [Security Scan Response](SECURITY_SCAN_NOTICE.md)
+[See full CHANGELOG](CHANGELOG.md)
 
 ---
 
-## ⚠️ CRITICAL NOTICE: What This Version Actually Includes
+## ✨ What This Version Includes
 
-**Version 2.2.12 is the ENHANCED METADATA RELEASE** with Cyrillic support and headless configuration. Some documentation files (DOCUMENTATION.md, ARCHITECTURE.md) describe **planned future features** that are not yet implemented.
+**Version 2.3.0** is a production-ready iCloud Calendar sync skill with:
 
-**IMPORTANT: See SECURITY_SCAN_NOTICE.md for detailed responses to ClawHub security scan concerns.**
-
-### ✅ ACTUALLY IMPLEMENTED IN v2.2.12:
+### ✅ Fully Implemented Features:
 
 **Fully functional modules:**
 - `src/icalendar_sync/calendar.py` (33 KB) - Complete CalDAV client
@@ -98,7 +96,9 @@
 - ✅ **Full Calendar Sync** - Bidirectional sync with iCloud
 - 🌐 **CalDAV Protocol** - Standard-compliant implementation
 - 🗓️ **Event Management** - Create, read, update, delete events
-- 🔁 **Recurring Events** - Full RRULE support (daily, weekly, monthly, yearly)
+- ✨ **Smart Updates** - Modify events without breaking UID integrity
+- 🔁 **Recurring Events** - Full RRULE support with smart instance handling
+- 🎯 **Granular Control** - Update single, all, or future instances of series
 - ⏰ **Alarms & Reminders** - Multiple alarms per event
 - 📱 **Multi-Device** - Instant sync across iPhone, iPad, Mac
 - 📂 **Multiple Calendars** - Work, Personal, Custom calendars
@@ -234,6 +234,44 @@ icalendar-sync create --calendar "Work" --json '{
     "count": 50
   }
 }'
+Update Event
+Simple Update
+bash
+# Update non-recurring event
+icalendar-sync update --calendar "Work" --uid "event-uid-here" --json '{
+  "summary": "Updated Meeting Title",
+  "location": "New Conference Room"
+}'
+Update Single Instance of Recurring Event
+bash
+# Change one Friday standup to Saturday without affecting other Fridays
+icalendar-sync update --calendar "Work" --uid "weekly-standup-uid" \
+  --recurrence-id "2026-02-14T09:00:00+03:00" \
+  --mode single \
+  --json '{
+    "dtstart": "2026-02-15T09:00:00+03:00",
+    "dtend": "2026-02-15T09:30:00+03:00",
+    "summary": "Standup - Moved to Saturday"
+  }'
+Update All Instances
+bash
+# Change time for ALL future standups
+icalendar-sync update --calendar "Work" --uid "weekly-standup-uid" \
+  --mode all \
+  --json '{
+    "dtstart": "2026-02-12T10:00:00+03:00",
+    "dtend": "2026-02-12T10:30:00+03:00"
+  }'
+Update This and Future Instances
+bash
+# Split series: keep old time before Feb 20, new time after
+icalendar-sync update --calendar "Work" --uid "weekly-standup-uid" \
+  --recurrence-id "2026-02-20T09:00:00+03:00" \
+  --mode future \
+  --json '{
+    "dtstart": "2026-02-20T14:00:00+03:00",
+    "dtend": "2026-02-20T14:30:00+03:00"
+  }'
 Delete Event
 bash
 # First, get the event UID
