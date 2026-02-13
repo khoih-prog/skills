@@ -2,6 +2,40 @@
 
 Complete reference for Lobster AI command-line interface.
 
+## Installation & Setup
+
+### Install (new users)
+
+| Platform | Command |
+|----------|---------|
+| macOS / Linux | `curl -fsSL https://install.lobsterbio.com \| bash` |
+| Windows (PowerShell) | `irm https://install.lobsterbio.com/windows \| iex` |
+| Manual (any) | `uv tool install 'lobster-ai[full,anthropic]' && lobster init` |
+| pip (any) | `pip install 'lobster-ai[full]' && lobster init` |
+
+### Upgrade
+
+| Method | Command |
+|--------|---------|
+| uv tool | `uv tool upgrade lobster-ai` |
+| pip | `pip install --upgrade lobster-ai` |
+
+### Add agent packages (uv tool installs)
+
+```bash
+uv tool install lobster-ai --with lobster-proteomics --with lobster-genomics
+```
+
+Or run `lobster init` to interactively select agents and generate the command.
+
+### Configure / reconfigure
+
+```bash
+lobster init                    # Workspace setup (interactive)
+lobster init --global           # Global defaults
+lobster init --force            # Overwrite existing config
+```
+
 ## Starting Lobster
 
 ```bash

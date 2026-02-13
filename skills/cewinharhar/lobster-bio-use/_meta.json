@@ -3,9 +3,15 @@
   "slug": "lobster-bio-use",
   "displayName": "LobsterBio - Use",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1770860414338,
-    "commit": "https://github.com/openclaw/skills/commit/3f25511381da7f1a47f3975fd26176c70e7526a8"
+    "version": "1.0.1",
+    "publishedAt": 1770985943508,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1770860414338,
+      "commit": "https://github.com/openclaw/skills/commit/3f25511381da7f1a47f3975fd26176c70e7526a8"
+    }
+  ]
 }

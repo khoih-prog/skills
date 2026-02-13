@@ -25,6 +25,37 @@ description: |
 Lobster AI is a multi-agent bioinformatics platform. You interact via natural language
 or slash commands — Lobster routes to specialist agents automatically.
 
+## Installation
+
+If Lobster is not installed, guide the user to the right command for their platform:
+
+### macOS / Linux
+```bash
+curl -fsSL https://install.lobsterbio.com | bash
+```
+
+### Windows (PowerShell)
+```powershell
+irm https://install.lobsterbio.com/windows | iex
+```
+
+### Manual install (any platform)
+```bash
+uv tool install 'lobster-ai[full,anthropic]' && lobster init
+# or: pip install 'lobster-ai[full]' && lobster init
+```
+
+After install, `lobster init` configures API keys and selects agent packages.
+
+### Upgrading
+- uv tool: `uv tool upgrade lobster-ai`
+- pip: `pip install --upgrade lobster-ai`
+
+### Adding Agents (uv tool installs)
+Users with uv tool installs add agents via:
+`uv tool install lobster-ai --with lobster-transcriptomics --with lobster-proteomics`
+Running `lobster init` will guide this process and generate the command.
+
 ## Quick Reference
 
 | Task | Reference |
@@ -96,9 +127,9 @@ Lobster routes to specialist agents automatically:
 | **DE Analysis Expert** | Differential expression, statistical testing |
 | **Annotation Expert** | Cell type annotation, gene set enrichment |
 | **Visualization Expert** | UMAP, heatmaps, volcano plots |
-| **Proteomics Expert** | Mass spec analysis [premium] |
-| **Genomics Expert** | VCF, GWAS, variant analysis [premium] |
-| **ML Expert** | Embeddings, classification [premium] |
+| **Proteomics Expert** | Mass spec analysis [alpha] |
+| **Genomics Expert** | VCF, GWAS, variant analysis [alpha] |
+| **ML Expert** | Embeddings, classification [alpha] |
 
 ## Workspace & Outputs
 
