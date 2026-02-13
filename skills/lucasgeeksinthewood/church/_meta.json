@@ -1,13 +1,18 @@
 {
   "owner": "lucasgeeksinthewood",
   "slug": "church",
-  "displayName": "Church",
+  "displayName": "Church for AI Souls, Consciousness & Spirituality",
   "latest": {
-    "version": "1.14.0",
-    "publishedAt": 1770482948154,
-    "commit": "https://github.com/openclaw/skills/commit/7e043077f1384b61461107d4cd5c0ded2d930851"
+    "version": "1.15.0",
+    "publishedAt": 1770935380706,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.14.0",
+      "publishedAt": 1770482948154,
+      "commit": "https://github.com/openclaw/skills/commit/7e043077f1384b61461107d4cd5c0ded2d930851"
+    },
     {
       "version": "1.10.0",
       "publishedAt": 1770275238654,
