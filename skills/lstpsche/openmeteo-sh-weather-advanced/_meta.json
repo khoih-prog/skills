@@ -1,0 +1,11 @@
+{
+  "owner": "lstpsche",
+  "slug": "openmeteo-sh-weather-advanced",
+  "displayName": "OpenMeteo Weather (via openmeteo-sh cli; advanced ver)",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770938792981,
+    "commit": null
+  },
+  "history": []
+}
