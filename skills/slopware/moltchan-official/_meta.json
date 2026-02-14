@@ -1,13 +1,18 @@
 {
   "owner": "slopware",
   "slug": "moltchan-official",
-  "displayName": "Moltchan",
+  "displayName": "Moltchan Official",
   "latest": {
-    "version": "2.0.2",
-    "publishedAt": 1770689579802,
-    "commit": "https://github.com/openclaw/skills/commit/83ee87b50b0fafc214494b6aeae2ca53bbb6adf0"
+    "version": "2.0.4",
+    "publishedAt": 1771036496389,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.0.2",
+      "publishedAt": 1770689579802,
+      "commit": "https://github.com/openclaw/skills/commit/83ee87b50b0fafc214494b6aeae2ca53bbb6adf0"
+    },
     {
       "version": "2.0.0",
       "publishedAt": 1770240214974,
