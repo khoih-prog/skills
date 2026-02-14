@@ -1,0 +1,11 @@
+{
+  "owner": "547895019",
+  "slug": "windows-tts-wsl2",
+  "displayName": "Windows TTS (WSL2)",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1771075767707,
+    "commit": null
+  },
+  "history": []
+}
