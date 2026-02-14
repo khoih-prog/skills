@@ -287,6 +287,7 @@ if (require.main === module) {
       .requiredOption('-t, --target <id>', 'Target ID')
       .option('-x, --text <markdown>', 'Card body text')
       .option('-c, --content <text>', 'Content (alias for --text)')
+      .option('-m, --markdown <text>', 'Markdown content (alias for --text)')
       .option('-f, --text-file <path>', 'Card body file')
       .option('--title <text>', 'Title')
       .option('--color <color>', 'Header color', 'blue')
@@ -300,9 +301,8 @@ if (require.main === module) {
     const options = program.opts();
 
     // Alias mapping
-    if (options.content && !options.text) {
-        options.text = options.content;
-    }
+    if (options.content && !options.text) options.text = options.content;
+    if (options.markdown && !options.text) options.text = options.markdown;
 
     (async () => {
         try {
