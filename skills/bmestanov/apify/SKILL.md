@@ -15,7 +15,7 @@ metadata:
 
 # Apify
 
-Run any of the 4,000+ Actors on [Apify Store](https://apify.com/store) and retrieve structured results via the REST API.
+Run any of the 17,000+ Actors on [Apify Store](https://apify.com/store) and retrieve structured results via the REST API.
 
 Full OpenAPI spec: [openapi.json](openapi.json)
 
