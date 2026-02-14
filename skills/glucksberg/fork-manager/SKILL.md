@@ -17,6 +17,33 @@ Manage forks where you contribute PRs but also use improvements before they're m
 - Review recently closed/rejected PRs and decide whether to keep locally
 - Manage local patches (fixes not submitted or rejected upstream)
 
+## When NOT to use
+
+- General GitHub queries (issues, PRs, CI status on any repo) → use `github` skill instead
+- Triaging/ranking/prioritizing issues → use `issue-prioritizer` skill instead
+- Reviewing code changes before publishing a PR → use `pr-review` skill instead
+- Creating new PRs from scratch (not fork sync) → use `gh pr create` directly
+
+## Cron Mode
+
+When invoked by a cron job (automated recurring sync), follow these guidelines for efficient execution:
+
+1. **Skip interactive prompts** — auto-resolve decisions that don't require human input:
+   - Rebases: attempt automatically, report failures
+   - Closed PRs: report but defer decision (don't drop or keep without human input)
+   - Audit findings: report but don't act
+2. **Compact output** — use the summary format, not full verbose report:
+   ```
+   🍴 Fork Sync Complete — <repo>
+   Main: synced N commits (old_sha → new_sha)
+   PRs: X open, Y changed state
+   - Rebased: A/B clean (C conflicts)
+   Production: rebuilt clean | N conflicts
+   Notable upstream: [1-3 bullet highlights]
+   ```
+3. **Checkpoint on failure** — if a rebase fails or production build has conflicts, write state to `repos/<name>/checkpoint.json` so the next run (or manual invocation) can resume
+4. **Time budget** — target <10 minutes total. If rebasing 20+ PRs, batch push at the end instead of per-branch
+
 ## Configuration
 
 Configs are organized per repository in `repos/<repo-name>/config.json` relative to the skill directory:
@@ -120,7 +147,7 @@ Se o arquivo não existir, criar com o header e prosseguir normalmente.
 
 ### Summary
 - Main: <status do sync>
-- PRs: <X open, Y merged, Z closed>
+- PRs: <X open, Y merged, Z closed, W reopened>
 - Local Patches: <N total, M com review vencida>
 - Production: <rebuilt OK | not rebuilt | build failed>
 
@@ -128,6 +155,7 @@ Se o arquivo não existir, criar com o header e prosseguir normalmente.
 - <lista de ações executadas, ex: "Synced main (was 12 commits behind)">
 - <"Rebased 21/21 branches clean">
 - <"PR #999 closed → kept as local patch local/my-fix">
+- <"PR #777 reopened → restored to openPRs (was in droppedPatches)">
 
 ### Pending
 - <ações que ficaram pendentes, ex: "PR #456 has conflicts — needs manual resolution">
@@ -426,6 +454,32 @@ gh pr list --state open --author @me --repo <repo> --json number,headRefName
 # Usar jq ou editar manualmente o JSON
 ```
 
+#### Detecção de PRs reabertos
+
+Ao comparar a lista do GitHub (`gh pr list --state open`) com o config local, detectar **três cenários**:
+
+| Cenário | Condição | Ação |
+|---------|----------|------|
+| **PR novo** | No GitHub mas não em `openPRs`, `localPatches`, nem `notes` | Adicionar a `openPRs` + `prBranches` normalmente |
+| **PR reaberto (dropped)** | No GitHub como open, encontrado em `notes.closedWithoutMerge` ou `notes.droppedPatches` | **Restaurar**: mover de volta para `openPRs` + `prBranches`, remover da seção `notes`. Fetch da branch: `git fetch <originRemote> <branch>`. Logar no relatório como "🔄 Reopened" |
+| **PR reaberto (local patch)** | No GitHub como open, encontrado em `localPatches` (via campo `originalPR`) | **Promover**: mover de `localPatches` para `openPRs` + `prBranches`. Logar no relatório como "🔄 Reopened (was local patch)" |
+
+**Implementação:**
+
+```bash
+# Para cada PR open no GitHub que NÃO está em openPRs:
+# 1. Checar se o número está em notes.closedWithoutMerge ou notes.droppedPatches
+#    → Se sim: PR foi reaberto. Restaurar automaticamente.
+# 2. Checar se algum entry em localPatches tem originalPR == número
+#    → Se sim: PR foi reaberto. Promover de volta a openPRs.
+# 3. Se não encontrado em lugar nenhum: PR genuinamente novo.
+
+# Restaurar branch se foi deletada:
+git fetch <originRemote> <branch> 2>/dev/null || git fetch <originRemote> pull/<number>/head:<branch>
+```
+
+**Nota:** A restauração é automática (sem interação) porque o mantenedor reabrir um PR é sinal claro de que ele deve voltar ao tracking. O relatório sempre lista os PRs restaurados para visibilidade.
+
 ### `build-production` - Criar branch de produção com todos os PRs + local patches
 
 ```bash
@@ -516,7 +570,7 @@ Para cada entry em `localPatches` cuja `reviewDate` já passou:
 9. **Pop stash** - `git stash pop` para restaurar arquivos locais
 10. Remind user to run their project's build command if needed
 
-**Nota sobre ordem:** `audit-open` roda **depois** de `review-closed` porque os PRs fechados já foram processados e removidos do config. Assim o audit só analisa PRs genuinamente abertos, sem falsos positivos de PRs que acabaram de ser fechados.
+**Nota sobre ordem:** `update-config` roda **antes** de `review-closed` porque é ali que PRs reabertos são detectados e restaurados automaticamente. Depois, `review-closed` processa PRs que foram genuinamente fechados. Por fim, `audit-open` roda por último, já com a lista de PRs abertos atualizada (incluindo os reabertos).
 
 ## Relatório para o Usuário
 
@@ -552,6 +606,15 @@ Após qualquer operação, gerar relatório:
 | 123 | fix(foo): bar    | ⚠️ resolved_upstream | upstream changed foo.ts 3d ago   |
 | 456 | fix(baz): qux    | ⚠️ duplicate_external | similar to #789 by @user         |
 | 111 | fix(a): b        | ⚠️ self_duplicate    | overlaps with our #222           |
+
+### PRs Reabertos (restaurados automaticamente)
+
+| #   | Título           | Origem              | Ação                    |
+| --- | ---------------- | ------------------- | ----------------------- |
+| 777 | fix(foo): bar    | notes.droppedPatches | 🔄 Restored to openPRs |
+| 888 | feat(baz): qux   | localPatches         | 🔄 Promoted to openPRs |
+
+_Seção presente apenas quando há PRs reabertos no ciclo atual._
 
 ### PRs Recém-Fechados (aguardando decisão)
 
