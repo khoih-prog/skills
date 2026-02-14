@@ -1,13 +1,18 @@
 {
   "owner": "zhuangclaw",
   "slug": "qst-memory",
-  "displayName": "QST Memory Management System",
+  "displayName": "Qst Memory",
   "latest": {
-    "version": "1.2.2",
-    "publishedAt": 1771049046076,
-    "commit": "https://github.com/openclaw/skills/commit/cce5d40a2e5ef305813cabfc0537b8e1f40c7cb0"
+    "version": "1.5.2",
+    "publishedAt": 1771087993814,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.2.2",
+      "publishedAt": 1771049046076,
+      "commit": "https://github.com/openclaw/skills/commit/cce5d40a2e5ef305813cabfc0537b8e1f40c7cb0"
+    },
     {
       "version": "1.2.1",
       "publishedAt": 1771048628118,
