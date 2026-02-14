@@ -1,0 +1,401 @@
+{
+  "name": "stocks",
+  "version": "4.0.0",
+  "description": "56+ financial data tools via Yahoo Finance. Auto-routes stock prices, fundamentals, earnings, dividends, options, crypto, forex, commodities, news, and more.",
+  "entry": "scripts/yfinance_ai.py",
+  "venv": "/home/openclaw/.openclaw/venv/stocks",
+  "setup": [
+    "python3 -m venv /home/openclaw/.openclaw/venv/stocks",
+    "source /home/openclaw/.openclaw/venv/stocks/bin/activate && pip install -r /home/openclaw/.openclaw/workspace/skills/stocks/requirements.txt"
+  ],
+  "invocation": "cd /home/openclaw/.openclaw/workspace/skills/stocks/scripts && /home/openclaw/.openclaw/venv/stocks/bin/python3 -c \"\nimport asyncio, sys\nsys.path.insert(0, '.')\nfrom yfinance_ai import Tools\nt = Tools()\nasync def main():\n    result = await t.{method}({args})\n    print(result)\nasyncio.run(main())\n\" 2>/dev/null",
+  "functions": {
+    "compare_stocks": {
+      "description": "Side-by-side comparison of multiple stocks",
+      "params": {
+        "tickers": "string (comma-separated)"
+      },
+      "triggers": ["compare", "compare stocks", "vs", "versus", "side by side"]
+    },
+    "download_multiple_tickers": {
+      "description": "Batch download historical data for multiple tickers",
+      "params": {
+        "interval": "string (default: 1d)",
+        "period": "string (default: 1mo)",
+        "tickers": "string (comma or space separated)"
+      },
+      "triggers": ["download tickers", "bulk download", "batch download"]
+    },
+    "get_analyst_estimates": {
+      "description": "Analyst EPS and revenue forecasts",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["estimates", "analyst estimates", "forecasts", "EPS forecast"]
+    },
+    "get_analyst_price_targets": {
+      "description": "Analyst price targets",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["price targets", "target price", "analyst targets"]
+    },
+    "get_analyst_recommendations": {
+      "description": "Analyst buy/hold/sell recommendations",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["recommendations", "analyst recommendations", "buy sell hold", "analyst rating"]
+    },
+    "get_api_status": {
+      "description": "Check Yahoo Finance API health",
+      "params": {},
+      "triggers": ["api status", "api health"]
+    },
+    "get_balance_sheet": {
+      "description": "Balance sheet / assets and liabilities",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["balance sheet", "assets", "liabilities"]
+    },
+    "get_capital_gains": {
+      "description": "Capital gains distributions",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["capital gains"]
+    },
+    "get_cash_flow": {
+      "description": "Cash flow statement",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["cash flow", "cash flows", "free cash flow"]
+    },
+    "get_commodity_price": {
+      "description": "Commodity/futures price",
+      "params": {
+        "commodity": "string (e.g. gold, oil, silver)"
+      },
+      "triggers": ["commodity", "commodity price", "gold price", "oil price", "crude", "silver"]
+    },
+    "get_company_info": {
+      "description": "Company profile and description",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["company info", "company profile", "about company", "tell me about", "what does"]
+    },
+    "get_company_officers": {
+      "description": "Company executives and officers",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["officers", "executives", "management", "CEO", "CFO", "insider roster", "who runs"]
+    },
+    "get_company_overview": {
+      "description": "Full company overview (profile + financials + analysis)",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["company overview", "full overview", "overview"]
+    },
+    "get_complete_analysis": {
+      "description": "Comprehensive analysis (price, fundamentals, earnings, analyst ratings, news)",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["complete analysis", "full analysis", "analyze", "deep dive"]
+    },
+    "get_corporate_actions": {
+      "description": "All corporate actions (dividends, splits, etc.)",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["corporate actions", "actions"]
+    },
+    "get_crypto_price": {
+      "description": "Cryptocurrency price and market data",
+      "params": {
+        "symbol": "string (e.g. BTC, ETH, bitcoin)"
+      },
+      "triggers": ["crypto price", "crypto", "bitcoin price", "ethereum price", "btc", "eth"]
+    },
+    "get_dividends": {
+      "description": "Dividend history",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["dividends", "dividend history", "dividend yield"]
+    },
+    "get_earnings_calendar": {
+      "description": "Earnings calendar with upcoming dates and estimates",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["earnings calendar", "upcoming earnings"]
+    },
+    "get_earnings_dates": {
+      "description": "Earnings date schedule",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["earnings dates", "when is earnings", "next earnings"]
+    },
+    "get_earnings_history": {
+      "description": "Historical earnings (EPS, revenue quarterly/annual)",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["earnings history", "earnings", "quarterly earnings", "annual earnings", "EPS history", "last quarter earnings"]
+    },
+    "get_eps_revisions": {
+      "description": "EPS revisions",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["eps revisions", "earnings revisions"]
+    },
+    "get_eps_trend": {
+      "description": "EPS trend data",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["eps trend", "earnings trend"]
+    },
+    "get_fast_info": {
+      "description": "Quick key metrics for a stock",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["fast info", "quick info", "key metrics"]
+    },
+    "get_financial_summary": {
+      "description": "Financial summary of a company",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["financial summary", "financials", "financial overview"]
+    },
+    "get_forex_rate": {
+      "description": "Foreign exchange rate",
+      "params": {
+        "pair": "string (e.g. EURUSD, EUR/USD)"
+      },
+      "triggers": ["forex", "exchange rate", "fx rate", "currency", "EUR/USD", "convert currency"]
+    },
+    "get_fund_holdings": {
+      "description": "Fund/ETF top holdings",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["fund holdings", "etf holdings", "top holdings"]
+    },
+    "get_fund_overview": {
+      "description": "Fund/ETF overview",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["fund overview", "etf overview"]
+    },
+    "get_fund_sector_weights": {
+      "description": "Fund/ETF sector allocation",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["fund sector weights", "sector allocation"]
+    },
+    "get_historical_comparison": {
+      "description": "Compare historical performance of multiple stocks",
+      "params": {
+        "period": "string (default: 1y)",
+        "tickers": "string (comma or space separated)"
+      },
+      "triggers": ["historical comparison", "performance comparison"]
+    },
+    "get_historical_data": {
+      "description": "Historical price data for a stock",
+      "params": {
+        "interval": "string (default: 1d)",
+        "period": "string (default: 1y)",
+        "ticker": "string"
+      },
+      "triggers": ["history", "historical", "price history", "chart"]
+    },
+    "get_historical_price_on_date": {
+      "description": "Price on a specific date",
+      "params": {
+        "date": "string (YYYY-MM-DD)",
+        "ticker": "string"
+      },
+      "triggers": ["price on date", "price on", "what was the price on"]
+    },
+    "get_income_statement": {
+      "description": "Income statement / P&L",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["income statement", "income", "profit and loss", "P&L"]
+    },
+    "get_insider_purchases": {
+      "description": "Insider buy transactions",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["insider purchases", "insider buys"]
+    },
+    "get_insider_roster_holders": {
+      "description": "Insider roster",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["insider roster", "insiders"]
+    },
+    "get_insider_transactions": {
+      "description": "Insider trades",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["insider transactions", "insider trades"]
+    },
+    "get_institutional_holders": {
+      "description": "Institutional holders",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["institutional holders", "institutions"]
+    },
+    "get_isin": {
+      "description": "ISIN identifier lookup",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["isin"]
+    },
+    "get_key_ratios": {
+      "description": "Key financial ratios (P/E, P/B, yields, etc.)",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["ratios", "key ratios", "P/E", "P/B", "valuation", "yield"]
+    },
+    "get_major_holders": {
+      "description": "Major shareholders",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["major holders", "top shareholders"]
+    },
+    "get_market_indices": {
+      "description": "Major market indices performance",
+      "params": {},
+      "triggers": ["market indices", "indices", "S&P 500", "Dow", "Nasdaq", "markets"]
+    },
+    "get_market_status": {
+      "description": "Current market status (open/closed)",
+      "params": {},
+      "triggers": ["market status", "is market open", "market hours"]
+    },
+    "get_mutualfund_holders": {
+      "description": "Mutual fund holders",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["mutual fund holders", "fund holders"]
+    },
+    "get_options_chain": {
+      "description": "Options chain (calls and puts)",
+      "params": {
+        "expiration": "string (YYYY-MM-DD, optional)",
+        "ticker": "string"
+      },
+      "triggers": ["options chain", "options", "calls and puts"]
+    },
+    "get_options_expirations": {
+      "description": "Available options expiration dates",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["options expirations", "expiry dates"]
+    },
+    "get_peer_comparison": {
+      "description": "Peer analysis vs similar companies",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["peer comparison", "peers", "competitors"]
+    },
+    "get_sec_filings": {
+      "description": "SEC filings (10-K, 10-Q, 8-K)",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["sec filings", "filings", "10-K", "10-Q", "8-K"]
+    },
+    "get_sector_performance": {
+      "description": "Sector performance metrics",
+      "params": {},
+      "triggers": ["sector performance", "sectors"]
+    },
+    "get_stock_news": {
+      "description": "Latest news for a stock",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["news", "stock news", "headlines"]
+    },
+    "get_stock_price": {
+      "description": "Current price + key metrics for a stock",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["price", "stock price", "quote", "ticker"]
+    },
+    "get_stock_quote": {
+      "description": "Detailed real-time quote",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["quote", "detailed quote"]
+    },
+    "get_stock_splits": {
+      "description": "Stock split history",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["splits", "stock splits"]
+    },
+    "get_trending_tickers": {
+      "description": "Currently trending tickers",
+      "params": {},
+      "triggers": ["trending", "trending tickers", "popular stocks"]
+    },
+    "get_upgrades_downgrades": {
+      "description": "Recent analyst upgrades and downgrades",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["upgrades", "downgrades"]
+    },
+    "run_self_test": {
+      "description": "Run validation test suite for all 56+ tools",
+      "params": {},
+      "triggers": ["self test", "run tests"]
+    },
+    "search_ticker": {
+      "description": "Search for a ticker symbol",
+      "params": {
+        "query": "string"
+      },
+      "triggers": ["search ticker", "find ticker", "ticker lookup"]
+    },
+    "validate_ticker": {
+      "description": "Validate a ticker symbol",
+      "params": {
+        "ticker": "string"
+      },
+      "triggers": ["validate ticker", "is ticker valid"]
+    }
+  }
+}
