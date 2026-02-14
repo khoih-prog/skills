@@ -1,0 +1,11 @@
+{
+  "owner": "neal-collab",
+  "slug": "agent-cost-monitor",
+  "displayName": "Agent Cost Monitor",
+  "latest": {
+    "version": "1.1.1",
+    "publishedAt": 1771049393067,
+    "commit": null
+  },
+  "history": []
+}
