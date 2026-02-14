@@ -124,17 +124,18 @@ Use this when you need a variable beyond the common ones listed above.
 ## Rules
 
 1. Always use `--llm` output format — most token-efficient, designed for agents.
-2. When the user asks about weather without specifying a location, check **USER.md** for their city/country.
-3. Present results as a natural-language summary — do not paste raw CLI output to the user.
-4. Use `--forecast-days=1` or `--forecast-days=2` for today/tomorrow — don't waste tokens on 7-day fetches.
-5. For targeted questions (e.g. "when will the rain stop?"), override params via `--hourly-params` or `--daily-params` to fetch only what's needed, analyze the output and give answer.
-6. Use `--forecast-since=N` when the user asks about a specific future day (e.g. "weather on Friday") to avoid fetching unnecessary earlier days.
-7. When the user switches cities ("and what about London?"), carry over all params used in prior weather queries this conversation — including any added in follow-ups. The new city gets the union of all previously requested params.
+2. **Quote all user-provided values** in shell commands. City names, dates, and any free-text input must be quoted to prevent shell interpretation: `--city="New York"`, `--city="St. Petersburg"`. Only known-safe tokens (numbers, single ASCII words) may be unquoted.
+3. When the user asks about weather without specifying a location, use the user's default city/country if known from session context.
+4. Present results as a natural-language summary — do not paste raw CLI output to the user.
+5. Use `--forecast-days=1` or `--forecast-days=2` for today/tomorrow — don't waste tokens on 7-day fetches.
+6. For targeted questions (e.g. "when will the rain stop?"), override params via `--hourly-params` or `--daily-params` to fetch only what's needed, analyze the output and give answer.
+7. Use `--forecast-since=N` when the user asks about a specific future day (e.g. "weather on Friday") to avoid fetching unnecessary earlier days.
+8. When the user switches cities ("and what about London?"), carry over all params used in prior weather queries this conversation — including any added in follow-ups. The new city gets the union of all previously requested params.
 
 ## Conversational examples
 
 **User:** "What's the weather like?"
-- Location not specified -> get city/country from USER.md.
+- Location not specified -> use city/country from session context.
 - General overview -> `--current`.
 ```
 openmeteo weather --current --city=Berlin --llm

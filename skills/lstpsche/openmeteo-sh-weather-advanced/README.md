@@ -32,7 +32,7 @@ Data is provided by [Open-Meteo](https://open-meteo.com), which is free for non-
 
 ### openmeteo-sh CLI
 
-#### macOS (Homebrew)
+#### macOS / Linux (Homebrew)
 
 ```sh
 brew tap lstpsche/tap
@@ -42,8 +42,15 @@ brew install openmeteo-sh
 #### Debian / Ubuntu (APT)
 
 ```sh
-echo "deb [trusted=yes] https://lstpsche.github.io/apt-repo stable main" \
+# Import the signing key
+curl -fsSL https://lstpsche.github.io/apt-repo/pubkey.gpg \
+  | sudo gpg --dearmor -o /usr/share/keyrings/openmeteo-sh.gpg
+
+# Add the repository
+echo "deb [signed-by=/usr/share/keyrings/openmeteo-sh.gpg] https://lstpsche.github.io/apt-repo stable main" \
   | sudo tee /etc/apt/sources.list.d/openmeteo-sh.list
+
+# Install
 sudo apt update
 sudo apt install openmeteo-sh
 ```
