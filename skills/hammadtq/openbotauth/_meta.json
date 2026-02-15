@@ -3,9 +3,15 @@
   "slug": "openbotauth",
   "displayName": "OpenBotAuth",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1770546483061,
-    "commit": "https://github.com/openclaw/skills/commit/5445b373353cb14e6bc15d7cde80ef3d2b5ca82a"
+    "version": "0.1.1",
+    "publishedAt": 1771102010236,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1770546483061,
+      "commit": "https://github.com/openclaw/skills/commit/5445b373353cb14e6bc15d7cde80ef3d2b5ca82a"
+    }
+  ]
 }
