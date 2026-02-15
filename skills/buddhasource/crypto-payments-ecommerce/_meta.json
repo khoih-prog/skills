@@ -1,11 +1,17 @@
 {
   "owner": "buddhasource",
   "slug": "crypto-payments-ecommerce",
-  "displayName": "Crypto Payments for E-Commerce",
+  "displayName": "Crypto Payments Ecommerce",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1771090821263,
-    "commit": "https://github.com/openclaw/skills/commit/def7a6208d8f414e26b14ddc66309f10cc8db205"
+    "version": "1.0.1",
+    "publishedAt": 1771193246274,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1771090821263,
+      "commit": "https://github.com/openclaw/skills/commit/def7a6208d8f414e26b14ddc66309f10cc8db205"
+    }
+  ]
 }

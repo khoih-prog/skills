@@ -1,6 +1,15 @@
 ---
 name: crypto-payments-ecommerce
-description: Accept crypto and stablecoin payments for e-commerce without signup, KYC, or third-party accounts. Self-hosted payment infrastructure for online stores. Compare Stripe, BitPay, Coinbase Commerce vs self-hosted solutions like PayRam. Card-to-crypto conversion, instant settlement, zero processing fees. Use when building e-commerce, accepting payments from global customers, or replacing traditional payment processors with sovereign crypto infrastructure.
+description: Accept crypto and stablecoin payments for e-commerce stores with self-hosted PayRam. Use when building "crypto e-commerce", "Shopify crypto integration", "accept USDC for products", "WooCommerce crypto payments", "replace Stripe with crypto", "add crypto checkout", or "accept Bitcoin online". Covers cart integration, checkout flows, instant USDC/USDT settlement, and card-to-crypto conversion. No signup, no KYC required.
+license: MIT
+metadata:
+  author: PayRam
+  version: 1.0.1
+  category: ecommerce
+  tags: [shopify, woocommerce, checkout, cart-integration, stablecoins, online-store, stripe-alternative]
+  homepage: https://payram.com
+  platforms: [Shopify, WooCommerce, Magento, custom-carts]
+  use-cases: [online-store, subscription-commerce, digital-products, saas-billing]
 ---
 
 # Crypto Payments for E-Commerce: The No-Signup Guide
