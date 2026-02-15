@@ -1,6 +1,6 @@
 ---
 name: web-monitor
-version: 3.1.0
+version: 3.4.2
 description: "Monitor web pages for changes, price drops, stock availability, and custom conditions. Use when a user asks to watch/track/monitor a URL, get notified about price changes, check if something is back in stock, or track any website for updates. Also handles listing, removing, checking, and reporting on existing monitors. v3 adds change summaries, visual diffs, price comparison, templates, JS rendering, and webhooks."
 metadata:
   {
@@ -12,75 +12,52 @@ metadata:
   }
 ---
 
-# Web Monitor Pro v3.0.0
+# Web Monitor Pro
 
-Track changes on any web page. Get alerts for price drops, stock changes, and content updates.
-
-## What's new in v3
-
-- **Change summaries**: When something changes, you get a real explanation. "Price dropped from R3,899 to R3,314 (15% off)" instead of just "changed".
-- **Visual diffs**: Side-by-side HTML comparison showing exactly what's different, with green/red highlights.
-- **Price comparison**: Compare prices across multiple stores. See who's cheapest and by how much.
-- **Templates**: Pre-built monitoring setups. One command to start tracking price drops, restocks, or sales.
-- **JS rendering**: Optional Playwright integration for sites that need a real browser to load.
-- **Webhooks**: POST to Slack, Discord, or any URL when conditions are met.
-
-## Setup
-
-No API keys needed. Uses `curl` for fetching and stores data in `~/.web-monitor/`.
-
-Run `monitor.py setup` for a welcome message and quick start guide.
-
-Optional: For JS-heavy sites, install Playwright: `pip3 install playwright && python3 -m playwright install chromium`
+Watch any web page. Know when it changes.
 
 ## Quick Start
 
-The fastest way to start: `watch` auto-detects what kind of page you're looking at and sets up the right kind of monitoring.
+```bash
+python3 scripts/monitor.py setup
+python3 scripts/monitor.py watch "https://example.com/product"
+python3 scripts/monitor.py check
+```
+
+## What It Does
+
+- Monitors web pages for content changes, price drops, and restocks
+- Smart change summaries ("Price dropped from $389 to $331, 15% off")
+- Visual side-by-side diffs showing exactly what changed
+- Price history tracking with trends and sparklines
+- Price comparison across multiple stores
+- Templates for common setups (price drop, restock, sale)
+- JS rendering via Playwright for dynamic sites
+- Webhooks to Slack, Discord, or any endpoint
+- Groups, notes, snapshots, exports
+- No API keys. Data in `~/.web-monitor/`. Uses `curl` by default.
+
+## Smart Watch
+
+The easiest way to start. Point it at a URL and it figures out the rest.
 
 ```bash
 python3 scripts/monitor.py watch "https://example.com/product"
 ```
 
-It figures out if it's a product page (sets up price monitoring), a stock page (watches for availability), or just a regular page (tracks content changes). No flags needed.
+It detects whether it's a product page (sets up price monitoring), a stock page (watches availability), or a regular page (tracks content). No flags needed.
 
-## Templates
-
-Skip the manual config. Templates set up everything for common use cases:
+Add options if you want more control:
 
 ```bash
-python3 scripts/monitor.py template list
-python3 scripts/monitor.py template use price-drop "https://example.com/product"
-python3 scripts/monitor.py template use restock "https://example.com/product"
-python3 scripts/monitor.py template use sale "https://example.com/deals"
-```
-
-Available templates:
-- `price-drop` - Monitor for price decreases. Snapshots the current price as baseline.
-- `restock` - Watch for "in stock", "available", "add to cart" text.
-- `content-update` - Track page content changes with smart diff.
-- `sale` - Watch for "sale", "discount", "% off" keywords.
-- `new-release` - Watch for new items or versions on a page.
-
-Each one pre-configures the condition, check interval, and priority.
-
-## All Commands
-
-Everything goes through `scripts/monitor.py`:
-
-```bash
-python3 scripts/monitor.py <command> [args]
-```
-
-### Adding Monitors
-
-**watch** (recommended for most cases):
-```bash
-python3 scripts/monitor.py watch "https://example.com/product"
 python3 scripts/monitor.py watch "https://example.com" --group wishlist
 python3 scripts/monitor.py watch "https://example.com" --browser --webhook "https://hooks.slack.com/..."
 ```
 
-**add** (when you want full control):
+## Adding Monitors
+
+When you want full control, use `add`:
+
 ```bash
 python3 scripts/monitor.py add "https://example.com/product" \
   --label "Cool Gadget" \
@@ -93,211 +70,269 @@ python3 scripts/monitor.py add "https://example.com/product" \
   --webhook "https://hooks.slack.com/..."
 ```
 
-Options for `add` and `watch`:
-- `--label/-l` - Name for the monitor
-- `--selector/-s` - CSS selector to focus on (`#price` or `.stock-status`)
-- `--condition/-c` - When to alert (see Conditions below)
-- `--interval/-i` - Check interval in minutes (default: 360)
-- `--group/-g` - Category name (e.g. "wishlist", "work")
-- `--priority/-p` - high, medium, or low (default: medium)
-- `--target/-t` - Price target number (e.g. 3000)
-- `--browser/-b` - Use Playwright headless browser for JS-rendered pages
-- `--webhook/-w` - Webhook URL to POST on changes (repeatable for multiple webhooks)
+**All options** (work with both `add` and `watch`):
 
-### Checking Monitors
+- `--label/-l` name for the monitor
+- `--selector/-s` CSS selector to focus on (`#price`, `.stock-status`)
+- `--condition/-c` when to alert (see Condition Syntax below)
+- `--interval/-i` check interval in minutes (default: 360)
+- `--group/-g` category name ("wishlist", "work")
+- `--priority/-p` high, medium, or low (default: medium)
+- `--target/-t` price target number
+- `--browser/-b` use Playwright for JS-rendered pages
+- `--webhook/-w` webhook URL, repeatable for multiple endpoints
 
-```bash
-python3 scripts/monitor.py check              # Check all enabled monitors
-python3 scripts/monitor.py check --id <id>     # Check one specific monitor
-python3 scripts/monitor.py check --verbose     # Include content preview in output
-```
-
-Returns JSON with status (changed/unchanged), condition info, price data, and smart change summaries.
-
-Change summaries tell you what actually happened:
-- Price monitors: "Price dropped from R3,899 to R3,314 (15% off). Lowest price in 30 days."
-- Stock monitors: "Back in stock! Was out of stock for 3 days."
-- Content: 'New: "Breaking news: AI model achieves new benchmark..."'
-
-When changes are detected, an HTML diff file is auto-generated. The path shows up in the `diff_path` field.
-
-### Visual Diffs
+## Checking Monitors
 
 ```bash
-python3 scripts/monitor.py diff <id>           # Generate and open side-by-side diff
-python3 scripts/monitor.py screenshot <id>     # Save current page content for diffing
+python3 scripts/monitor.py check                # check all
+python3 scripts/monitor.py check --id 3          # check one
+python3 scripts/monitor.py check --verbose       # include content preview
 ```
 
-The diff command generates an HTML page with old content on the left, new content on the right. Added text is green, removed is red, changed is yellow. Opens automatically in your browser.
+Returns status (changed/unchanged), condition info, price data, and a human-readable change summary. Examples of what summaries look like:
 
-### Price Comparison
+- "Price dropped from $389 to $331 (15% off). Lowest price in 30 days."
+- "Back in stock! Was out of stock for 3 days."
+- "New content: 'Breaking news: AI model achieves...'"
 
-Compare prices across all monitors in a group:
+When changes are detected, an HTML diff is auto-generated. The path appears in the `diff_path` field.
+
+## Dashboard
+
+Everything at a glance.
 
 ```bash
-python3 scripts/monitor.py compare mygroup     # Compare monitors in "mygroup"
-python3 scripts/monitor.py compare --all       # Compare all price monitors
+python3 scripts/monitor.py dashboard
+python3 scripts/monitor.py dashboard --whatsapp
 ```
 
-Shows cheapest to most expensive, price history for each, and the best deal with percentage below average.
+Shows status icons, last check time, days monitored, current prices, target progress, and browser/webhook config. Groups monitors by category.
+
+## Price Trends
+
+```bash
+python3 scripts/monitor.py trend 3
+python3 scripts/monitor.py trend 3 --days 30
+```
+
+Shows direction (rising/dropping/stable), min/max/avg with dates, target progress, and a sparkline.
+
+## Price Comparison
+
+Compare prices across stores in a group:
+
+```bash
+python3 scripts/monitor.py compare mygroup
+python3 scripts/monitor.py compare --all
+```
+
+Shows cheapest to most expensive, price history, and the best deal as a percentage below average.
 
 Add a competitor to an existing monitor:
 
 ```bash
-python3 scripts/monitor.py add-competitor <id> "https://competitor.com/same-product"
+python3 scripts/monitor.py add-competitor 3 "https://competitor.com/same-product"
 ```
 
-This creates a new monitor in the same group with the same condition, so you can compare them.
+Creates a new monitor in the same group with the same condition.
 
-### Dashboard
+## Templates
 
-See everything at a glance:
-```bash
-python3 scripts/monitor.py dashboard
-python3 scripts/monitor.py dashboard --whatsapp    # Formatted for WhatsApp
-```
-
-Shows status icons, last check time, days monitored, current prices, target progress, and whether browser/webhooks are configured. Groups monitors by category.
-
-### Price Trends
+Pre-built setups for common patterns. Skip the manual config.
 
 ```bash
-python3 scripts/monitor.py trend <id>
-python3 scripts/monitor.py trend <id> --days 30
+python3 scripts/monitor.py template list
+python3 scripts/monitor.py template use price-drop "https://example.com/product"
+python3 scripts/monitor.py template use restock "https://example.com/product"
+python3 scripts/monitor.py template use sale "https://example.com/deals"
 ```
 
-Shows price direction (rising/dropping/stable), min/max/avg with dates, target progress, and a sparkline chart.
+Available templates:
 
-### Managing Monitors
+- `price-drop` watches for price decreases, snapshots current price as baseline
+- `restock` looks for "in stock", "available", "add to cart"
+- `content-update` tracks page changes with smart diff
+- `sale` watches for "sale", "discount", "% off"
+- `new-release` watches for new items or versions
+
+Each one pre-configures the condition, interval, and priority.
+
+## Managing Monitors
 
 ```bash
-python3 scripts/monitor.py list                    # List all
-python3 scripts/monitor.py list --group wishlist   # Filter by group
-python3 scripts/monitor.py pause <id>              # Pause (skip during checks)
-python3 scripts/monitor.py resume <id>             # Resume
-python3 scripts/monitor.py remove <id>             # Delete
+python3 scripts/monitor.py list                    # all monitors
+python3 scripts/monitor.py list --group wishlist   # filter by group
+python3 scripts/monitor.py pause 3                 # skip during checks
+python3 scripts/monitor.py resume 3                # re-enable
+python3 scripts/monitor.py remove 3                # delete
 ```
 
-### Notes
+## Notes and Snapshots
 
 Attach notes to any monitor:
-```bash
-python3 scripts/monitor.py note <id> "waiting for Black Friday"
-python3 scripts/monitor.py notes <id>              # View all notes
-```
-
-### Manual Snapshots
-
-Take a snapshot right now, with an optional note:
-```bash
-python3 scripts/monitor.py snapshot <id>
-python3 scripts/monitor.py snapshot <id> --note "price before sale"
-```
-
-### History
 
 ```bash
-python3 scripts/monitor.py history <id>
-python3 scripts/monitor.py history <id> --limit 10
+python3 scripts/monitor.py note 3 "waiting for Black Friday"
+python3 scripts/monitor.py notes 3
 ```
 
-### Reports
+Take a manual snapshot:
 
-Weekly summary formatted for WhatsApp:
+```bash
+python3 scripts/monitor.py snapshot 3
+python3 scripts/monitor.py snapshot 3 --note "price before sale"
+```
+
+View history:
+
+```bash
+python3 scripts/monitor.py history 3
+python3 scripts/monitor.py history 3 --limit 10
+```
+
+## Visual Diffs
+
+Side-by-side HTML comparison. Old on the left, new on the right. Green for additions, red for removals, yellow for changes.
+
+```bash
+python3 scripts/monitor.py diff 3
+python3 scripts/monitor.py screenshot 3
+```
+
+`diff` generates the comparison and opens it in your browser. `screenshot` saves the current content for future diffing.
+
+## Reports
+
+Weekly summary, formatted for WhatsApp:
+
 ```bash
 python3 scripts/monitor.py report
 ```
 
-### Groups
+## Groups
 
 ```bash
-python3 scripts/monitor.py groups    # List all groups with counts
+python3 scripts/monitor.py groups
 ```
 
-### Export and Import
+Lists all groups with monitor counts.
+
+## Engines and Cloudflare Support
+
+The monitor uses a fetch engine to grab page content. By default (`--engine auto`), it tries engines in order until one works:
+
+1. **curl** -- fast, no dependencies, works on most sites
+2. **cloudscraper** -- handles Cloudflare JS challenges without a full browser
+3. **playwright** -- full headless browser for JS-heavy SPAs
+
+Check what's available on your system:
 
 ```bash
-python3 scripts/monitor.py export > monitors.json
-python3 scripts/monitor.py import monitors.json      # Skips duplicates by URL
+python3 scripts/monitor.py engines
 ```
 
-## Condition Syntax
+Force a specific engine:
 
-- `price below 500` or `price < 500` - Alert when price drops below threshold
-- `price above 1000` or `price > 1000` - Alert when price goes above threshold
-- `contains 'in stock'` - Alert when text appears on page
-- `not contains 'out of stock'` - Alert when text disappears from page
+```bash
+python3 scripts/monitor.py watch "https://example.com" --engine cloudscraper
+python3 scripts/monitor.py add "https://example.com" --engine browser
+```
 
-## Priority Levels
+Install cloudscraper (recommended for Cloudflare-protected e-commerce sites):
 
-- **high** - Immediate alert (shown with fire emoji)
-- **medium** - Normal alert (default)
-- **low** - Batch into daily/weekly digest
+```bash
+pip3 install cloudscraper
+```
+
+The engine preference is saved per monitor. You can mix engines across monitors.
 
 ## JS Rendering
 
-Some sites (Takealot, Amazon, most modern SPAs) load content with JavaScript. The default curl fetch won't see that content.
-
-Add `--browser` to use Playwright's headless Chromium:
+Sites like Amazon, Best Buy, and most SPAs load content with JavaScript. Default `curl` fetching won't see it. Add `--browser` to use Playwright's headless Chromium:
 
 ```bash
-python3 scripts/monitor.py add "https://takealot.com/product" --browser
-python3 scripts/monitor.py watch "https://takealot.com/product" --browser
+python3 scripts/monitor.py watch "https://amazon.com/dp/B0EXAMPLE" --browser
 ```
 
-If Playwright isn't installed, the tool falls back to curl and notes the limitation. Install it with:
+If Playwright isn't installed, it falls back to `curl` and warns you. Install with:
 
-```
+```bash
 pip3 install playwright && python3 -m playwright install chromium
 ```
 
 ## Webhooks
 
-Get notified via webhook when a condition is met or content changes:
+Fire a JSON POST when conditions are met or content changes:
 
 ```bash
 python3 scripts/monitor.py add "https://example.com" --webhook "https://hooks.slack.com/services/..."
-python3 scripts/monitor.py add "https://example.com" --webhook "https://url1.com" --webhook "https://url2.com"
 ```
 
-The webhook receives a JSON POST with: monitor_id, label, url, event details (status, condition_met, change_summary, current_price), and timestamp.
+Use `--webhook` multiple times for multiple endpoints. The payload includes monitor_id, label, url, event details (status, condition_met, change_summary, current_price), and timestamp.
 
-Webhooks fire during `check` whenever a change is detected or a condition is met.
+Webhooks fire during `check` whenever something triggers.
+
+## Export and Import
+
+```bash
+python3 scripts/monitor.py export > monitors.json
+python3 scripts/monitor.py import monitors.json
+```
+
+Import skips duplicates by URL.
+
+## GUI Console
+
+```bash
+python3 scripts/monitor.py gui
+```
+
+Opens `~/.web-monitor/console.html` in your browser. Single self-contained HTML file. Shows all monitors, price trends, alert history, groups, and templates. Dark/light mode, filtering, sorting, sparklines. No external dependencies.
+
+Add `--no-open` to generate without launching.
+
+## Condition Syntax
+
+- `price below 500` or `price < 500` alerts when price drops below threshold
+- `price above 1000` or `price > 1000` alerts when price exceeds threshold
+- `contains 'in stock'` alerts when text appears on page
+- `not contains 'out of stock'` alerts when text disappears
+
+## Priority Levels
+
+- **high** fires an immediate alert
+- **medium** is the default
+- **low** gets batched into digests
 
 ## Automation with Cron
 
-Set up a cron job to check monitors and alert on changes:
+Set up a cron job to check monitors regularly:
 
 ```
 Task: Check all web monitors. Run: python3 <skill_dir>/scripts/monitor.py check
 Report any monitors where status is "changed" or "condition_met" is true.
-If nothing changed, say so briefly or stay silent.
+If nothing changed, stay silent.
 ```
 
-Recommended: every 6 hours (`0 */6 * * *`).
-
-For weekly reports: `python3 <skill_dir>/scripts/monitor.py report` on Mondays.
+Recommended schedule: every 6 hours (`0 */6 * * *`). For weekly reports, run `report` on Mondays.
 
 ## Feedback
 
-Found a bug? Have an idea? We want to hear it.
-
 ```bash
-monitor.py feedback "your message"
-monitor.py feedback --bug "something broke"
-monitor.py feedback --idea "wouldn't it be cool if..."
+python3 scripts/monitor.py feedback "your message"
+python3 scripts/monitor.py feedback --bug "something broke"
+python3 scripts/monitor.py feedback --idea "wouldn't it be cool if..."
+python3 scripts/monitor.py debug
 ```
-
-Need to file a detailed bug report? Run `monitor.py debug` to get system info you can paste into an issue.
 
 ## Tips
 
-- For JS-heavy sites, use `--browser` or the OpenClaw browser tool to get rendered content
-- Up to 50 snapshots per monitor are kept for history
-- Content is capped at 10KB per snapshot
-- Use `--selector` to focus on a specific element and reduce noise
-- When a user says "watch this" or "let me know when", create a monitor + cron job
-- Price targets show progress in dashboard and check output
-- The `watch` command is the easiest entry point for new monitors
-- Use `template use` for quick setups without figuring out conditions
-- Group related monitors together, then use `compare` to see who's cheapest
+- `watch` is almost always the right starting point. Use `add` only when you need specific conditions.
+- `--selector` reduces noise. If you only care about the price, point it at `#price` instead of the whole page.
+- Group related monitors, then use `compare` to find the best deal across stores.
+- Up to 50 snapshots per monitor are kept. Content is capped at 10KB per snapshot.
+- Price targets show progress in both `dashboard` and `check` output.
+- `snapshot --note` before a sale event gives you a clean baseline to diff against.
+- For JS-heavy sites, `--browser` is not optional. It's required.
+- Combine webhooks with Slack or Discord for real-time alerts without polling.

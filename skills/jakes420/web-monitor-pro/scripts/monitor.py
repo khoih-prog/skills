@@ -41,13 +41,22 @@ try:
 except ImportError:
     HAS_PLAYWRIGHT = False
 
+# cloudscraper handles Cloudflare JS challenges without a full browser.
+# Lightweight alternative to Playwright for Cloudflare-protected sites.
+try:
+    import cloudscraper as _cloudscraper_module
+    HAS_CLOUDSCRAPER = True
+except ImportError:
+    _cloudscraper_module = None
+    HAS_CLOUDSCRAPER = False
+
 # Webhook POSTs use urllib.request.urlopen — standard library, no extra deps.
 import urllib.request
 import urllib.error
 
-VERSION = "3.1.0"
+VERSION = "3.4.0"
 
-WHATS_NEW = "Change summaries, visual diffs, price comparison, templates, JS rendering, webhooks"
+WHATS_NEW = "OpenClaw engine for anti-bot sites. Use --engine openclaw + --content-file to feed externally-fetched content."
 
 # --- Storage paths ---
 STORE_DIR = Path(os.environ.get("WEB_MONITOR_DIR", Path.home() / ".web-monitor"))
@@ -372,6 +381,55 @@ def fetch_url(url, selector=None):
         return None, str(e), ""
 
 
+def fetch_url_cloudscraper(url, selector=None):
+    """
+    Fetch URL using cloudscraper to bypass Cloudflare JS challenges.
+    cloudscraper handles Cloudflare JS challenges without a full browser.
+    Requires: pip3 install cloudscraper
+    """
+    if not HAS_CLOUDSCRAPER:
+        return None, ("Cloudscraper not installed. Install with: "
+                      "pip3 install cloudscraper"), ""
+    try:
+        scraper = _cloudscraper_module.create_scraper(
+            browser={'browser': 'chrome', 'platform': 'darwin', 'mobile': False}
+        )
+        resp = scraper.get(url, timeout=30)
+        resp.raise_for_status()
+        html = resp.text
+
+        text = _strip_html(html)
+        structured_prices = _extract_structured_prices(html)
+
+        title_match = re.search(r'<title[^>]*>(.*?)</title>', html, re.DOTALL | re.IGNORECASE)
+        page_title = title_match.group(1).strip() if title_match else ""
+        page_title = re.sub(r'<[^>]+>', '', page_title).strip()
+
+        if len(text) < 200 and not structured_prices:
+            return None, (f"Page returned minimal content ({len(text)} chars) via cloudscraper. "
+                          "Site may require full browser rendering."), page_title
+
+        if structured_prices:
+            price_str = " ".join(f"STRUCTURED_PRICE:R{p:.2f}" for p in structured_prices)
+            text = price_str + " " + text
+
+        if selector:
+            pattern = None
+            if selector.startswith('#'):
+                pattern = rf'id="{re.escape(selector[1:])}"[^>]*>(.*?)</\w+>'
+            elif selector.startswith('.'):
+                pattern = rf'class="[^"]*{re.escape(selector[1:])}[^"]*"[^>]*>(.*?)</\w+>'
+            if pattern:
+                match = re.search(pattern, html, re.DOTALL | re.IGNORECASE)
+                if match:
+                    extracted = re.sub(r'<[^>]+>', ' ', match.group(1))
+                    text = re.sub(r'\s+', ' ', extracted).strip()
+
+        return text, None, page_title
+    except Exception as e:
+        return None, f"cloudscraper error: {e}", ""
+
+
 def fetch_url_browser_playwright(url, selector=None):
     """
     Fetch URL using Playwright headless browser for JS-rendered pages.
@@ -417,18 +475,63 @@ def fetch_url_browser_playwright(url, selector=None):
         return None, f"Playwright error: {e}", ""
 
 
-def fetch_url_auto(url, selector=None, use_browser=False):
-    """Fetch URL, using Playwright if use_browser is True, else curl."""
-    if use_browser:
+def fetch_url_auto(url, selector=None, use_browser=False, engine="auto"):
+    """
+    Fetch URL with smart engine fallback chain.
+
+    Engine options:
+      auto: curl -> cloudscraper -> playwright (tries each on failure)
+      curl: curl only
+      cloudscraper: cloudscraper only
+      browser: Playwright only
+    """
+    if engine == "openclaw":
+        # openclaw engine means content is fetched externally (via OpenClaw browser tool)
+        # and passed in via --content-file. If we reach here during a fetch, it means
+        # the caller didn't provide pre-fetched content.
+        return None, ("This monitor uses the 'openclaw' engine. Content must be provided "
+                       "externally via --content-file. Use OpenClaw's browser tool to fetch "
+                       "the page, save to a file, then: monitor.py check --id <id> --content-file <path>"), ""
+    if engine == "curl":
+        return fetch_url(url, selector)
+    if engine == "cloudscraper":
+        return fetch_url_cloudscraper(url, selector)
+    if engine == "browser" or use_browser:
         content, err, title = fetch_url_browser_playwright(url, selector)
         if err and not HAS_PLAYWRIGHT:
-            # Fallback to curl with a note
             content, err2, title = fetch_url(url, selector)
             if content:
                 return content, None, title
             return content, err, title
         return content, err, title
-    return fetch_url(url, selector)
+
+    # engine == "auto": try curl -> cloudscraper -> playwright
+    content, err, title = fetch_url(url, selector)
+    if content:
+        return content, None, title
+
+    # curl failed or returned minimal content, try cloudscraper
+    if HAS_CLOUDSCRAPER:
+        content2, err2, title2 = fetch_url_cloudscraper(url, selector)
+        if content2:
+            return content2, None, title2 or title
+
+    # cloudscraper failed or unavailable, try playwright
+    if HAS_PLAYWRIGHT:
+        content3, err3, title3 = fetch_url_browser_playwright(url, selector)
+        if content3:
+            return content3, None, title3 or title
+
+    # Nothing worked. Build helpful error message.
+    suggestions = []
+    if not HAS_CLOUDSCRAPER:
+        suggestions.append("pip3 install cloudscraper (for Cloudflare sites)")
+    if not HAS_PLAYWRIGHT:
+        suggestions.append("pip3 install playwright && python3 -m playwright install chromium (for JS-heavy sites)")
+    hint = ""
+    if suggestions:
+        hint = " Try installing: " + "; ".join(suggestions)
+    return None, (err or "Failed to fetch page.") + hint, title
 
 
 def fetch_url_simple(url, selector=None):
@@ -789,6 +892,44 @@ def check_condition(condition, content, monitor=None):
 
 # --- Commands ---
 
+def cmd_engines(args):
+    """Show which fetch engines are available on this system."""
+    print()
+    print(_bold("🔧 Fetch Engines"))
+    print()
+
+    # curl
+    try:
+        result = subprocess.run(["curl", "--version"], capture_output=True, text=True, timeout=5)
+        version = result.stdout.split('\n')[0].strip() if result.returncode == 0 else None
+        if version:
+            print(f"  curl: {_green('✅ installed')} ({version.split()[1] if len(version.split()) > 1 else version})")
+        else:
+            print(f"  curl: {_red('❌ not found')}")
+    except Exception:
+        print(f"  curl: {_red('❌ not found')}")
+
+    # cloudscraper
+    if HAS_CLOUDSCRAPER:
+        try:
+            cs_version = _cloudscraper_module.__version__
+        except AttributeError:
+            cs_version = "unknown"
+        print(f"  cloudscraper: {_green('✅ installed')} (v{cs_version})")
+    else:
+        print(f"  cloudscraper: {_red('❌ not installed')} (pip3 install cloudscraper)")
+
+    # playwright
+    if HAS_PLAYWRIGHT:
+        print(f"  playwright: {_green('✅ installed')}")
+    else:
+        print(f"  playwright: {_red('❌ not installed')} (pip3 install playwright && python3 -m playwright install chromium)")
+
+    print()
+    print(_dim("  Engine fallback order (auto mode): curl -> cloudscraper -> playwright"))
+    print()
+
+
 def cmd_setup(args):
     print()
     print(_bold("👁️  Web Monitor Pro v" + VERSION))
@@ -805,6 +946,7 @@ def cmd_setup(args):
     print(f"  {_cyan('monitor.py template list')}  Pre-built monitoring templates")
     print(f"  {_cyan('monitor.py compare <g>')}    Compare prices across a group")
     print(f"  {_cyan('monitor.py diff <id>')}      Visual side-by-side diff")
+    print(f"  {_cyan('--engine <e>')}              Fetch engine: auto, curl, cloudscraper, browser, openclaw")
     print(f"  {_cyan('--browser')}                 JS rendering via Playwright")
     print(f"  {_cyan('--webhook <url>')}           Webhook notifications")
     print()
@@ -815,7 +957,7 @@ def cmd_setup(args):
     print(f"  debug                      System info for bug reports")
     print()
     print(_bold("Examples:"))
-    print(f"  monitor.py watch https://takealot.com/some-product")
+    print(f"  monitor.py watch https://amazon.com/dp/B09V3KXJPB")
     print(f"  monitor.py add https://example.com --label 'My Page' --condition \"price below 500\"")
     print(f"  monitor.py template use price-drop https://example.com/product")
     print()
@@ -823,6 +965,19 @@ def cmd_setup(args):
     print()
     ensure_dirs()
     print(_green("✅ Storage directory ready: " + str(STORE_DIR)))
+    print()
+    print(_bold("Engines:"))
+    engines_available = ["curl"]
+    if HAS_CLOUDSCRAPER:
+        engines_available.append("cloudscraper")
+    if HAS_PLAYWRIGHT:
+        engines_available.append("playwright")
+    print(f"  Available: {', '.join(engines_available)}")
+    if not HAS_CLOUDSCRAPER:
+        print(f"  {_dim('Install cloudscraper for Cloudflare bypass: pip3 install cloudscraper')}")
+    if not HAS_PLAYWRIGHT:
+        print(f"  {_dim('Install Playwright for JS rendering: pip3 install playwright && python3 -m playwright install chromium')}")
+    print(f"  Run {_cyan('monitor.py engines')} for details.")
     print()
 
 
@@ -913,6 +1068,7 @@ def cmd_debug(args):
     print(f"  Data dir:      {STORE_DIR}")
     print(f"  Data size:     {store_size}")
     print(f"  Monitors:      {monitor_count} ({enabled} enabled)")
+    print(f"  Cloudscraper:  {'installed' if HAS_CLOUDSCRAPER else 'not installed'}")
     print(f"  Playwright:    {'installed' if HAS_PLAYWRIGHT else 'not installed'}")
     print(f"  Installed via: {install_via}")
 
@@ -966,6 +1122,9 @@ def cmd_help(args):
     print(f"  report                     Weekly summary")
     print(f"  groups                     List all groups")
     print()
+    print(_bold("Engines:"))
+    print(f"  engines                    Show available fetch engines")
+    print()
     print(_bold("Options for 'add' and 'watch':"))
     print(f"  --label/-l        Human-friendly name")
     print(f"  --selector/-s     CSS-like selector (#id or .class)")
@@ -974,6 +1133,7 @@ def cmd_help(args):
     print(f"  --group/-g        Group/category name")
     print(f"  --priority/-p     Priority: high, medium, low (default: medium)")
     print(f"  --target/-t       Price target (e.g. 3000)")
+    print(f"  --engine/-e       Fetch engine: auto, curl, cloudscraper, browser, openclaw (default: auto)")
     print(f"  --browser/-b      Use Playwright for JS-rendered pages")
     print(f"  --webhook/-w      Webhook URL (repeatable)")
     print()
@@ -1004,6 +1164,7 @@ def cmd_add(args):
         "notes": [],
         "price_history": [],
         "browser": getattr(args, 'browser', False),
+        "engine": getattr(args, 'engine', 'auto') or 'auto',
         "webhooks": getattr(args, 'webhook', []) or [],
     }
 
@@ -1011,7 +1172,8 @@ def cmd_add(args):
     save_monitors(monitors)
 
     use_browser = monitor.get("browser", False)
-    content, err, title = fetch_url_auto(args.url, args.selector, use_browser=use_browser)
+    engine = monitor.get("engine", "auto")
+    content, err, title = fetch_url_auto(args.url, args.selector, use_browser=use_browser, engine=engine)
     if content:
         content_hash = hashlib.md5(content.encode()).hexdigest()
         save_snapshot(mid, content, content_hash)
@@ -1081,9 +1243,34 @@ def cmd_check(args):
         print(_yellow("All monitors are paused. Use `monitor.py resume <id>` to re-enable one."))
         return
 
+    # Pre-fetched content support: if --content-file is provided, read it once
+    prefetched_content = None
+    if getattr(args, 'content_file', None):
+        if not args.id:
+            print(_red("--content-file requires --id to specify which monitor to update."))
+            return
+        cf = args.content_file
+        if cf == "-":
+            prefetched_content = sys.stdin.read()
+        else:
+            try:
+                with open(cf, "r") as f:
+                    prefetched_content = f.read()
+            except (IOError, OSError) as e:
+                print(_red(f"Cannot read content file: {e}"))
+                return
+        if not prefetched_content or len(prefetched_content.strip()) < 10:
+            print(_red("Content file is empty or too short."))
+            return
+
     for mid, m in targets.items():
-        use_browser = m.get("browser", False)
-        content, err, _ = fetch_url_auto(m["url"], m.get("selector"), use_browser=use_browser)
+        # Use pre-fetched content if provided, otherwise fetch normally
+        if prefetched_content is not None:
+            content, err = prefetched_content, None
+        else:
+            use_browser = m.get("browser", False)
+            engine = m.get("engine", "auto")
+            content, err, _ = fetch_url_auto(m["url"], m.get("selector"), use_browser=use_browser, engine=engine)
         if err:
             results.append({
                 "id": mid, "label": m["label"], "status": "error", "error": err,
@@ -1389,7 +1576,8 @@ def cmd_snapshot(args):
         return
 
     use_browser = m.get("browser", False)
-    content, err, _ = fetch_url_auto(m["url"], m.get("selector"), use_browser=use_browser)
+    engine = m.get("engine", "auto")
+    content, err, _ = fetch_url_auto(m["url"], m.get("selector"), use_browser=use_browser, engine=engine)
     if err:
         print(_red(f"Error fetching: {err}"))
         return
@@ -1537,41 +1725,52 @@ def cmd_watch(args):
     print(f"Fetching {url}...")
 
     use_browser = getattr(args, 'browser', False)
-    content, err, title = fetch_url_auto(url, use_browser=use_browser)
+    engine = getattr(args, 'engine', 'auto') or 'auto'
 
-    if err:
-        print(_red(f"Couldn't fetch: {err}"))
-        return
-
-    prices = extract_prices(content)
-    content_lower = content.lower()
+    # OpenClaw engine: skip fetch, create monitor without initial snapshot.
+    # First check will need --content-file to provide the page content.
+    if engine == "openclaw":
+        content = None
+        title = None
+        print(f"  🔧 OpenClaw engine: skipping initial fetch.")
+        print(f"  First check needs: monitor.py check --id <id> --content-file <path>")
+    else:
+        content, err, title = fetch_url_auto(url, use_browser=use_browser, engine=engine)
+        if err:
+            print(_red(f"Couldn't fetch: {err}"))
+            return
 
     monitor_type = "content"
     condition = None
-    label = title[:60] if title else url
-
+    label = (title[:60] if title else None) or url[:60]
     label = re.sub(r'\s*[\|–\-]\s*.*$', '', label).strip() or url[:60]
 
-    stock_terms = ["in stock", "out of stock", "sold out", "add to cart", "add to basket",
-                   "available", "unavailable", "notify me"]
-    has_stock = any(t in content_lower for t in stock_terms)
+    if content:
+        prices = extract_prices(content)
+        content_lower = content.lower()
 
-    if prices:
-        monitor_type = "price"
-        best_price = prices[0]
-        condition = f"price below {best_price * 0.9:.0f}"
-        print(f"  💰 Detected price: R{best_price:,.0f}")
-        print(f"  Auto-set alert: price drops below R{best_price * 0.9:,.0f}")
-    elif has_stock:
-        monitor_type = "stock"
-        if any(t in content_lower for t in ["out of stock", "sold out", "unavailable"]):
-            condition = "contains 'in stock'"
-            print(f"  📦 Currently out of stock. Will alert when back in stock.")
+        stock_terms = ["in stock", "out of stock", "sold out", "add to cart", "add to basket",
+                       "available", "unavailable", "notify me"]
+        has_stock = any(t in content_lower for t in stock_terms)
+
+        if prices:
+            monitor_type = "price"
+            best_price = prices[0]
+            condition = f"price below {best_price * 0.9:.0f}"
+            print(f"  💰 Detected price: R{best_price:,.0f}")
+            print(f"  Auto-set alert: price drops below R{best_price * 0.9:,.0f}")
+        elif has_stock:
+            monitor_type = "stock"
+            if any(t in content_lower for t in ["out of stock", "sold out", "unavailable"]):
+                condition = "contains 'in stock'"
+                print(f"  📦 Currently out of stock. Will alert when back in stock.")
+            else:
+                condition = "not contains 'out of stock'"
+                print(f"  📦 Currently in stock. Will alert if it goes out of stock.")
         else:
-            condition = "not contains 'out of stock'"
-            print(f"  📦 Currently in stock. Will alert if it goes out of stock.")
+            print(f"  📄 Set up for content change monitoring.")
     else:
-        print(f"  📄 Set up for content change monitoring.")
+        print(f"  📄 Set up for content change monitoring (no initial snapshot).")
 
     mid = gen_id(url, label)
     monitors = load_monitors()
@@ -1594,12 +1793,14 @@ def cmd_watch(args):
         "price_history": [],
         "type": monitor_type,
         "browser": use_browser,
+        "engine": engine,
         "webhooks": webhooks,
     }
 
-    content_hash = hashlib.md5(content.encode()).hexdigest()
-    save_snapshot(mid, content, content_hash)
-    update_price_history(monitor, content)
+    if content:
+        content_hash = hashlib.md5(content.encode()).hexdigest()
+        save_snapshot(mid, content, content_hash)
+        update_price_history(monitor, content)
 
     monitors[mid] = monitor
     save_monitors(monitors)
@@ -1607,7 +1808,10 @@ def cmd_watch(args):
     print()
     print(_green(f"✅ Now monitoring: {label}"))
     print(f"   ID: {mid}")
-    print(f"   Check with: monitor.py check --id {mid}")
+    if engine == "openclaw":
+        print(f"   First check: monitor.py check --id {mid} --content-file <path>")
+    else:
+        print(f"   Check with: monitor.py check --id {mid}")
     print(f"   Dashboard:  monitor.py dashboard")
 
 
@@ -1662,7 +1866,8 @@ def cmd_screenshot(args):
         return
 
     use_browser = m.get("browser", False)
-    content, err, _ = fetch_url_auto(m["url"], m.get("selector"), use_browser=use_browser)
+    engine = m.get("engine", "auto")
+    content, err, _ = fetch_url_auto(m["url"], m.get("selector"), use_browser=use_browser, engine=engine)
     if err:
         print(_red(f"Error fetching: {err}"))
         return
@@ -1809,6 +2014,7 @@ def cmd_add_competitor(args):
         "notes": [],
         "price_history": [],
         "browser": m.get("browser", False),
+        "engine": m.get("engine", "auto"),
         "webhooks": [],
     }
 
@@ -1817,7 +2023,8 @@ def cmd_add_competitor(args):
 
     # Take initial snapshot
     use_browser = new_monitor.get("browser", False)
-    content, err, title = fetch_url_auto(args.url, new_monitor.get("selector"), use_browser=use_browser)
+    engine = new_monitor.get("engine", "auto")
+    content, err, title = fetch_url_auto(args.url, new_monitor.get("selector"), use_browser=use_browser, engine=engine)
     if content:
         if title:
             label = re.sub(r'\s*[\|–\-]\s*.*$', '', title[:60]).strip() or args.url[:60]
@@ -1877,7 +2084,8 @@ def cmd_template_use(args):
     print(f"Applying '{name}' template to {url}...")
 
     use_browser = getattr(args, 'browser', False)
-    content, err, title = fetch_url_auto(url, use_browser=use_browser)
+    engine = getattr(args, 'engine', 'auto') or 'auto'
+    content, err, title = fetch_url_auto(url, use_browser=use_browser, engine=engine)
     if err:
         print(_red(f"Couldn't fetch: {err}"))
         return
@@ -1919,6 +2127,7 @@ def cmd_template_use(args):
         "price_history": [],
         "type": tmpl.get("type", "content"),
         "browser": use_browser,
+        "engine": engine,
         "webhooks": webhooks,
     }
 
@@ -1933,6 +2142,762 @@ def cmd_template_use(args):
     print(f"   ID: {mid}")
 
 
+def cmd_gui(args):
+    """Generate and open the GUI console."""
+    monitors = load_monitors()
+    no_open = getattr(args, 'no_open', False)
+
+    # Gather all data
+    monitor_data = []
+    all_snapshots = []
+    week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+
+    for mid, m in monitors.items():
+        snaps = get_snapshots(mid, limit=20)
+        latest = snaps[0] if snaps else None
+
+        # Determine status
+        status = "stable"
+        if not m.get("enabled", True):
+            status = "paused"
+        elif latest:
+            condition = m.get("condition")
+            if condition:
+                met, _ = check_condition(condition, latest.get("content", ""), m)
+                if met:
+                    status = "condition_met"
+            # Check if changed recently (compare last 2 snaps)
+            if len(snaps) >= 2 and snaps[0].get("hash") != snaps[1].get("hash") and status != "condition_met":
+                status = "changed"
+
+        # Count changes in last 7 days
+        snap_hashes_week = []
+        for s in snaps:
+            try:
+                dt = datetime.fromisoformat(s["timestamp"].replace("Z", "+00:00"))
+                if dt > week_ago:
+                    snap_hashes_week.append(s.get("hash"))
+            except Exception:
+                pass
+        changes_7d = max(0, len(set(snap_hashes_week)) - 1)
+
+        # Snapshot entries for global list
+        for s in snaps[:5]:
+            all_snapshots.append({
+                "timestamp": s.get("timestamp"),
+                "monitor_label": m.get("label", mid),
+                "monitor_id": mid,
+                "hash": s.get("hash"),
+            })
+
+        monitor_data.append({
+            "id": mid,
+            "url": m.get("url", ""),
+            "label": m.get("label", mid),
+            "status": status,
+            "enabled": m.get("enabled", True),
+            "priority": m.get("priority", "medium"),
+            "group": m.get("group") or "",
+            "condition": m.get("condition") or "",
+            "target": m.get("target"),
+            "created": m.get("created"),
+            "last_checked": latest["timestamp"] if latest else None,
+            "price_history": m.get("price_history", []),
+            "notes_count": len(m.get("notes", [])),
+            "type": m.get("type", "content"),
+            "browser": m.get("browser", False),
+            "webhooks": len(m.get("webhooks", [])),
+            "changes_7d": changes_7d,
+        })
+
+    # Build alert history from snapshots
+    alert_history = []
+    for mid, m in monitors.items():
+        snaps = get_snapshots(mid, limit=20)
+        for i in range(len(snaps) - 1):
+            if snaps[i].get("hash") != snaps[i + 1].get("hash"):
+                # Generate summary
+                summary = generate_change_summary(
+                    snaps[i + 1].get("content", ""),
+                    snaps[i].get("content", ""),
+                    m
+                )
+                alert_history.append({
+                    "timestamp": snaps[i].get("timestamp"),
+                    "monitor_label": m.get("label", mid),
+                    "monitor_id": mid,
+                    "summary": summary,
+                })
+    alert_history.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+    alert_history = alert_history[:20]
+
+    # Sort global snapshots
+    all_snapshots.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+    # Mark changed/unchanged
+    snap_by_monitor = {}
+    recent_snapshots = []
+    for s in all_snapshots[:30]:
+        mid = s["monitor_id"]
+        prev_hash = snap_by_monitor.get(mid)
+        s["changed"] = prev_hash is not None and prev_hash != s["hash"]
+        snap_by_monitor[mid] = s["hash"]
+        recent_snapshots.append(s)
+    recent_snapshots = recent_snapshots[:10]
+
+    # Groups
+    groups = {}
+    for md in monitor_data:
+        g = md["group"] or "ungrouped"
+        if g not in groups:
+            groups[g] = {"name": g, "count": 0, "alerts": 0}
+        groups[g]["count"] += 1
+        if md["status"] in ("changed", "condition_met"):
+            groups[g]["alerts"] += 1
+
+    # Templates
+    template_data = []
+    for name, t in TEMPLATES.items():
+        template_data.append({
+            "name": name,
+            "description": t["description"],
+            "condition": t.get("condition") or "Auto-detected",
+            "type": t.get("type", "content"),
+            "interval": t["interval_minutes"],
+            "priority": t["priority"],
+        })
+
+    data = {
+        "version": VERSION,
+        "generated": datetime.now(timezone.utc).isoformat(),
+        "monitors": monitor_data,
+        "alerts": alert_history,
+        "snapshots": recent_snapshots,
+        "groups": list(groups.values()),
+        "templates": template_data,
+    }
+
+    html = _generate_gui_html(data)
+
+    out_path = STORE_DIR / "console.html"
+    ensure_dirs()
+    out_path.write_text(html, encoding="utf-8")
+    print(f"Console generated: {out_path}")
+    size_kb = len(html.encode()) / 1024
+    print(f"Size: {size_kb:.0f}KB")
+
+    if not no_open:
+        try:
+            webbrowser.open(f"file://{out_path}")
+            print("Opened in browser.")
+        except Exception:
+            print(f"Open manually: file://{out_path}")
+
+
+def _generate_gui_html(data):
+    """Generate the full self-contained HTML console."""
+    data_json = json.dumps(data, indent=None, default=str)
+
+    return '''<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Web Monitor Pro Console</title>
+<style>
+:root[data-theme="dark"] {
+  --bg: #0a0a0a; --bg-card: #141414; --bg-card-hover: #1a1a1a; --bg-input: #1e1e1e;
+  --text: #e5e5e5; --text-dim: #737373; --text-muted: #525252;
+  --accent: #3b82f6; --accent-dim: #1d4ed8;
+  --green: #22c55e; --green-dim: #166534;
+  --amber: #f59e0b; --amber-dim: #92400e;
+  --red: #ef4444; --red-dim: #991b1b;
+  --border: #262626; --shadow: rgba(0,0,0,0.5);
+}
+:root[data-theme="light"] {
+  --bg: #fafafa; --bg-card: #ffffff; --bg-card-hover: #f5f5f5; --bg-input: #f0f0f0;
+  --text: #171717; --text-dim: #737373; --text-muted: #a3a3a3;
+  --accent: #2563eb; --accent-dim: #1e40af;
+  --green: #16a34a; --green-dim: #bbf7d0;
+  --amber: #d97706; --amber-dim: #fef3c7;
+  --red: #dc2626; --red-dim: #fecaca;
+  --border: #e5e5e5; --shadow: rgba(0,0,0,0.08);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg); color: var(--text); line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, .mono {
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'JetBrains Mono', ui-monospace, monospace;
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Header */
+.header {
+  padding: 32px 0 24px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+}
+.header-left { display: flex; align-items: center; gap: 16px; }
+.header h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+.version-badge {
+  background: var(--accent); color: #fff; padding: 2px 10px; border-radius: 20px;
+  font-size: 12px; font-weight: 600;
+}
+.header-right { display: flex; align-items: center; gap: 16px; font-size: 14px; color: var(--text-dim); }
+.theme-toggle {
+  background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px 12px; cursor: pointer; color: var(--text); font-size: 14px;
+  transition: all 0.2s;
+}
+.theme-toggle:hover { border-color: var(--accent); }
+.header-stats span { margin-left: 12px; }
+
+/* Section */
+section { padding: 32px 0; }
+section h2 { font-size: 18px; font-weight: 600; margin-bottom: 20px; letter-spacing: -0.3px; }
+
+/* Metric Cards */
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.metric-card {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 20px; transition: all 0.2s;
+}
+.metric-card:hover { background: var(--bg-card-hover); transform: translateY(-1px); }
+.metric-value { font-size: 32px; font-weight: 700; font-family: 'SF Mono', monospace; }
+.metric-label { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
+.metric-card.green .metric-value { color: var(--green); }
+.metric-card.amber .metric-value { color: var(--amber); }
+.metric-card.red .metric-value { color: var(--red); }
+.metric-card.blue .metric-value { color: var(--accent); }
+
+/* Controls */
+.controls {
+  display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;
+}
+.controls select, .controls input {
+  background: var(--bg-input); border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px 12px; color: var(--text); font-size: 14px; outline: none;
+}
+.controls select:focus, .controls input:focus { border-color: var(--accent); }
+
+/* Monitor Cards */
+.monitor-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+.monitor-card {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 20px; transition: all 0.2s; position: relative; overflow: hidden;
+}
+.monitor-card:hover { background: var(--bg-card-hover); transform: translateY(-2px); box-shadow: 0 8px 24px var(--shadow); }
+.monitor-card .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.monitor-label { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+.monitor-url {
+  font-size: 12px; color: var(--text-dim); white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; max-width: 280px; display: block; margin-bottom: 12px;
+}
+.badge {
+  display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px;
+  border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap;
+}
+.badge-stable { background: var(--green-dim); color: var(--green); }
+.badge-changed { background: var(--amber-dim); color: var(--amber); }
+.badge-condition_met { background: var(--red-dim); color: var(--red); }
+.badge-paused { background: var(--bg-input); color: var(--text-muted); }
+.badge-error { background: var(--red-dim); color: var(--red); }
+.badge-high { background: var(--red-dim); color: var(--red); }
+.badge-low { background: var(--bg-input); color: var(--text-muted); }
+.badge-group { background: var(--accent-dim); color: var(--accent); cursor: pointer; }
+[data-theme="light"] .badge-stable { background: #dcfce7; }
+[data-theme="light"] .badge-changed { background: #fef3c7; }
+[data-theme="light"] .badge-condition_met { background: #fecaca; }
+[data-theme="light"] .badge-high { background: #fecaca; }
+[data-theme="light"] .badge-group { background: #dbeafe; }
+
+.card-meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; align-items: center; }
+.card-detail { font-size: 12px; color: var(--text-dim); }
+.card-detail b { color: var(--text); }
+
+/* Price section */
+.price-current { font-size: 20px; font-weight: 700; font-family: 'SF Mono', monospace; margin: 8px 0; }
+.price-target-bar {
+  height: 6px; background: var(--bg-input); border-radius: 3px; overflow: hidden; margin: 6px 0;
+}
+.price-target-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+.price-target-text { font-size: 11px; color: var(--text-dim); }
+
+/* Sparkline */
+.sparkline { margin: 8px 0; }
+.sparkline svg { display: block; }
+
+/* Condition */
+.condition-text { font-size: 12px; color: var(--text-dim); font-style: italic; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+
+/* Notes badge */
+.notes-badge {
+  position: absolute; top: 12px; right: 12px; background: var(--accent);
+  color: #fff; width: 22px; height: 22px; border-radius: 50%;
+  font-size: 11px; display: flex; align-items: center; justify-content: center; font-weight: 700;
+}
+
+/* Price Trends */
+.trend-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; }
+.trend-card {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px;
+}
+.trend-card h3 { font-size: 14px; margin-bottom: 12px; }
+.trend-stats { display: flex; gap: 16px; flex-wrap: wrap; margin: 12px 0; }
+.trend-stat { font-size: 12px; color: var(--text-dim); }
+.trend-stat b { color: var(--text); display: block; font-size: 14px; }
+.trend-chart { margin-top: 12px; }
+
+/* Alert Timeline */
+.timeline { display: flex; flex-direction: column; gap: 8px; }
+.timeline-item {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 18px; display: flex; gap: 12px; align-items: flex-start; transition: all 0.2s;
+}
+.timeline-item:hover { background: var(--bg-card-hover); }
+.timeline-time { font-size: 12px; color: var(--text-muted); white-space: nowrap; min-width: 60px; font-family: 'SF Mono', monospace; }
+.timeline-label { font-size: 13px; font-weight: 600; }
+.timeline-summary { font-size: 13px; color: var(--text-dim); }
+
+/* Groups */
+.group-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+.group-card {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 18px; cursor: pointer; transition: all 0.2s;
+}
+.group-card:hover { background: var(--bg-card-hover); border-color: var(--accent); transform: translateY(-1px); }
+.group-name { font-size: 16px; font-weight: 600; }
+.group-count { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
+.group-alerts { font-size: 12px; color: var(--red); margin-top: 2px; }
+
+/* Templates */
+.template-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.template-card {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px;
+}
+.template-card h3 { font-size: 15px; margin-bottom: 6px; }
+.template-card .desc { font-size: 13px; color: var(--text-dim); margin-bottom: 8px; }
+.template-card .tmpl-meta { font-size: 12px; color: var(--text-muted); }
+.template-cmd {
+  font-family: 'SF Mono', monospace; font-size: 11px; background: var(--bg-input);
+  padding: 8px 12px; border-radius: 6px; margin-top: 10px; color: var(--accent);
+  word-break: break-all;
+}
+
+/* Snapshot list */
+.snap-list { display: flex; flex-direction: column; gap: 6px; }
+.snap-item {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 16px; display: flex; justify-content: space-between; align-items: center;
+  font-size: 13px;
+}
+.snap-changed { border-left: 3px solid var(--amber); }
+.snap-unchanged { border-left: 3px solid var(--green); }
+
+/* Footer */
+.footer {
+  padding: 32px 0; border-top: 1px solid var(--border); text-align: center;
+  font-size: 13px; color: var(--text-muted);
+}
+.footer a { color: var(--text-dim); }
+
+/* Empty state */
+.empty-state {
+  text-align: center; padding: 40px 20px; color: var(--text-dim);
+  font-size: 14px;
+}
+.empty-state .emoji { font-size: 32px; margin-bottom: 8px; display: block; }
+.empty-state code {
+  background: var(--bg-input); padding: 4px 10px; border-radius: 6px;
+  font-family: 'SF Mono', monospace; font-size: 13px;
+}
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.monitor-card, .metric-card, .timeline-item, .group-card, .template-card, .trend-card {
+  animation: fadeIn 0.3s ease both;
+}
+.monitor-grid > :nth-child(2) { animation-delay: 0.03s; }
+.monitor-grid > :nth-child(3) { animation-delay: 0.06s; }
+.monitor-grid > :nth-child(4) { animation-delay: 0.09s; }
+.monitor-grid > :nth-child(5) { animation-delay: 0.12s; }
+.monitor-grid > :nth-child(6) { animation-delay: 0.15s; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header { flex-direction: column; align-items: flex-start; }
+  .monitor-grid { grid-template-columns: 1fr; }
+  .metrics { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- Header -->
+<div class="header">
+  <div class="header-left">
+    <h1>&#x1F441;&#xFE0F; Web Monitor Pro</h1>
+    <span class="version-badge" id="version"></span>
+  </div>
+  <div class="header-right">
+    <span id="header-stats"></span>
+    <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">&#x1F319; Dark</button>
+  </div>
+</div>
+
+<!-- Status Overview -->
+<section>
+  <h2>&#x1F4CA; Status Overview</h2>
+  <div class="metrics" id="metrics"></div>
+</section>
+
+<!-- Monitor Cards -->
+<section>
+  <h2>&#x1F4E1; Monitors</h2>
+  <div class="controls">
+    <select id="filter-group" onchange="renderMonitors()"><option value="">All Groups</option></select>
+    <select id="filter-status" onchange="renderMonitors()">
+      <option value="">All Statuses</option>
+      <option value="stable">Stable</option>
+      <option value="changed">Changed</option>
+      <option value="condition_met">Alert</option>
+      <option value="paused">Paused</option>
+    </select>
+    <select id="sort-by" onchange="renderMonitors()">
+      <option value="status">Sort: Status</option>
+      <option value="priority">Sort: Priority</option>
+      <option value="name">Sort: Name</option>
+      <option value="last_checked">Sort: Last Checked</option>
+    </select>
+  </div>
+  <div class="monitor-grid" id="monitor-grid"></div>
+</section>
+
+<!-- Price Trends -->
+<section id="sec-trends">
+  <h2>&#x1F4C8; Price Trends</h2>
+  <div class="trend-grid" id="trend-grid"></div>
+</section>
+
+<!-- Alert History -->
+<section id="sec-alerts">
+  <h2>&#x26A1; Alert History</h2>
+  <div class="timeline" id="alert-timeline"></div>
+</section>
+
+<!-- Groups -->
+<section id="sec-groups">
+  <h2>&#x1F4C1; Groups</h2>
+  <div class="group-grid" id="group-grid"></div>
+</section>
+
+<!-- Templates -->
+<section>
+  <h2>&#x1F4CB; Templates</h2>
+  <div class="template-grid" id="template-grid"></div>
+</section>
+
+<!-- Recent Snapshots -->
+<section id="sec-snapshots">
+  <h2>&#x1F4F8; Recent Snapshots</h2>
+  <div class="snap-list" id="snap-list"></div>
+</section>
+
+<!-- Footer -->
+<div class="footer">
+  <p>Made with &#x1F441;&#xFE0F; by @jakes420</p>
+  <p style="margin-top:4px"><code>monitor.py feedback</code> to share ideas</p>
+  <p style="margin-top:4px" id="footer-version"></p>
+</div>
+
+</div>
+
+<script>
+const DATA = ''' + data_json + ''';
+
+function relTime(iso) {
+  if (!iso) return 'never';
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+  const d = Math.floor(diff/86400);
+  return d === 1 ? 'yesterday' : d + 'd ago';
+}
+function daysSince(iso) {
+  if (!iso) return 0;
+  return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86400000));
+}
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function truncUrl(u, n) { try { const p = new URL(u); return (p.hostname + p.pathname).slice(0, n || 40); } catch(e) { return u.slice(0, n || 40); } }
+
+const STATUS_MAP = {
+  stable: { icon: '\\u2705', label: 'Stable', cls: 'badge-stable' },
+  changed: { icon: '\\u26A0\\uFE0F', label: 'Changed', cls: 'badge-changed' },
+  condition_met: { icon: '\\uD83D\\uDD34', label: 'Alert', cls: 'badge-condition_met' },
+  paused: { icon: '\\u23F8\\uFE0F', label: 'Paused', cls: 'badge-paused' },
+  error: { icon: '\\u274C', label: 'Error', cls: 'badge-error' },
+};
+const PRI_MAP = { high: '\\uD83D\\uDD25 High', low: '\\uD83D\\uDCA4 Low' };
+const STATUS_ORDER = { condition_met: 0, changed: 1, stable: 2, paused: 3, error: 4 };
+const PRI_ORDER = { high: 0, medium: 1, low: 2 };
+
+function sparklineSVG(prices, w, h) {
+  if (!prices || prices.length < 2) return '';
+  const vals = prices.map(p => p.price);
+  const mn = Math.min(...vals), mx = Math.max(...vals);
+  const range = mx - mn || 1;
+  const pts = vals.map((v, i) => {
+    const x = (i / (vals.length - 1)) * w;
+    const y = h - ((v - mn) / range) * (h - 2) - 1;
+    return x.toFixed(1) + ',' + y.toFixed(1);
+  }).join(' ');
+  const trending = vals[vals.length-1] > vals[0];
+  const color = trending ? 'var(--red)' : 'var(--green)';
+  return '<svg class="sparkline" width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'"><polyline fill="none" stroke="'+color+'" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" points="'+pts+'"/></svg>';
+}
+
+function trendChart(prices, w, h, target) {
+  if (!prices || prices.length < 2) return '';
+  const vals = prices.map(p => p.price);
+  const mn = Math.min(...vals), mx = Math.max(...vals);
+  const allVals = target ? [...vals, target] : vals;
+  const gMn = Math.min(...allVals), gMx = Math.max(...allVals);
+  const range = gMx - gMn || 1;
+  const pts = vals.map((v, i) => {
+    const x = (i / (vals.length - 1)) * w;
+    const y = h - ((v - gMn) / range) * (h - 8) - 4;
+    return x.toFixed(1) + ',' + y.toFixed(1);
+  }).join(' ');
+  const trending = vals[vals.length-1] > vals[0];
+  const color = trending ? 'var(--red)' : 'var(--green)';
+  let targetLine = '';
+  if (target) {
+    const ty = (h - ((target - gMn) / range) * (h - 8) - 4).toFixed(1);
+    targetLine = '<line x1="0" y1="'+ty+'" x2="'+w+'" y2="'+ty+'" stroke="var(--accent)" stroke-width="1" stroke-dasharray="4,3" opacity="0.6"/><text x="'+w+'" y="'+(parseFloat(ty)-4)+'" fill="var(--accent)" font-size="10" text-anchor="end">Target</text>';
+  }
+  return '<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'"><polyline fill="none" stroke="'+color+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" points="'+pts+'"/>'+targetLine+'</svg>';
+}
+
+// Theme
+function toggleTheme() {
+  const html = document.documentElement;
+  const cur = html.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  document.getElementById('theme-btn').innerHTML = next === 'dark' ? '&#x1F319; Dark' : '&#x2600;&#xFE0F; Light';
+  localStorage.setItem('wm-theme', next);
+}
+(function() {
+  const saved = localStorage.getItem('wm-theme');
+  if (saved) {
+    document.documentElement.setAttribute('data-theme', saved);
+    document.getElementById('theme-btn').innerHTML = saved === 'dark' ? '&#x1F319; Dark' : '&#x2600;&#xFE0F; Light';
+  }
+})();
+
+// Init
+document.getElementById('version').textContent = 'v' + DATA.version;
+document.getElementById('footer-version').textContent = 'Web Monitor Pro v' + DATA.version;
+
+// Header stats
+const totalM = DATA.monitors.length;
+const activeM = DATA.monitors.filter(m => m.enabled).length;
+const pausedM = totalM - activeM;
+document.getElementById('header-stats').innerHTML = totalM + ' monitors <span>' + activeM + ' active</span><span>' + pausedM + ' paused</span>';
+
+// Metrics
+(function() {
+  const week = DATA.monitors.reduce((s, m) => s + (m.changes_7d || 0), 0);
+  const condMet = DATA.monitors.filter(m => m.status === 'condition_met').length;
+  const priceM = DATA.monitors.filter(m => m.price_history && m.price_history.length > 0).length;
+  const groupCount = DATA.groups.filter(g => g.name !== 'ungrouped').length || DATA.groups.length;
+
+  const cards = [
+    { value: totalM, label: 'Total Monitors', cls: 'blue' },
+    { value: activeM, label: 'Active', cls: 'green' },
+    { value: pausedM, label: 'Paused', cls: '' },
+    { value: week, label: 'Changes (7d)', cls: 'amber' },
+    { value: condMet, label: 'Conditions Met', cls: 'red' },
+    { value: priceM, label: 'Price Tracking', cls: 'blue' },
+    { value: groupCount, label: 'Groups', cls: '' },
+  ];
+  document.getElementById('metrics').innerHTML = cards.map(c =>
+    '<div class="metric-card ' + c.cls + '"><div class="metric-value">' + c.value + '</div><div class="metric-label">' + c.label + '</div></div>'
+  ).join('');
+})();
+
+// Populate group filter
+(function() {
+  const sel = document.getElementById('filter-group');
+  const groups = [...new Set(DATA.monitors.map(m => m.group).filter(Boolean))].sort();
+  groups.forEach(g => {
+    const o = document.createElement('option');
+    o.value = g; o.textContent = g;
+    sel.appendChild(o);
+  });
+})();
+
+function renderMonitors() {
+  const group = document.getElementById('filter-group').value;
+  const status = document.getElementById('filter-status').value;
+  const sort = document.getElementById('sort-by').value;
+
+  let ms = DATA.monitors.slice();
+  if (group) ms = ms.filter(m => m.group === group);
+  if (status) ms = ms.filter(m => m.status === status);
+
+  if (sort === 'status') ms.sort((a,b) => (STATUS_ORDER[a.status]||9) - (STATUS_ORDER[b.status]||9));
+  else if (sort === 'priority') ms.sort((a,b) => (PRI_ORDER[a.priority]||9) - (PRI_ORDER[b.priority]||9));
+  else if (sort === 'name') ms.sort((a,b) => a.label.localeCompare(b.label));
+  else if (sort === 'last_checked') ms.sort((a,b) => (b.last_checked||'').localeCompare(a.last_checked||''));
+
+  if (ms.length === 0) {
+    document.getElementById('monitor-grid').innerHTML = '<div class="empty-state"><span class="emoji">\\uD83D\\uDC41\\uFE0F</span>Nothing to watch yet. Start with:<br><code>monitor.py watch &lt;url&gt;</code></div>';
+    return;
+  }
+
+  document.getElementById('monitor-grid').innerHTML = ms.map(m => {
+    const st = STATUS_MAP[m.status] || STATUS_MAP.stable;
+    const ph = m.price_history || [];
+    const hasPrice = ph.length > 0;
+    const curPrice = hasPrice ? ph[ph.length-1].price : null;
+    const days = daysSince(m.created);
+
+    let priceHTML = '';
+    if (hasPrice) {
+      priceHTML += '<div class="price-current">R' + curPrice.toLocaleString() + '</div>';
+      if (m.target) {
+        const pct = Math.min(100, Math.max(0, (1 - (curPrice - m.target) / curPrice) * 100));
+        const color = curPrice <= m.target ? 'var(--green)' : 'var(--accent)';
+        priceHTML += '<div class="price-target-bar"><div class="price-target-fill" style="width:'+pct+'%;background:'+color+'"></div></div>';
+        priceHTML += '<div class="price-target-text">Target: R' + m.target.toLocaleString() + (curPrice <= m.target ? ' \\uD83C\\uDFAF Hit!' : '') + '</div>';
+      }
+      priceHTML += sparklineSVG(ph.slice(-20), 80, 24);
+    }
+
+    let notesHTML = m.notes_count > 0 ? '<div class="notes-badge">' + m.notes_count + '</div>' : '';
+
+    let badges = '<span class="badge ' + st.cls + '">' + st.icon + ' ' + st.label + '</span>';
+    if (m.priority === 'high' || m.priority === 'low') badges += ' <span class="badge badge-' + m.priority + '">' + (PRI_MAP[m.priority]||'') + '</span>';
+    if (m.group) badges += ' <span class="badge badge-group" onclick="filterGroup(\\'' + esc(m.group) + '\\')">' + esc(m.group) + '</span>';
+
+    let condHTML = m.condition ? '<div class="condition-text">Condition: ' + esc(m.condition) + '</div>' : '';
+
+    return '<div class="monitor-card">' + notesHTML +
+      '<div class="card-top"><div><div class="monitor-label">' + esc(m.label) + '</div><a class="monitor-url" href="' + esc(m.url) + '" target="_blank" title="' + esc(m.url) + '">' + esc(truncUrl(m.url)) + '</a></div></div>' +
+      '<div class="card-meta">' + badges + '</div>' +
+      '<div class="card-detail">Checked ' + relTime(m.last_checked) + ' &middot; ' + days + 'd monitored' + (m.browser ? ' &middot; \\uD83C\\uDF10 JS' : '') + (m.webhooks ? ' &middot; \\uD83D\\uDD14' : '') + '</div>' +
+      priceHTML + condHTML +
+    '</div>';
+  }).join('');
+}
+renderMonitors();
+
+function filterGroup(g) {
+  document.getElementById('filter-group').value = g;
+  renderMonitors();
+  document.getElementById('monitor-grid').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Price Trends
+(function() {
+  const priceMonitors = DATA.monitors.filter(m => m.price_history && m.price_history.length >= 2);
+  const grid = document.getElementById('trend-grid');
+  if (priceMonitors.length === 0) {
+    grid.innerHTML = '<div class="empty-state"><span class="emoji">\\uD83D\\uDCC9</span>Price tracking starts after the second check</div>';
+    return;
+  }
+  grid.innerHTML = priceMonitors.map(m => {
+    const ph = m.price_history;
+    const vals = ph.map(p => p.price);
+    const mn = Math.min(...vals), mx = Math.max(...vals);
+    const avg = vals.reduce((a,b)=>a+b,0)/vals.length;
+    const cur = vals[vals.length-1];
+    const recent = vals.slice(-3);
+    const dir = recent[recent.length-1] > recent[0] ? '\\u2197\\uFE0F rising' : recent[recent.length-1] < recent[0] ? '\\u2198\\uFE0F dropping' : '\\u2192 stable';
+
+    function fmtDate(iso) { try { return new Date(iso).toLocaleDateString('en-ZA',{month:'short',day:'numeric'}); } catch(e) { return iso; } }
+    const mnDate = fmtDate(ph[vals.indexOf(mn)].date);
+    const mxDate = fmtDate(ph[vals.indexOf(mx)].date);
+
+    return '<div class="trend-card"><h3>' + esc(m.label) + ' <span style="font-weight:400;font-size:12px;color:var(--text-dim)">' + dir + '</span></h3>' +
+      '<div class="trend-stats">' +
+      '<div class="trend-stat"><b>R' + cur.toLocaleString() + '</b>Current</div>' +
+      '<div class="trend-stat"><b>R' + mn.toLocaleString() + '</b>Low (' + mnDate + ')</div>' +
+      '<div class="trend-stat"><b>R' + mx.toLocaleString() + '</b>High (' + mxDate + ')</div>' +
+      '<div class="trend-stat"><b>R' + Math.round(avg).toLocaleString() + '</b>Average</div>' +
+      '</div><div class="trend-chart">' + trendChart(ph.slice(-30), 320, 60, m.target) + '</div></div>';
+  }).join('');
+})();
+
+// Alert History
+(function() {
+  const tl = document.getElementById('alert-timeline');
+  if (DATA.alerts.length === 0) {
+    tl.innerHTML = '<div class="empty-state"><span class="emoji">\\uD83D\\uDE0C</span>All quiet. Your monitors are behaving.</div>';
+    return;
+  }
+  tl.innerHTML = DATA.alerts.map(a =>
+    '<div class="timeline-item"><div class="timeline-time">' + relTime(a.timestamp) + '</div><div><div class="timeline-label">' + esc(a.monitor_label) + '</div><div class="timeline-summary">' + esc(a.summary) + '</div></div></div>'
+  ).join('');
+})();
+
+// Groups
+(function() {
+  const grid = document.getElementById('group-grid');
+  if (DATA.groups.length === 0) {
+    grid.innerHTML = '<div class="empty-state"><span class="emoji">\\uD83D\\uDCC1</span>Organize monitors into groups:<br><code>monitor.py add &lt;url&gt; --group wishlist</code></div>';
+    return;
+  }
+  grid.innerHTML = DATA.groups.map(g =>
+    '<div class="group-card" onclick="filterGroup(\\'' + esc(g.name) + '\\')">' +
+    '<div class="group-name">' + esc(g.name) + '</div>' +
+    '<div class="group-count">' + g.count + ' monitor' + (g.count !== 1 ? 's' : '') + '</div>' +
+    (g.alerts > 0 ? '<div class="group-alerts">' + g.alerts + ' alert' + (g.alerts !== 1 ? 's' : '') + '</div>' : '') +
+    '</div>'
+  ).join('');
+})();
+
+// Templates
+(function() {
+  const grid = document.getElementById('template-grid');
+  grid.innerHTML = DATA.templates.map(t =>
+    '<div class="template-card"><h3>' + esc(t.name) + '</h3>' +
+    '<div class="desc">' + esc(t.description) + '</div>' +
+    '<div class="tmpl-meta">Condition: ' + esc(t.condition) + ' &middot; Every ' + t.interval + 'min &middot; ' + t.priority + ' priority</div>' +
+    '<div class="template-cmd">monitor.py template use ' + esc(t.name) + ' &lt;url&gt;</div></div>'
+  ).join('');
+})();
+
+// Snapshots
+(function() {
+  const list = document.getElementById('snap-list');
+  if (DATA.snapshots.length === 0) {
+    list.innerHTML = '<div class="empty-state"><span class="emoji">\\uD83D\\uDCF8</span>No snapshots yet</div>';
+    return;
+  }
+  list.innerHTML = DATA.snapshots.map(s =>
+    '<div class="snap-item ' + (s.changed ? 'snap-changed' : 'snap-unchanged') + '">' +
+    '<span>' + esc(s.monitor_label) + '</span>' +
+    '<span style="display:flex;gap:8px;align-items:center"><span class="badge ' + (s.changed ? 'badge-changed' : 'badge-stable') + '">' + (s.changed ? 'Changed' : 'Unchanged') + '</span><span style="font-size:12px;color:var(--text-muted)">' + relTime(s.timestamp) + '</span></span>' +
+    '</div>'
+  ).join('');
+})();
+
+// Hide empty sections
+if (DATA.monitors.filter(m => m.price_history && m.price_history.length >= 2).length === 0 && DATA.monitors.length > 0) {
+  // keep trends section visible with empty state
+}
+</script>
+</body>
+</html>'''
+
+
 def main():
     if len(sys.argv) < 2:
         cmd_help(None)
@@ -1941,11 +2906,19 @@ def main():
     if sys.argv[1] == "help":
         cmd_help(None)
         return
+    if sys.argv[1] == "gui":
+        class GuiArgs:
+            no_open = "--no-open" in sys.argv
+        cmd_gui(GuiArgs())
+        return
     if sys.argv[1] == "setup":
         cmd_setup(None)
         return
     if sys.argv[1] == "debug":
         cmd_debug(None)
+        return
+    if sys.argv[1] == "engines":
+        cmd_engines(None)
         return
     if sys.argv[1] == "feedback":
         class FeedbackArgs:
@@ -1981,11 +2954,14 @@ def main():
             a.browser = "--browser" in sys.argv or "-b" in sys.argv
             a.group = None
             a.webhook = []
+            a.engine = "auto"
             for i, arg in enumerate(sys.argv):
                 if arg in ("--group", "-g") and i + 1 < len(sys.argv):
                     a.group = sys.argv[i + 1]
                 if arg in ("--webhook", "-w") and i + 1 < len(sys.argv):
                     a.webhook.append(sys.argv[i + 1])
+                if arg in ("--engine", "-e") and i + 1 < len(sys.argv):
+                    a.engine = sys.argv[i + 1]
             cmd_template_use(a)
             return
         else:
@@ -2006,6 +2982,7 @@ def main():
     p_add.add_argument("--priority", "-p", choices=["high", "medium", "low"], default="medium")
     p_add.add_argument("--target", "-t", type=float, help="Price target")
     p_add.add_argument("--browser", "-b", action="store_true", help="Use Playwright for JS rendering")
+    p_add.add_argument("--engine", "-e", choices=["auto", "curl", "cloudscraper", "browser", "openclaw"], default="auto", help="Fetch engine (openclaw = skip fetch, use --content-file on check)")
     p_add.add_argument("--webhook", "-w", action="append", help="Webhook URL (repeatable)")
 
     # remove
@@ -2020,6 +2997,7 @@ def main():
     p_check = sub.add_parser("check", help="Check monitors for changes")
     p_check.add_argument("--id", help="Check specific monitor")
     p_check.add_argument("--verbose", "-v", action="store_true")
+    p_check.add_argument("--content-file", help="Use pre-fetched content from file instead of fetching (use - for stdin). Requires --id.")
 
     # history
     p_hist = sub.add_parser("history", help="Show snapshot history")
@@ -2086,6 +3064,7 @@ def main():
     p_watch.add_argument("url", help="URL to monitor")
     p_watch.add_argument("--group", "-g", help="Group/category")
     p_watch.add_argument("--browser", "-b", action="store_true", help="Use Playwright for JS rendering")
+    p_watch.add_argument("--engine", "-e", choices=["auto", "curl", "cloudscraper", "browser", "openclaw"], default="auto", help="Fetch engine (openclaw = skip fetch, use --content-file on check)")
     p_watch.add_argument("--webhook", "-w", action="append", help="Webhook URL (repeatable)")
 
     # export

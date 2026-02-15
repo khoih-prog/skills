@@ -3,11 +3,16 @@
   "slug": "web-monitor-pro",
   "displayName": "Web Monitor",
   "latest": {
-    "version": "3.1.0",
-    "publishedAt": 1771158244163,
-    "commit": "https://github.com/openclaw/skills/commit/7dc3ac8ee60bf3c0af7b60ecac2fc62f2ecbfe43"
+    "version": "3.4.3",
+    "publishedAt": 1771183367906,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.1.0",
+      "publishedAt": 1771158244163,
+      "commit": "https://github.com/openclaw/skills/commit/7dc3ac8ee60bf3c0af7b60ecac2fc62f2ecbfe43"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1771044341223,
