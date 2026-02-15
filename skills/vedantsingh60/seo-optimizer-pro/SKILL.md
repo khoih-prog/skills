@@ -2,7 +2,7 @@
 
 **AI-powered SEO content optimization for both Google ranking and AI search (AEO).**
 
-Analyze and optimize content with Claude AI for search visibility across traditional Google results and emerging AI search platforms (ChatGPT, Google AI Overviews, Claude, etc).
+Analyze and optimize content with AI for search visibility across traditional Google results and emerging AI search platforms (ChatGPT, Google AI Overviews, Claude, etc).
 
 ---
 
@@ -17,7 +17,7 @@ SEO optimization requires balancing multiple objectives:
 - Need both technical optimization AND compelling AI-optimized content
 
 ### The Solution
-Analyze and optimize content using Claude AI combined with technical SEO audits. Get specific recommendations for both traditional Google ranking AND emerging AI search visibility.
+Analyze and optimize content using AI combined with technical SEO audits. Get specific recommendations for both traditional Google ranking AND emerging AI search visibility.
 
 ### Why This Matters
 - **AI Search is Growing**: ChatGPT, Google AI Overviews, Claude are becoming major discovery channels
@@ -169,16 +169,57 @@ enhancing structure for AI readability, adding comparison tables.
 
 ---
 
+## 🔐 Credentials Required
+
+You need **one API key** — for whichever provider/model you want to use:
+
+| Provider | Env Variable | Models | Get Key |
+|----------|-------------|--------|---------|
+| Anthropic | `ANTHROPIC_API_KEY` | Claude Opus, Sonnet, Haiku | https://console.anthropic.com |
+| OpenAI | `OPENAI_API_KEY` | GPT-5.2 Pro, Thinking, Instant | https://platform.openai.com |
+| Google | `GOOGLE_API_KEY` | Gemini 3 Pro, 2.5 Pro/Flash | https://aistudio.google.dev |
+| OpenRouter | `OPENROUTER_API_KEY` | Llama 3.3-70B, 3.2-90B | https://openrouter.ai |
+| Mistral | `MISTRAL_API_KEY` | Mistral Large 2501 | https://console.mistral.ai |
+
+**Only set the key for the provider you're using.** For example, to use Claude:
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Or to use GPT:
+```bash
+export OPENAI_API_KEY=sk-...
+```
+
+The skill itself is free. You pay the provider directly for API usage at their standard rates.
+
+### ⚠️ Important Privacy Notice
+
+**Your content IS sent to third-party AI providers.** Before using this skill with sensitive content, review the privacy policy of your chosen provider:
+
+- **Anthropic Privacy**: https://www.anthropic.com/legal/privacy
+- **OpenAI Privacy**: https://openai.com/policies/privacy-policy
+- **Google Gemini Terms**: https://ai.google.dev/gemini-api/terms
+- **OpenRouter Privacy**: https://openrouter.ai/privacy
+- **Mistral Terms**: https://mistral.ai/terms/
+
+**Recommendation**: Test with non-sensitive sample content first. Each provider has different data retention policies.
+
+---
+
 ## 🚀 Quick Start
 
 ### 1. Access the Skill
 Available for free on ClawhHub - no subscription required
 
 ### 2. Set Up
-Ensure you have:
-- Your Anthropic API key configured
+
+**Required:**
+- API key for your chosen provider (see Credentials table above)
+
+**Optional:**
 - Content to analyze (HTML or plain text)
-- Target keywords (optional but recommended)
+- Target keywords (recommended for better analysis)
 
 ### 3. Python Usage
 
@@ -327,7 +368,7 @@ A: No ranking is guaranteed, but these suggestions are based on proven SEO facto
 A: SEO optimizes for Google's algorithm. AEO optimizes for AI chatbots that generate responses. They overlap significantly—good content for humans is usually good for both.
 
 **Q: Can I use this for languages other than English?**
-A: The readability analysis is English-optimized, but keyword analysis and Claude suggestions work for any language.
+A: The readability analysis is English-optimized, but keyword analysis and AI suggestions work for any language.
 
 **Q: How long should content be?**
 A: It depends on topic complexity. Generally: 300+ words minimum, 1000+ for comprehensive coverage, 2000+ for pillar/authority pages.
@@ -351,48 +392,31 @@ A: No, this skill analyzes and optimizes existing content. To generate new conte
 
 ## 🗺️ Roadmap
 
-### ✅ Current Release (v1.0.0)
-- Content readability analysis
+### ✅ Current Release (v1.0.2)
+- Content readability analysis (Flesch-Kincaid)
 - Keyword density tracking
 - Technical SEO audit
-- Claude AI optimization suggestions
+- Multi-provider AI optimization (Claude, GPT, Gemini, Llama, Mistral)
 - AEO-specific recommendations
-- Real-time impact estimation
+- Impact estimation
 
-### 🚧 Coming Soon (v1.1.0)
-- **Competitor analysis** - Compare your content to top 5 Google results
-- **Bulk analysis** - Analyze 10+ pages in one run
-- **Historical tracking** - Track optimization progress over time
-- **Recommendation automation** - Apply suggestions automatically
+### 🚧 Coming Soon
+- **Competitor analysis** - Compare your content to top Google results
+- **Bulk analysis** - Analyze multiple pages in one run
 - **Export formats** - PDF reports, JSON data, CSV analysis
+- **Multi-language readability** - Support beyond English
 
-### 🔮 Future (v1.2+)
-- **Multi-language support** - Full support for 20+ languages
+### 🔮 Future
 - **Schema generation** - Auto-generate JSON-LD schema
 - **Link analysis** - Deep internal/external link auditing
 - **Content gap analysis** - Identify missing topics in your content
-- **Slack integration** - Run analyses from Slack
-- **Team dashboards** - Shared workspace with multiple users
-- **Historical analytics** - Track how content performs over time
 
 ---
 
 ## 📚 Resources
 
-### Documentation
-- 📖 **Full Guide**: https://docs.unisai.vercel.app/seo-optimizer
-- 💡 **Tutorials**: https://docs.unisai.vercel.app/seo-optimizer/tutorials
-- 🎓 **AEO Course**: https://docs.unisai.vercel.app/seo-optimizer/aeo-guide
-
-### Community
-- 💬 **Slack Community**: https://slack.unisai.vercel.app
-- 📧 **Email Support**: support@unisai.vercel.app
-- 🐛 **Bug Reports**: https://github.com/unisai/seo-optimizer/issues
-- ⭐ **Feature Requests**: https://slack.unisai.vercel.app
-
-### Contact
+### Support
 - Email: support@unisai.vercel.app
-- Slack: https://slack.unisai.vercel.app
 - Website: https://unisai.vercel.app
 
 ---
@@ -420,9 +444,9 @@ This skill is **free and open to all users** on ClawhHub.
 ## 🚀 Get Started
 
 1. Access this free skill on ClawhHub (no subscription needed)
-2. Set your Anthropic API key
-3. Analyze your first piece of content
-4. Review recommendations and implement
+2. Install the SDK for your provider: `pip install anthropic` (or openai, google-generativeai, mistralai)
+3. Set the API key for your chosen provider (see Credentials table above)
+4. Analyze your first piece of content
 
 ---
 
@@ -438,7 +462,22 @@ This skill is **free and open to all users** on ClawhHub.
 
 ## 📝 Changelog
 
-### [1.1.0] - 2026-02-02
+### [1.0.4] - 2026-02-14
+
+#### 🔒 Security & Transparency Improvements
+- **Source Code Included** - Fixed license contradiction; source code IS included for transparency and security audits
+- **License Clarification** - Changed from "proprietary" to "free-to-use" with clear modification rights for personal use
+- **Data Sharing Warnings** - Added explicit warnings about third-party AI provider data sharing with links to privacy policies
+- **Metadata Consistency** - Fixed registry metadata to accurately reflect required environment variables
+- **Install Recommendations** - Updated requirements.txt and docs to recommend selective SDK installation (not all packages)
+
+#### 📝 Documentation Updates
+- Added GitHub repository and verifiable support contacts
+- Clarified which API key is required for which model
+- Added provider privacy policy links for informed consent
+- Updated all version references to 1.0.4
+
+### [1.0.2] - 2026-02-14
 
 #### ✨ Multi-Model Support
 - **Claude 4.5 Series** - Opus, Sonnet, Haiku models
@@ -478,8 +517,8 @@ This skill is **free and open to all users** on ClawhHub.
 
 ---
 
-**Last Updated**: February 2, 2026
-**Current Version**: 1.0.0
+**Last Updated**: February 14, 2026
+**Current Version**: 1.0.4
 **Status**: Active & Maintained
 
-© 2026 UniAI. All rights reserved.
+© 2026 UnisAI. All rights reserved.

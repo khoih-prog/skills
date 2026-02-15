@@ -1,26 +1,34 @@
 #!/usr/bin/env python3
 """
 SEO Optimizer Pro - AI-Powered SEO Content Optimization
+Version: 1.0.4
+Copyright © 2026 UnisAI. All Rights Reserved.
 
-Combines Claude's AI capabilities with technical SEO analysis to help optimize
-content for both traditional Google ranking and emerging AI search (AEO).
+Multi-provider SEO analysis using Claude, GPT, Gemini, Llama, or Mistral.
+Each provider requires its own API key. Only the provider you select needs
+a key configured.
 
 Features:
-- Content optimization suggestions using Claude AI
+- Content optimization suggestions via your chosen AI model
 - Technical SEO audit and recommendations
 - Answer Engine Optimization (AEO) analysis
 - Keyword clustering and topic mapping
 - Meta tag generation
 - Readability and structure analysis
+
+PRIVACY NOTICE: This skill sends your content to third-party AI providers.
+Review the provider's privacy policy before sending sensitive content.
 """
+
+__version__ = "1.0.4"
 
 import os
 import json
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from typing import List, Dict, Optional, Tuple
 import re
 from datetime import datetime
-from anthropic import Anthropic
+
 
 @dataclass
 class SEOMetrics:
@@ -36,6 +44,7 @@ class SEOMetrics:
     avg_paragraph_length: int
     flesch_kincaid_grade: float
 
+
 @dataclass
 class OptimizationSuggestion:
     """Optimization suggestion with priority"""
@@ -46,91 +55,179 @@ class OptimizationSuggestion:
     recommended_value: Optional[str]
     impact: str  # estimated impact description
 
+
 @dataclass
 class SEOAnalysisResult:
     """Complete SEO analysis result"""
     test_id: str
     timestamp: str
     url: Optional[str]
+    model_used: str
+    provider: str
     metrics: SEOMetrics
     suggestions: List[OptimizationSuggestion]
-    content_optimization: Dict  # Claude-generated improvements
-    aeo_recommendations: List[str]  # AI search specific tips
+    content_optimization: Dict
+    aeo_recommendations: List[str]
     estimated_impact: str
+
 
 class SEOOptimizer:
     """
-    AI-powered SEO optimizer for content optimization and technical analysis
+    AI-powered SEO optimizer with real multi-provider support.
 
-    Supports multiple AI models:
-    - Claude 4.5 Series (Anthropic)
-    - GPT-5.2 Series (OpenAI)
-    - Gemini 2.5/3.0 Series (Google)
-    - Llama 3.2/3.3 (Meta)
-    - Mistral Large (Mistral AI)
+    Each provider uses its own SDK and API key:
+    - Anthropic Claude: ANTHROPIC_API_KEY
+    - OpenAI GPT: OPENAI_API_KEY
+    - Google Gemini: GOOGLE_API_KEY
+    - Mistral: MISTRAL_API_KEY
+    - Meta Llama (via OpenRouter): OPENROUTER_API_KEY
 
-    Capabilities:
-    - Content optimization with AI suggestions
-    - Technical SEO audits
-    - AEO (Answer Engine Optimization) analysis
-    - Keyword research and clustering
-    - Meta tag generation
-    - Readability analysis
+    Only the API key for your chosen provider is required.
     """
 
     # IP Protection
     WATERMARK = "PROPRIETARY_SKILL_SEO_OPTIMIZER_2026"
 
-    # Supported models across providers (2026)
+    # Supported models and their providers (2026)
     SUPPORTED_MODELS = {
-        # Anthropic Claude
-        "claude-opus-4-5-20251101": "anthropic",
-        "claude-sonnet-4-5-20250929": "anthropic",
-        "claude-haiku-4-5-20251001": "anthropic",
+        # Anthropic Claude 4.5
+        "claude-opus-4-5-20251101": {"provider": "anthropic", "env_key": "ANTHROPIC_API_KEY"},
+        "claude-sonnet-4-5-20250929": {"provider": "anthropic", "env_key": "ANTHROPIC_API_KEY"},
+        "claude-haiku-4-5-20251001": {"provider": "anthropic", "env_key": "ANTHROPIC_API_KEY"},
 
-        # OpenAI GPT
-        "gpt-5.2-pro": "openai",
-        "gpt-5.2-thinking": "openai",
-        "gpt-5.2-instant": "openai",
+        # OpenAI GPT-5.2
+        "gpt-5.2-pro": {"provider": "openai", "env_key": "OPENAI_API_KEY"},
+        "gpt-5.2-thinking": {"provider": "openai", "env_key": "OPENAI_API_KEY"},
+        "gpt-5.2-instant": {"provider": "openai", "env_key": "OPENAI_API_KEY"},
 
-        # Google Gemini
-        "gemini-3-pro": "google",
-        "gemini-2.5-pro": "google",
-        "gemini-2.5-flash": "google",
+        # Google Gemini 2.5/3.0
+        "gemini-3-pro": {"provider": "google", "env_key": "GOOGLE_API_KEY"},
+        "gemini-2.5-pro": {"provider": "google", "env_key": "GOOGLE_API_KEY"},
+        "gemini-2.5-flash": {"provider": "google", "env_key": "GOOGLE_API_KEY"},
 
-        # Meta Llama
-        "llama-3.3-70b": "meta",
-        "llama-3.2-90b": "meta",
+        # Meta Llama (via OpenRouter)
+        "llama-3.3-70b": {"provider": "openrouter", "env_key": "OPENROUTER_API_KEY"},
+        "llama-3.2-90b": {"provider": "openrouter", "env_key": "OPENROUTER_API_KEY"},
 
         # Mistral
-        "mistral-large-2501": "mistral",
+        "mistral-large-2501": {"provider": "mistral", "env_key": "MISTRAL_API_KEY"},
     }
 
-    def __init__(self, anthropic_api_key: str = None, model: str = None):
+    def __init__(self, model: str = None, api_key: str = None):
         """
-        Initialize with API key and optional model selection
+        Initialize with model selection and optional API key override.
 
         Args:
-            anthropic_api_key: Anthropic API key (uses ANTHROPIC_API_KEY env var if not provided)
-            model: Model to use (defaults to claude-opus-4-5-20251101)
+            model: Model ID to use (defaults to claude-haiku-4-5-20251001)
+            api_key: Override API key (otherwise reads from environment variable)
         """
-        self.api_key = anthropic_api_key or os.getenv("ANTHROPIC_API_KEY")
-        if not self.api_key:
-            raise ValueError("ANTHROPIC_API_KEY not set")
+        self.model = model or "claude-haiku-4-5-20251001"
 
-        self.client = Anthropic(api_key=self.api_key)
-        self.model = model or "claude-opus-4-5-20251101"  # Default to most capable Claude
-
-        # Validate model
         if self.model not in self.SUPPORTED_MODELS:
-            raise ValueError(f"Model {self.model} not supported. Available models: {list(self.SUPPORTED_MODELS.keys())}")
+            raise ValueError(
+                f"Model '{self.model}' not supported.\n"
+                f"Available models: {list(self.SUPPORTED_MODELS.keys())}"
+            )
+
+        self.model_config = self.SUPPORTED_MODELS[self.model]
+        self.provider = self.model_config["provider"]
+        self.env_key = self.model_config["env_key"]
+
+        # Resolve API key
+        self.api_key = api_key or os.getenv(self.env_key)
+        if not self.api_key:
+            raise ValueError(
+                f"{self.env_key} not set. "
+                f"Model '{self.model}' requires the {self.env_key} environment variable."
+            )
+
+        # Initialize the correct client for the provider
+        self.client = self._init_client()
+
+    def _init_client(self):
+        """Initialize the correct SDK client based on provider."""
+        if self.provider == "anthropic":
+            from anthropic import Anthropic
+            return Anthropic(api_key=self.api_key)
+
+        elif self.provider == "openai":
+            from openai import OpenAI
+            return OpenAI(api_key=self.api_key)
+
+        elif self.provider == "google":
+            import google.generativeai as genai
+            genai.configure(api_key=self.api_key)
+            return genai.GenerativeModel(self.model)
+
+        elif self.provider == "mistral":
+            from mistralai import Mistral
+            return Mistral(api_key=self.api_key)
+
+        elif self.provider == "openrouter":
+            from openai import OpenAI
+            return OpenAI(
+                api_key=self.api_key,
+                base_url="https://openrouter.ai/api/v1"
+            )
+
+        else:
+            raise ValueError(f"Unknown provider: {self.provider}")
+
+    def _call_ai(self, prompt: str, max_tokens: int = 1000) -> str:
+        """
+        Send a prompt to the selected AI model and return the response text.
+        Routes to the correct API based on provider.
+        """
+        if self.provider == "anthropic":
+            message = self.client.messages.create(
+                model=self.model,
+                max_tokens=max_tokens,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return message.content[0].text
+
+        elif self.provider in ("openai", "openrouter"):
+            # OpenAI SDK (also used for OpenRouter/Llama)
+            model_id = self.model
+            if self.provider == "openrouter":
+                # OpenRouter uses specific model paths
+                model_map = {
+                    "llama-3.3-70b": "meta-llama/llama-3.3-70b-instruct",
+                    "llama-3.2-90b": "meta-llama/llama-3.2-90b-vision-instruct",
+                }
+                model_id = model_map.get(self.model, self.model)
+
+            response = self.client.chat.completions.create(
+                model=model_id,
+                max_tokens=max_tokens,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return response.choices[0].message.content
+
+        elif self.provider == "google":
+            response = self.client.generate_content(
+                prompt,
+                generation_config={"max_output_tokens": max_tokens}
+            )
+            return response.text
+
+        elif self.provider == "mistral":
+            response = self.client.chat.complete(
+                model=self.model,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=max_tokens,
+            )
+            return response.choices[0].message.content
+
+        else:
+            raise ValueError(f"Unknown provider: {self.provider}")
 
     def analyze_content(self,
                        content: str,
                        url: Optional[str] = None,
                        target_keywords: Optional[List[str]] = None) -> SEOAnalysisResult:
         """
-        Perform comprehensive SEO analysis on content
+        Perform comprehensive SEO analysis on content.
 
         Args:
             content: HTML or plain text content to analyze
@@ -140,21 +237,20 @@ class SEOOptimizer:
         Returns:
             Complete SEO analysis with suggestions
         """
-
         test_id = self._generate_test_id()
         timestamp = datetime.utcnow().isoformat() + "Z"
 
         # Extract text from content
         text_content = self._extract_text(content)
 
-        # Analyze technical metrics
+        # Analyze technical metrics (no AI needed)
         metrics = self._calculate_metrics(text_content, target_keywords)
 
-        # Generate suggestions
+        # Generate rule-based suggestions (no AI needed)
         suggestions = self._generate_suggestions(text_content, metrics, target_keywords)
 
-        # Get Claude AI optimization suggestions
-        content_optimization = self._get_claude_suggestions(text_content, target_keywords)
+        # Get AI optimization suggestions
+        content_optimization = self._get_ai_suggestions(text_content, target_keywords)
 
         # AEO-specific recommendations
         aeo_recommendations = self._get_aeo_recommendations(text_content, target_keywords)
@@ -166,6 +262,8 @@ class SEOOptimizer:
             test_id=test_id,
             timestamp=timestamp,
             url=url,
+            model_used=self.model,
+            provider=self.provider,
             metrics=metrics,
             suggestions=suggestions,
             content_optimization=content_optimization,
@@ -175,16 +273,13 @@ class SEOOptimizer:
 
     def _extract_text(self, content: str) -> str:
         """Extract text from HTML or plain text"""
-        # Remove HTML tags
         text = re.sub(r'<[^>]+>', '', content)
-        # Decode HTML entities
         text = text.replace('&nbsp;', ' ').replace('&lt;', '<').replace('&gt;', '>')
-        # Clean up whitespace
         text = re.sub(r'\s+', ' ', text).strip()
         return text
 
     def _calculate_metrics(self, text: str, keywords: Optional[List[str]] = None) -> SEOMetrics:
-        """Calculate SEO metrics"""
+        """Calculate SEO metrics (no AI call, pure computation)"""
         words = text.split()
         word_count = len(words)
         paragraphs = [p.strip() for p in text.split('\n\n') if p.strip()]
@@ -200,13 +295,16 @@ class SEOOptimizer:
                 if density > 0:
                     keyword_density[keyword] = round(density, 2)
 
-        # Readability (simplified Flesch-Kincaid)
+        # Readability (Flesch-Kincaid)
         sentences = len(re.split(r'[.!?]+', text))
         syllables = self._count_syllables(text)
-        fk_grade = (0.39 * (word_count / sentences) + 11.8 * (syllables / word_count) - 15.59) if sentences > 0 else 0
-        readability_score = max(0, min(100, 100 - (fk_grade * 5)))  # Convert to 0-100 scale
+        if sentences > 0 and word_count > 0:
+            fk_grade = 0.39 * (word_count / sentences) + 11.8 * (syllables / word_count) - 15.59
+        else:
+            fk_grade = 0
+        readability_score = max(0, min(100, 100 - (fk_grade * 5)))
 
-        # Heading structure (simplified)
+        # Heading structure
         headings = [(f"H{i}", text.count(f"<h{i}")) for i in range(1, 7)]
         headings = [(h, c) for h, c in headings if c > 0]
 
@@ -215,7 +313,7 @@ class SEOOptimizer:
             readability_score=readability_score,
             keyword_density=keyword_density,
             headings_structure=headings,
-            meta_tags_present=["title", "description"],  # Placeholder
+            meta_tags_present=["title", "description"],
             internal_links_count=text.count("<a href"),
             external_links_count=0,
             word_count=word_count,
@@ -224,95 +322,76 @@ class SEOOptimizer:
         )
 
     def _count_syllables(self, text: str) -> int:
-        """Estimate syllable count (simplified)"""
+        """Estimate syllable count"""
         vowels = "aeiouy"
         syllable_count = 0
         previous_was_vowel = False
-
         for char in text.lower():
             is_vowel = char in vowels
             if is_vowel and not previous_was_vowel:
                 syllable_count += 1
             previous_was_vowel = is_vowel
-
         return max(1, syllable_count)
 
     def _generate_suggestions(self,
                             text: str,
                             metrics: SEOMetrics,
                             keywords: Optional[List[str]] = None) -> List[OptimizationSuggestion]:
-        """Generate optimization suggestions"""
+        """Generate rule-based optimization suggestions (no AI call)"""
         suggestions = []
 
-        # Content length
         if metrics.word_count < 300:
             suggestions.append(OptimizationSuggestion(
-                category="content",
-                priority="high",
+                category="content", priority="high",
                 suggestion="Content is too short. Aim for at least 300 words for better indexing.",
-                current_value=str(metrics.word_count),
-                recommended_value="300+",
+                current_value=str(metrics.word_count), recommended_value="300+",
                 impact="Better coverage of topic, improved ranking potential"
             ))
         elif metrics.word_count < 1000:
             suggestions.append(OptimizationSuggestion(
-                category="content",
-                priority="medium",
+                category="content", priority="medium",
                 suggestion="Consider expanding content to 1000+ words for comprehensive coverage.",
-                current_value=str(metrics.word_count),
-                recommended_value="1000+",
+                current_value=str(metrics.word_count), recommended_value="1000+",
                 impact="More thorough topic coverage, higher authority signals"
             ))
 
-        # Readability
         if metrics.readability_score < 60:
             suggestions.append(OptimizationSuggestion(
-                category="content",
-                priority="high",
+                category="content", priority="high",
                 suggestion="Content readability is low. Use shorter sentences and simpler words.",
-                current_value=f"{metrics.readability_score:.1f}/100",
-                recommended_value="60+",
+                current_value=f"{metrics.readability_score:.1f}/100", recommended_value="60+",
                 impact="Better user engagement, improved bounce rate"
             ))
 
-        # Keyword density
         if keywords:
             for keyword, density in metrics.keyword_density.items():
                 if density < 0.5:
                     suggestions.append(OptimizationSuggestion(
-                        category="keywords",
-                        priority="medium",
+                        category="keywords", priority="medium",
                         suggestion=f"Target keyword '{keyword}' appears {density}% of the time. Increase naturally to 1-2%.",
-                        current_value=f"{density:.2f}%",
-                        recommended_value="1-2%",
+                        current_value=f"{density:.2f}%", recommended_value="1-2%",
                         impact="Better keyword relevance signal"
                     ))
                 elif density > 3:
                     suggestions.append(OptimizationSuggestion(
-                        category="keywords",
-                        priority="high",
+                        category="keywords", priority="high",
                         suggestion=f"Keyword '{keyword}' density is {density}% - this may be keyword stuffing.",
-                        current_value=f"{density:.2f}%",
-                        recommended_value="1-2%",
+                        current_value=f"{density:.2f}%", recommended_value="1-2%",
                         impact="Avoid Google penalties, maintain natural flow"
                     ))
 
-        # Heading structure
         if not metrics.headings_structure:
             suggestions.append(OptimizationSuggestion(
-                category="technical",
-                priority="high",
+                category="technical", priority="high",
                 suggestion="No heading tags found. Add H1, H2, H3 tags to structure content.",
-                current_value="None",
-                recommended_value="H1 (1), H2 (3-5), H3 (optional)",
+                current_value="None", recommended_value="H1 (1), H2 (3-5), H3 (optional)",
                 impact="Better content structure, improved accessibility"
             ))
 
-        return suggestions[:10]  # Limit to top 10 suggestions
+        return suggestions[:10]
 
-    def _get_claude_suggestions(self, text: str, keywords: Optional[List[str]] = None) -> Dict:
-        """Get AI-powered optimization suggestions from Claude"""
-
+    def _get_ai_suggestions(self, text: str, keywords: Optional[List[str]] = None) -> Dict:
+        """Get AI-powered optimization suggestions from the selected model."""
         keyword_context = ""
         if keywords:
             keyword_context = f"\n\nTarget keywords to naturally incorporate: {', '.join(keywords)}"
@@ -320,7 +399,7 @@ class SEOOptimizer:
         prompt = f"""You are an expert SEO content strategist. Analyze this content and provide specific, actionable optimization suggestions.
 
 Content:
-{text[:2000]}...
+{text[:2000]}
 
 {keyword_context}
 
@@ -334,18 +413,9 @@ Please provide:
 
 Format as JSON with keys: title, meta_description, h1, key_points, keyword_integration, internal_links"""
 
-        message = self.client.messages.create(
-            model=self.model,
-            max_tokens=1000,
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
-        )
+        response_text = self._call_ai(prompt, max_tokens=1000)
 
         try:
-            # Try to parse JSON response
-            response_text = message.content[0].text
-            # Extract JSON from response
             json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
             if json_match:
                 return json.loads(json_match.group())
@@ -355,12 +425,11 @@ Format as JSON with keys: title, meta_description, h1, key_points, keyword_integ
         return {
             "title": "See analysis in full results",
             "meta_description": "See analysis in full results",
-            "suggestions": message.content[0].text
+            "suggestions": response_text
         }
 
     def _get_aeo_recommendations(self, text: str, keywords: Optional[List[str]] = None) -> List[str]:
-        """Get Answer Engine Optimization (AEO) specific recommendations"""
-
+        """Get Answer Engine Optimization (AEO) recommendations."""
         keyword_context = ""
         if keywords:
             keyword_context = f"Focus on these keywords: {', '.join(keywords[:3])}"
@@ -379,37 +448,24 @@ Provide 5 specific AEO recommendations to:
 
 Format as a simple numbered list."""
 
-        message = self.client.messages.create(
-            model=self.model,
-            max_tokens=500,
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
-        )
-
-        response_text = message.content[0].text
-        # Extract numbered items
+        response_text = self._call_ai(prompt, max_tokens=500)
         items = re.findall(r'\d+\.\s*(.+?)(?=\n\d+\.|\Z)', response_text, re.DOTALL)
         return [item.strip() for item in items][:5]
 
     def _estimate_impact(self, metrics: SEOMetrics, suggestion_count: int) -> str:
-        """Estimate potential impact of optimizations"""
-
+        """Estimate potential impact of optimizations (no AI call)"""
         impact_score = 0
         factors = []
 
         if metrics.word_count < 500:
             impact_score += 3
             factors.append("Expanding content length")
-
         if metrics.readability_score < 70:
             impact_score += 2
             factors.append("Improving readability")
-
         if metrics.keyword_density:
             impact_score += 2
             factors.append("Optimizing keyword presence")
-
         if not metrics.headings_structure:
             impact_score += 1
             factors.append("Adding heading structure")
@@ -423,11 +479,12 @@ Format as a simple numbered list."""
 
     def format_results(self, result: SEOAnalysisResult) -> str:
         """Format analysis results for display"""
-
         output = f"""
 ╔══════════════════════════════════════════════════════════════════╗
 ║              SEO ANALYSIS RESULTS - {result.test_id}              ║
 ╚══════════════════════════════════════════════════════════════════╝
+
+🤖 Model: {result.model_used} ({result.provider})
 
 📊 METRICS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
