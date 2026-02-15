@@ -1,8 +1,19 @@
 ---
 name: JWT
-description: Implement secure JWT authentication with proper validation and token handling.
+slug: jwt
+version: 1.0.1
+description: Implement secure JWT authentication with proper validation, token lifecycle, and key management.
 metadata: {"clawdbot":{"emoji":"🔐","os":["linux","darwin","win32"]}}
 ---
+
+## Quick Reference
+
+| Topic | File |
+|-------|------|
+| Algorithm selection | `algorithms.md` |
+| Token lifecycle | `lifecycle.md` |
+| Validation checklist | `validation.md` |
+| Common attacks | `attacks.md` |
 
 ## Security Fundamentals
 
