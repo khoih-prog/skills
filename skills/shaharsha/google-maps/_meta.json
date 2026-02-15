@@ -3,11 +3,16 @@
   "slug": "google-maps",
   "displayName": "Google Maps",
   "latest": {
-    "version": "3.1.1",
-    "publishedAt": 1770369759401,
-    "commit": "https://github.com/openclaw/skills/commit/e434b86a21980822056026b8c235a4513dad669a"
+    "version": "3.1.2",
+    "publishedAt": 1771088042020,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.1.1",
+      "publishedAt": 1770369759401,
+      "commit": "https://github.com/openclaw/skills/commit/e434b86a21980822056026b8c235a4513dad669a"
+    },
     {
       "version": "3.0.2",
       "publishedAt": 1770369273692,
