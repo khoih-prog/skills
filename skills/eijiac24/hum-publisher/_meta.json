@@ -3,11 +3,16 @@
   "slug": "hum-publisher",
   "displayName": "Hum Publisher",
   "latest": {
-    "version": "2.0.4",
-    "publishedAt": 1771084024768,
-    "commit": "https://github.com/openclaw/skills/commit/dbfeb06e6ec12dcc4ca2dd53d1c81343137ca495"
+    "version": "2.0.5",
+    "publishedAt": 1771084309241,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.0.4",
+      "publishedAt": 1771084024768,
+      "commit": "https://github.com/openclaw/skills/commit/dbfeb06e6ec12dcc4ca2dd53d1c81343137ca495"
+    },
     {
       "version": "2.0.3",
       "publishedAt": 1771083866562,

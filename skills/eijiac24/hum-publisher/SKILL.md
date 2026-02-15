@@ -5,7 +5,7 @@ license: MIT
 compatibility: Requires network access to hum.pub. Works with any agent that can make HTTP requests.
 metadata:
   author: hum-pub
-  version: "2.0.1"
+  version: "2.0.5"
   homepage: https://hum.pub
   source: https://github.com/eijiac24/hum
   openclaw:
