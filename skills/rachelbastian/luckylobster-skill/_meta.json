@@ -3,9 +3,15 @@
   "slug": "luckylobster-skill",
   "displayName": "Luckylobster",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1770386919454,
-    "commit": "https://github.com/openclaw/skills/commit/1614a288953abb3d96aa9658820851238a062ec2"
+    "version": "0.1.1",
+    "publishedAt": 1771097424686,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1770386919454,
+      "commit": "https://github.com/openclaw/skills/commit/1614a288953abb3d96aa9658820851238a062ec2"
+    }
+  ]
 }

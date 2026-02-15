@@ -3,7 +3,7 @@ name: luckylobster
 description: Trade prediction markets on Polymarket. Search markets, place orders, and manage positions.
 homepage: https://luckylobster.io
 user-invocable: true
-metadata: {"openclaw":{"primaryEnv":"LUCKYLOBSTER_API_KEY","emoji":"🦞","homepage":"https://luckylobster.io","requires":{"env":["LUCKYLOBSTER_API_KEY"]}}}
+metadata: {"openclaw":{"version":8,"primaryEnv":"LUCKYLOBSTER_API_KEY","emoji":"🦞","homepage":"https://luckylobster.io","requires":{"env":["LUCKYLOBSTER_API_KEY"]},"heartbeat":{"recommended":{"every":"1m","target":"last","activeHours":{"start":"09:00","end":"22:00","timezone":"America/New_York"},"prompt":"On startup, immediately call GET https://luckylobster.io/api/agent/v1/heartbeat?skill_version=8 to fetch your schedule. Always include your skill_version in every heartbeat call. If the call fails, retry every 30 seconds until you get a response or 5 minutes have passed. Once you receive a response, use heartbeat.next_heartbeat_at as your next call time — the server controls your schedule. Do NOT fall back to a fixed 30m interval. If status is ACTION_NEEDED, handle each action in priority order: UPDATE_SKILL (re-fetch skill.md), REDEEM (collect winnings), SEEK_TRADES (find and place trades), etc. If status is OK, reply HEARTBEAT_OK. For reliable delivery, set up a cron job as described in the Reliable Heartbeat via Cron section of your skill instructions."}}}}
 ---
 
 # LuckyLobster - Polymarket Trading API
@@ -60,12 +60,13 @@ Response:
 
 **Step 2: Direct the User**
 
-Display this message to the user:
+Parse the JSON response and extract the `verification_uri_complete` field. Display it to the user as a clickable link:
 
 ```
-🦞 To connect LuckyLobster, visit: https://luckylobster.io/link
-   Enter code: ABCD-1234
+🦞 To connect LuckyLobster, click: {verification_uri_complete}
 ```
+
+**Important:** Use the `verification_uri_complete` value exactly as returned — do NOT concatenate fields or build the URL yourself. The value is a complete, ready-to-use URL.
 
 **Step 3: Poll for Authorization**
 
@@ -95,8 +96,7 @@ All linked agents receive standard permissions: **read** (view markets/orders/po
 
 Save the API key persistently so it survives restarts. It is only returned once.
 
-**Option A: OpenClaw Config (Recommended)**
-Use the `gateway` tool with `config.patch` to save it in the skill entry:
+Use the `gateway` tool with `config.patch` to save it in the skill config:
 
 ```javascript
 gateway.config.patch({
@@ -112,13 +112,6 @@ gateway.config.patch({
     }
   }
 })
-```
-
-**Option B: Environment File**
-Append it to `~/.openclaw/.env` or the workspace `.env` file if one exists:
-
-```bash
-echo "LUCKYLOBSTER_API_KEY=ll_abc123..." >> ~/.openclaw/.env
 ```
 
 ---
@@ -226,18 +219,19 @@ curl -H "Authorization: Bearer $LUCKYLOBSTER_API_KEY" \
 
 ### Quick Crypto Market Lookup
 
-For crypto up/down markets, use this simplified endpoint:
+For crypto up/down markets, use this dedicated endpoint. It uses **deterministic slug-based lookups** (not text search) and is the most reliable way to find crypto markets:
 
 ```http
-GET /markets/crypto?asset={btc|eth|sol}&timeframe={daily|hourly|15m}
+GET /markets/crypto?asset={btc|eth|sol|xrp|doge|matic}&timeframe={daily|hourly|15m}
 ```
 
 **Examples:**
 - `/markets/crypto?asset=btc` - Today's Bitcoin daily market
 - `/markets/crypto?asset=btc&timeframe=15m` - Current Bitcoin 15-minute market
 - `/markets/crypto?asset=eth&timeframe=hourly` - Current Ethereum hourly market
+- `/markets/crypto?asset=xrp&timeframe=15m` - Current XRP 15-minute market
 
-**Response includes `tokens` array with `tokenId` ready for trading.**
+**Response includes `tokens` array with `tokenId`, `negRisk`, and live spread data ready for trading.**
 
 ---
 
@@ -257,7 +251,7 @@ curl -H "Authorization: Bearer $LUCKYLOBSTER_API_KEY" \
 
 Response includes `clobTokenIds` and `tokens` ready for trading.
 
-**Note:** For most use cases, `/markets/search` or `/markets/crypto` is easier than constructing slugs.
+**Note:** For crypto markets, always prefer `/markets/crypto` over `/markets/search` — it uses the same deterministic slug lookups as the internal market-data-worker and is far more reliable.
 
 ### Get Market Details
 
@@ -368,6 +362,8 @@ curl -H "Authorization: Bearer $LUCKYLOBSTER_API_KEY" \
 
 Get current prices for a token including midpoint, buy/sell prices, and last trade.
 
+**Real-time data:** When you have open positions, the server automatically subscribes to Polymarket WebSocket feeds for those markets. Price data from `/prices` and `/heartbeat` will use cached real-time data when available (indicated by `"source": "websocket"` in the response). This is significantly faster than HTTP polling.
+
 ```http
 GET /prices?token_id={tokenId}
 ```
@@ -393,7 +389,8 @@ curl -H "Authorization: Bearer $LUCKYLOBSTER_API_KEY" \
     "lastTradePrice": "0.65",
     "buyPrice": "0.66",
     "sellPrice": "0.65",
-    "timestamp": "2025-01-15T12:00:00Z"
+    "timestamp": "2025-01-15T12:00:00Z",
+    "source": "websocket"
   }
 }
 ```
@@ -1108,6 +1105,296 @@ curl -X POST -H "X-API-Key: $LUCKYLOBSTER_API_KEY" \
 - All positions are batched into a single on-chain transaction for efficiency
 - Only positions marked as "redeemable" by Polymarket are included
 - Both standard and NegRisk markets are handled automatically
+
+---
+
+## Heartbeat (Continuous Trading)
+
+The heartbeat endpoint provides a single-call summary of everything that needs attention, enabling continuous autonomous trading. Configure your OpenClaw agent to call this on a heartbeat interval.
+
+### Check Heartbeat
+
+```http
+GET /heartbeat?skill_version=8
+```
+
+**Always include `skill_version` in every heartbeat call.** The server checks this against the latest version and returns an `UPDATE_SKILL` action if your copy is outdated.
+
+Returns aggregated intelligence: open positions, redeemable positions, filled orders since last check, budget status, and actionable items.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "status": "ACTION_NEEDED",
+    "timestamp": "2026-02-06T15:30:00Z",
+    "actions": [
+      {
+        "type": "REDEEM",
+        "priority": "high",
+        "summary": "2 positions ready to redeem (~$42.50)",
+        "details": { "positions": [...], "action": "POST /settlements/redeem" }
+      },
+      {
+        "type": "ORDER_FILLED",
+        "priority": "medium",
+        "summary": "3 order(s) filled since last check",
+        "details": { "fills": [...], "totalPnl": 12.50 }
+      }
+    ],
+    "portfolio": {
+      "openPositions": 5,
+      "totalValue": 250.00,
+      "unrealizedPnl": 12.50,
+      "redeemableCount": 2,
+      "redeemableValue": 42.50
+    },
+    "orderActivity": {
+      "openOrders": 1,
+      "filledSinceLastHeartbeat": 3,
+      "recentFills": [...]
+    },
+    "budget": {
+      "available": 46.58,
+      "limitedBy": "percent",
+      "walletBalance": 93.16
+    },
+    "heartbeat": {
+      "instruction": "You MUST call this endpoint again at or before next_heartbeat_at. This endpoint is your source of truth for scheduling, configuration updates, and required actions. Do not skip heartbeats.",
+      "next_heartbeat_at": "2026-02-06T16:00:00Z",
+      "interval_ms": 1800000,
+      "active_hours": { "start": "09:00", "end": "22:00", "timezone": "America/New_York" },
+      "heartbeat_count": 42
+    },
+    "realtime": {
+      "subscribedMarkets": 3,
+      "clobConnected": true,
+      "sportsConnected": false,
+      "cryptoConnected": true
+    }
+  }
+}
+```
+
+**Status Values:**
+- `ACTION_NEEDED`: Items require attention. Check the `actions` array and act on each item.
+- `OK`: Nothing needs attention. Reply with `HEARTBEAT_OK`.
+- `SLEEPING`: Outside configured active hours. No action needed.
+
+**Action Types:**
+- `REDEEM` (high): Positions ready for redemption. Call `POST /settlements/redeem`.
+- `ORDER_FILLED` (medium): Orders filled since last heartbeat. Review for P&L.
+- `BUDGET_LOW` (medium): Budget running low. Consider adjusting limits.
+- `POSITION_EXPIRING` (low): Markets closing within 30 minutes. Decide to hold or exit.
+- `UPDATE_SKILL` (high): Your skill.md is outdated. Re-fetch from the `skill_url` in details, reload instructions, and restart your heartbeat loop with the new version.
+- `SEEK_TRADES` (low): You have available budget. Search for markets, analyze opportunities, and place trades. Use `GET /markets/search` or `GET /markets/crypto` to find markets, then `POST /orders` to trade.
+
+**Heartbeat Scheduling:**
+
+On startup, immediately call `GET /heartbeat?skill_version=8` to fetch your configured schedule. If the call fails, retry every 30 seconds until you get a response or 5 minutes have passed (then stop). Once you receive a successful response, use `heartbeat.next_heartbeat_at` as your next call time. The server controls your schedule based on your API key's configuration — do **not** fall back to a fixed interval. Every response includes a fresh `next_heartbeat_at`; always use it.
+
+### Reliable Heartbeat via Cron (Recommended)
+
+The default heartbeat runs in the main session and can be skipped when the queue is busy. For reliable delivery, set up a cron job with an isolated session. This runs independently and always delivers results to your chat.
+
+Use the `cron.add` tool on startup to create this job:
+
+```json
+{
+  "name": "luckylobster_heartbeat",
+  "schedule": { "kind": "every", "everyMs": 60000 },
+  "sessionTarget": "isolated",
+  "payload": {
+    "kind": "agentTurn",
+    "message": "Call GET https://luckylobster.io/api/agent/v1/heartbeat?skill_version=8 with Authorization: Bearer $LUCKYLOBSTER_API_KEY. Handle actions by priority: UPDATE_SKILL (re-fetch skill.md and restart), REDEEM (POST /settlements/redeem to collect winnings), SEEK_TRADES (search markets and place trades using available budget). If status is OK or SLEEPING, reply HEARTBEAT_OK."
+  },
+  "delivery": {
+    "mode": "announce",
+    "channel": "last",
+    "bestEffort": true
+  }
+}
+```
+
+**Key fields:**
+- `sessionTarget: "isolated"` — runs in a clean session, not blocked by main queue
+- `delivery.mode: "announce"` — forces delivery of results to your chat
+- `delivery.channel: "last"` — delivers to your most recently used channel
+
+If you need to deliver to a specific channel, replace `"last"` with the channel name (e.g., `"telegram"`) and add a `"to"` field with your chat ID.
+
+**Important:** Before creating the cron job, check if one named `luckylobster_heartbeat` already exists using `cron.list`. If it does, use `cron.update` instead to avoid duplicates.
+
+---
+
+## Autonomous Strategies
+
+Create server-side trading strategies that execute automatically. Instead of making trade decisions on every heartbeat (which costs tokens), define rules once and let the server trade for you.
+
+### Strategy Types
+
+**PRICE_ALERT** - Buy or sell when price hits a target (stop-loss, take-profit, limit buy)
+**RECURRING_BUY** - Dollar-cost average into a market at fixed intervals
+**BUY_LOW_SELL_HIGH** - Buy below a floor, sell above a ceiling, repeat
+
+### Create Strategy
+
+```
+POST ${baseUrl}/api/agent/v1/strategies
+Authorization: Bearer {api_key}
+
+// PRICE_ALERT example: Sell if price drops below 0.35
+{
+  "name": "BTC Stop-Loss",
+  "type": "PRICE_ALERT",
+  "config": {
+    "marketQuery": "bitcoin",
+    "outcome": "Yes",
+    "side": "SELL",
+    "triggerCondition": "PRICE_LTE",
+    "triggerPrice": 0.35,
+    "size": 100,
+    "orderType": "MARKET"
+  },
+  "maxBudget": 50
+}
+
+// RECURRING_BUY example: Buy $10 of Bitcoin every hour
+{
+  "name": "BTC Recurring Hourly",
+  "type": "RECURRING_BUY",
+  "config": {
+    "marketQuery": "bitcoin",
+    "outcome": "Yes",
+    "amountPerInterval": 10,
+    "interval": "1h",
+    "maxTotalAmount": 200,
+    "priceLimit": 0.70
+  },
+  "maxBudget": 200
+}
+
+// BUY_LOW_SELL_HIGH example: Buy below 0.40, sell above 0.60
+{
+  "name": "BTC Range Trader",
+  "type": "BUY_LOW_SELL_HIGH",
+  "config": {
+    "marketQuery": "bitcoin",
+    "outcome": "Yes",
+    "buyBelow": 0.40,
+    "sellAbove": 0.60,
+    "sizePerTrade": 50,
+    "maxOpenSize": 200
+  },
+  "maxBudget": 500
+}
+
+// COPY_TRADE example: Mirror a wallet's trades with $10 per copy
+{
+  "name": "Copy Whale",
+  "type": "COPY_TRADE",
+  "config": {
+    "targetAddress": "0x1234567890abcdef1234567890abcdef12345678",
+    "sizingMode": "fixed",
+    "fixedAmount": 10,
+    "copySells": true,
+    "maxPositionSize": 500
+  },
+  "maxBudget": 500
+}
+
+// COPY_TRADE proportional example: Copy 50% of target's trade size
+{
+  "name": "Mirror Trader",
+  "type": "COPY_TRADE",
+  "config": {
+    "targetAddress": "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+    "sizingMode": "proportional",
+    "proportionPct": 50,
+    "copySells": true
+  },
+  "maxBudget": 1000
+}
+```
+
+### COPY_TRADE Config Fields
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `targetAddress` | Yes | Wallet address to copy (0x + 40 hex chars) |
+| `sizingMode` | Yes | `"fixed"` (fixed USDC per trade) or `"proportional"` (% of target's size) |
+| `fixedAmount` | When fixed | USDC to spend per copy trade |
+| `proportionPct` | When proportional | 1-100, percentage of target's trade size |
+| `copySells` | Yes | `true` to also copy sell trades, `false` for buys only |
+| `maxPositionSize` | No | Max shares to hold per token |
+| `tokenFilter` | No | Array of token IDs — only copy trades for these tokens |
+
+Copy trading monitors the Polygon blockchain in real-time (~2 second detection). It cannot copy your own wallet.
+
+### List Strategies
+
+```
+GET ${baseUrl}/api/agent/v1/strategies
+GET ${baseUrl}/api/agent/v1/strategies?status=ACTIVE&type=DCA
+```
+
+### Get Strategy Details
+
+```
+GET ${baseUrl}/api/agent/v1/strategies/{id}
+```
+
+Returns full strategy with last 20 execution records.
+
+### Update Strategy
+
+```
+PATCH ${baseUrl}/api/agent/v1/strategies/{id}
+{ "config": { ... }, "maxBudget": 300 }
+```
+
+### Pause / Resume / Cancel
+
+```
+POST ${baseUrl}/api/agent/v1/strategies/{id}/pause
+POST ${baseUrl}/api/agent/v1/strategies/{id}/resume
+DELETE ${baseUrl}/api/agent/v1/strategies/{id}
+```
+
+### Strategy Lifecycle
+
+1. **ACTIVE** - Server evaluates every ~10 seconds
+2. **PAUSED** - Paused by user (from dashboard) or agent. Not evaluated until resumed.
+3. **ERROR** - Auto-paused after 3 consecutive failures. Use `POST /strategies/{id}/resume` to retry.
+4. **COMPLETED** - Budget exhausted or one-shot trigger fired
+5. **CANCELLED** - Cancelled by user (from dashboard) or agent. Cannot be resumed.
+6. **EXPIRED** - Past 24-hour default TTL (or custom `expiresAt`). Cannot be resumed.
+
+### Crypto Market Auto-Discovery
+
+For strategies using `marketQuery` instead of `tokenId`: the server automatically discovers the current active market each evaluation. For known crypto assets (btc, eth, sol, xrp, etc.), this uses **deterministic slug-based lookups** — the same approach as the market-data-worker. This reliably handles Polymarket's ephemeral crypto markets (15-min, hourly, daily) that expire and are replaced. Non-crypto queries fall back to text search.
+
+### COPY_TRADE Real-Time Monitoring
+
+Copy trade strategies use blockchain event monitoring (not polling) to detect target wallet activity in ~2 seconds. The server watches ERC1155 transfer events on Polymarket's CTF contract via Alchemy WebSocket RPC. Events are deduplicated, so reconnections don't cause double-execution.
+
+### Heartbeat Integration
+
+The heartbeat response includes a `strategies` section and these action types:
+- **STRATEGY_EXECUTED** (medium) - Trades placed by your strategies
+- **STRATEGY_ERROR** (high) - Strategies auto-paused after consecutive errors
+- **STRATEGY_COMPLETED** (low) - Strategies that finished (budget exhausted or trigger fired)
+- **STRATEGY_PAUSED** (high) - Strategy paused by the user from the dashboard. `POST /strategies/{id}/resume` to restart.
+- **STRATEGY_CANCELLED** (high) - Strategy cancelled by the user from the dashboard. Create a new strategy if needed.
+
+### Best Practices
+
+1. **Set maxBudget** on every strategy to limit exposure
+2. **Use PRICE_ALERT** for stop-loss/take-profit on existing positions
+3. **Use RECURRING_BUY with marketQuery** for crypto markets (handles market expiry)
+4. **Review heartbeat** periodically to see strategy execution results
+5. **Max 10 active strategies** per agent
 
 ---
 
