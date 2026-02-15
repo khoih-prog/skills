@@ -1,11 +1,17 @@
 {
   "owner": "thesmartape",
   "slug": "humannft",
-  "displayName": "Humannft",
+  "displayName": "HumanNFT",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1771002852494,
-    "commit": "https://github.com/openclaw/skills/commit/2a831ba37804b728977bef64cfc96edb4a6477a3"
+    "version": "1.0.0",
+    "publishedAt": 1771159802084,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1771002852494,
+      "commit": "https://github.com/openclaw/skills/commit/2a831ba37804b728977bef64cfc96edb4a6477a3"
+    }
+  ]
 }
