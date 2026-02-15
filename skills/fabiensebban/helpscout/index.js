@@ -1,6 +1,7 @@
 const { getCredentials } = require('./scripts/getCredentials');
 const { getToken } = require('./scripts/getToken');
 const { fetchConversations } = require('./scripts/fetchConversations');
+const { sendReply, createNote } = require('./scripts/sendReply');
 
 /**
  * Fetch conversations from all configured inboxes
@@ -19,5 +20,7 @@ module.exports = {
   getCredentials, 
   getToken, 
   fetchConversations,
-  fetchAllInboxes
+  fetchAllInboxes,
+  sendReply,
+  createNote
 };

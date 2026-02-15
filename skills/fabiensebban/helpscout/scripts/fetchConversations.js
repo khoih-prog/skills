@@ -1,48 +1,43 @@
 const fetch = require('node-fetch');
 const { getToken } = require('./getToken');
 
-/**
- * Fetch conversations from a specific inbox with optional filters
- * @param {number} inboxId - The mailbox ID to fetch conversations from
- * @param {Object} options - Optional query parameters
- * @param {string} options.status - Filter by status: active, pending, closed, spam, or all (default: active)
- * @param {number} options.folderId - Filter by folder ID
- * @param {number} options.assignedTo - Filter by user ID
- * @param {number} options.customerId - Filter by customer ID
- * @param {number} options.number - Filter by conversation number
- * @param {string} options.modifiedSince - ISO8601 date to filter conversations modified after this date
- * @param {string} options.sortField - Sort field: createdAt, mailboxId, modifiedAt, number, score, status, subject (default: createdAt)
- * @param {string} options.sortOrder - Sort order: asc or desc (default: desc)
- * @param {string} options.tag - Filter by tag name
- * @param {string} options.query - Advanced search query (fieldId:value format)
- * @param {string} options.embed - Comma-separated list of resources to embed: threads
- * @param {number} options.page - Page number (default: 1)
- * @returns {Promise<Object>} - The conversations data with pagination info
- */
-async function fetchConversations(inboxId, options = {}) {
+// Fetch conversations from a specific inbox
+async function fetchConversations({ inboxId = null,
+                                    status = null,
+                                    folderId = null,
+                                    assignedTo = null,
+                                    customerId = null,
+                                    number = null,
+                                    modifiedSince = null,
+                                    sortField = null,
+                                    sortOrder = null,
+                                    tag = null,
+                                    query = null,
+                                    page = null}) {
   const token = await getToken();
-  
-  // Build query string from options
-  const params = new URLSearchParams();
-  params.append('mailbox', inboxId);
-  
-  // Add all optional parameters if they exist
-  if (options.status) params.append('status', options.status);
-  if (options.folderId) params.append('folderId', options.folderId);
-  if (options.assignedTo) params.append('assignedTo', options.assignedTo);
-  if (options.customerId) params.append('customerId', options.customerId);
-  if (options.number) params.append('number', options.number);
-  if (options.modifiedSince) params.append('modifiedSince', options.modifiedSince);
-  if (options.sortField) params.append('sortField', options.sortField);
-  if (options.sortOrder) params.append('sortOrder', options.sortOrder);
-  if (options.tag) params.append('tag', options.tag);
-  if (options.query) params.append('query', options.query);
-  if (options.embed) params.append('embed', options.embed);
-  if (options.page) params.append('page', options.page);
+  const parameters = new URLSearchParams({
+    mailbox: inboxId,
+    status: status,
+    folderId: folderId,
+    assignedTo: assignedTo,
+    customerId: customerId,
+    number: number,
+    modifiedSince: modifiedSince,
+    sortField: sortField,
+    sortOrder: sortOrder,
+    tag: tag,
+    query: query,
+    page: page
+  });
 
-  const url = `https://api.helpscout.net/v2/conversations?${params.toString()}`;
-  
-  const response = await fetch(url, {
+  // Filter out null parameters
+  for (const [key, value] of parameters.entries()) {
+    if (value === null) {
+      parameters.delete(key);
+    }
+  }
+
+  const response = await fetch(`https://api.helpscout.net/v2/conversations?${parameters}`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`

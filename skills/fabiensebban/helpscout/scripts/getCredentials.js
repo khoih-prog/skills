@@ -1,8 +1,10 @@
-// Loads Helpscout API credentials securely from environment variables
+const config = require('openclaw-config');
+
+// Loads Helpscout API credentials securely
 function getCredentials() {
-  const apiKey = process.env.API_KEY;
-  const appSecret = process.env.APP_SECRET;
-  const inboxIds = process.env.INBOX_IDS ? JSON.parse(process.env.INBOX_IDS) : null;
+  const apiKey = config.get("helpscout.API_KEY");
+  const appSecret = config.get("helpscout.APP_SECRET");
+  const inboxIds = config.get("helpscout.INBOX_IDS");
 
   if (!apiKey || !appSecret || !Array.isArray(inboxIds) || inboxIds.length === 0) {
     throw new Error("Invalid Helpscout credentials. Please configure your API key, app secret, and at least one Inbox ID using the OpenClaw config system.");
