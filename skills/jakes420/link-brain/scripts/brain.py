@@ -60,9 +60,9 @@ Commands:
   help         Show help organized by use case
 """
 
-VERSION = "4.2.0"
+VERSION = "4.3.0"
 
-WHATS_NEW = "Interactive GUI console with search, tag cloud, knowledge graph, reading timeline"
+WHATS_NEW = "Quickstart: auto-detects browser bookmarks and imports them in one shot. Zero-config first run."
 
 import argparse
 import csv
@@ -3072,31 +3072,156 @@ def cmd_import(args):
                       "skipped_duplicates": skipped, "imported_ids": imported_ids}, indent=2))
 
 
+def _detect_browsers():
+    """Detect available browser bookmarks without importing. Returns list of (name, count, path)."""
+    results = []
+    parsers = [
+        ("Chrome", _parse_chrome_bookmarks),
+        ("Safari", _parse_safari_bookmarks),
+        ("Firefox", _parse_firefox_bookmarks),
+    ]
+    for name, parser_fn in parsers:
+        try:
+            bookmarks, path = parser_fn()
+            if bookmarks and len(bookmarks) > 0:
+                results.append((name.lower(), len(bookmarks), path))
+        except Exception:
+            pass
+    return results
+
+
+def cmd_quickstart(args):
+    """All-in-one first run: setup + detect browsers + import all + generate GUI."""
+    db = get_db()
+
+    total_imported = 0
+    total_skipped = 0
+    sources_imported = []
+
+    parsers = [
+        ("chrome", _parse_chrome_bookmarks),
+        ("safari", _parse_safari_bookmarks),
+        ("firefox", _parse_firefox_bookmarks),
+    ]
+
+    for source_name, parser_fn in parsers:
+        try:
+            bookmarks, path = parser_fn()
+            if bookmarks and len(bookmarks) > 0:
+                imported, skipped, ids = bulk_insert_links(db, bookmarks, source_name)
+                total_imported += imported
+                total_skipped += skipped
+                sources_imported.append({
+                    "name": source_name,
+                    "found": len(bookmarks),
+                    "imported": imported,
+                    "skipped": skipped,
+                    "path": path,
+                })
+        except Exception:
+            pass
+
+    total_links = db.execute("SELECT COUNT(*) as n FROM links").fetchone()["n"]
+    tag_count = db.execute("SELECT COUNT(*) as n FROM tags").fetchone()["n"]
+    unread = db.execute("SELECT COUNT(*) as n FROM links WHERE is_read = 0 OR is_read IS NULL").fetchone()["n"]
+
+    result = {
+        "status": "ok",
+        "sources_imported": sources_imported,
+        "total_imported": total_imported,
+        "total_skipped": total_skipped,
+        "total_links": total_links,
+        "total_tags": tag_count,
+        "unread": unread,
+        "data_dir": str(DB_DIR),
+    }
+
+    # Generate GUI console if we have links
+    if total_links > 0:
+        try:
+            class GuiArgs:
+                no_open = True
+            # Suppress gui output by capturing it
+            import io
+            old_stdout = sys.stdout
+            sys.stdout = io.StringIO()
+            cmd_gui(GuiArgs())
+            sys.stdout = old_stdout
+            result["gui_path"] = str(DB_DIR / "console.html")
+        except Exception:
+            sys.stdout = old_stdout if 'old_stdout' in dir() else sys.stdout
+
+    # Show milestones
+    if total_imported > 0:
+        milestones = track_activity(db, "save")
+        if milestones:
+            result["milestones"] = milestones
+
+    print(json.dumps(result, indent=2))
+
+
 def cmd_setup(args):
     DB_DIR.mkdir(parents=True, exist_ok=True)
     already_existed = DB_PATH.exists()
-    get_db()
+    db = get_db()
+
+    # Detect available browser bookmarks
+    browsers = _detect_browsers()
+
     if already_existed:
+        total = db.execute("SELECT COUNT(*) as n FROM links").fetchone()["n"]
+        result = {
+            "status": "already_setup",
+            "version": VERSION,
+            "data_dir": str(DB_DIR),
+            "total_links": total,
+        }
+        if browsers:
+            result["browsers_detected"] = [
+                {"name": n, "count": c, "path": p} for n, c, p in browsers
+            ]
+        # Also print human-readable
         print(f"🧠 {_bold('Link Brain')} v{VERSION}")
         print(f"   Data: {DB_DIR}")
-        print(f"   {_green('Already set up. You are good to go.')}")
+        print(f"   Links: {total}")
+        if browsers:
+            print()
+            print(f"   {_bold('Bookmarks available to import:')}")
+            for name, count, _ in browsers:
+                print(f"   - {name}: {_bold(str(count))} bookmarks")
+            print(f"   Run: brain.py quickstart (imports everything automatically)")
+        print(f"   {_green('Ready to go.')}")
     else:
+        result = {
+            "status": "created",
+            "version": VERSION,
+            "data_dir": str(DB_DIR),
+        }
         print(f"🧠 {_bold('Link Brain')} v{VERSION}")
         print()
         print("Your personal knowledge base for links.")
         print()
         print(f"   {_green('Created')} {DB_DIR}")
-        print()
-        print(f"{_bold('Get started:')}")
-        print()
-        print(f"  {_cyan('1.')} Save your first link:")
-        print(f'     brain.py save "https://example.com" --title "Cool article" --tags "tech"')
-        print()
-        print(f"  {_cyan('2.')} Auto-save (fetches and summarizes for you):")
-        print(f'     brain.py auto-save "https://example.com"')
-        print()
-        print(f"  {_cyan('3.')} Import your bookmarks:")
-        print(f"     brain.py scan chrome")
+
+        if browsers:
+            total_bm = sum(c for _, c, _ in browsers)
+            result["browsers_detected"] = [
+                {"name": n, "count": c, "path": p} for n, c, p in browsers
+            ]
+            print()
+            print(f"{_bold(f'Found {total_bm} bookmarks on your machine:')}")
+            for name, count, _ in browsers:
+                print(f"   {name}: {_bold(str(count))} bookmarks")
+            print()
+            print(f"  {_cyan('brain.py quickstart')}    Import everything and open the visual console")
+            print(f"  {_cyan('brain.py scan chrome')}   Import just Chrome")
+        else:
+            print()
+            print(f"{_bold('Get started:')}")
+            print()
+            print(f"  {_cyan('brain.py save <url> --auto')}    Save and auto-summarize a link")
+            print(f"  {_cyan('brain.py scan chrome')}          Import browser bookmarks")
+
         print()
         print(f"Run {_cyan('brain.py help')} to see everything you can do.")
 
@@ -3872,7 +3997,7 @@ tl.innerHTML = DATA.timeline.map(d => {
 // Recent
 const recentList = document.getElementById('recent-list');
 if (DATA.recent.length === 0) {
-  recentList.innerHTML = '<div class="empty-state"><div class="emoji-big">\\uD83E\\uDDE0</div>Your brain is empty. Save your first link:<br><code>brain.py save &lt;url&gt;</code></div>';
+  recentList.innerHTML = '<div class="empty-state"><div class="emoji-big">\\uD83E\\uDDE0</div>Your brain is empty.<br>Run <code>brain.py quickstart</code> to import your browser bookmarks instantly.<br>Or save a link: <code>brain.py save &lt;url&gt; --auto</code></div>';
 } else {
   recentList.innerHTML = DATA.recent.map(linkCard).join('');
 }
@@ -3883,6 +4008,10 @@ if (DATA.recent.length === 0) {
 
 def cmd_help(args):
     print(f"🧠 {_bold('Link Brain')} v{VERSION}")
+    print()
+    print(f"{_bold('🚀 Get started')}")
+    print(f"  {_cyan('quickstart')}               Auto-import all browser bookmarks + open GUI")
+    print(f"  {_cyan('setup')}                    First-time setup (detects your browsers)")
     print()
     print(f"{_bold('📥 Save stuff')}")
     print(f"  {_cyan('save')} <url>              Save a URL (add --title, --summary, --tags)")
@@ -3954,6 +4083,7 @@ def main():
     sub = parser.add_subparsers(dest="command")
 
     sub.add_parser("setup")
+    sub.add_parser("quickstart")
     sub.add_parser("help")
 
     # save
@@ -4109,7 +4239,7 @@ def main():
         return
 
     commands = {
-        "setup": cmd_setup, "help": cmd_help,
+        "setup": cmd_setup, "quickstart": cmd_quickstart, "help": cmd_help,
         "save": cmd_save, "auto-save": cmd_auto_save,
         "search": cmd_search, "recent": cmd_recent,
         "tags": cmd_tags, "get": cmd_get, "delete": cmd_delete,
