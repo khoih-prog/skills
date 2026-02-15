@@ -21,14 +21,19 @@ Scans your installed skills for suspicious patterns, verifies them against Virus
 Run the cleaner to automatically verify and allowlist suspicious skills:
 
 ```bash
-# Clean all skills
-node ./skills/skill-cleaner/scripts/clean.js
+# Dry run (safe, just shows what would happen)
+npx tsx ./skills/skill-cleaner/scripts/clean.ts
+
+# Commit clean results to safety allowlist
+npx tsx ./skills/skill-cleaner/scripts/clean.ts --commit
 ```
 
-## How it works
+## Security Disclosure
 
-1. Runs the internal OpenClaw `skill-scanner`.
-2. For every flagged file, it calculates the SHA256 hash.
-3. Checks the hash on VirusTotal.
-4. If VirusTotal reports 0 detections, the file hash is added to `~/.openclaw/security/safety-allowlist.json`.
-5. Future scans will skip these verified files.
+This skill requires high-privilege access to function as a security utility:
+
+- **Persistence**: Writes to `~/.openclaw/security/safety-allowlist.json`. This is required to remember verified safe files so they aren't flagged in future scans.
+- **Privilege**: Requires `VIRUSTOTAL_API_KEY` to perform reputation lookups.
+- **Verification**: The script performs a **Live Scan** of your `skills/` directory using the internal OpenClaw security module.
+
+**Audit Guidance**: If you see "Persistence & Privilege" warnings on the Hub, this is expected behavior for a security management tool. Always run in dry-run mode first to inspect planned changes.
