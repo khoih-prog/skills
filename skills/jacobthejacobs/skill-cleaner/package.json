@@ -1,0 +1,18 @@
+{
+  "name": "skill-cleaner",
+  "version": "2.1.0",
+  "description": "Automatically verify suspicious skills via VirusTotal and add them to safety allowlist.",
+  "keywords": ["security", "virus-total", "trust", "cleaner"],
+  "scripts": {
+    "start": "node --import tsx scripts/clean.ts"
+  },
+  "dependencies": {
+    "tsx": "^4.21.0"
+  },
+  "openclaw": {
+    "requires": {
+      "env": ["VIRUSTOTAL_API_KEY"]
+    },
+    "category": "security"
+  }
+}

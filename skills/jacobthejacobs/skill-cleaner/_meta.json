@@ -1,13 +1,18 @@
 {
   "owner": "jacobthejacobs",
   "slug": "skill-cleaner",
-  "displayName": "skill-cleaner",
+  "displayName": "Skill Cleaner",
   "latest": {
-    "version": "1.0.4",
-    "publishedAt": 1771192439337,
-    "commit": "https://github.com/openclaw/skills/commit/738265be9911d9551bf6dbcbdebc38cbdaad1c23"
+    "version": "2.1.0",
+    "publishedAt": 1771195809595,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.4",
+      "publishedAt": 1771192439337,
+      "commit": "https://github.com/openclaw/skills/commit/738265be9911d9551bf6dbcbdebc38cbdaad1c23"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1771191855074,
