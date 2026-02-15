@@ -1,0 +1,11 @@
+{
+  "owner": "castanley",
+  "slug": "grok",
+  "displayName": "xAI Grok Search",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1771140440493,
+    "commit": null
+  },
+  "history": []
+}
