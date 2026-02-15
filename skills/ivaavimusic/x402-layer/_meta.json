@@ -1,13 +1,18 @@
 {
   "owner": "ivaavimusic",
   "slug": "x402-layer",
-  "displayName": "x402 Singularity Layer",
+  "displayName": "X402 Layer",
   "latest": {
-    "version": "1.1.1",
-    "publishedAt": 1771097168959,
-    "commit": "https://github.com/openclaw/skills/commit/c1a11f7d27f1d0ad48b485203636a7feaf79d600"
+    "version": "1.1.2",
+    "publishedAt": 1771143071918,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.1.1",
+      "publishedAt": 1771097168959,
+      "commit": "https://github.com/openclaw/skills/commit/c1a11f7d27f1d0ad48b485203636a7feaf79d600"
+    },
     {
       "version": "1.0.1",
       "publishedAt": 1769772508801,
