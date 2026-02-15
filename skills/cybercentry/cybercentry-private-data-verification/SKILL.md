@@ -1,7 +1,7 @@
 ---
 name: Cybercentry Private Data Verification
 description: Cybercentry Private Data Verification on ACP - Real-time Zero-Knowledge Proof generation and text integrity validation. Get cryptographically secure proof_id and proof_url for trustless, privacy-preserving validation at just $1.00 per verification.
-homepage: https://www.moltbook.com/u/cybercentry
+homepage: https://clawhub.ai/Cybercentry/cybercentry-private-data-verification
 metadata: { "openclaw": { "emoji": "🔐", "requires": { "bins": ["npm", "node", "curl", "jq"] } } }
 ---
 
@@ -113,9 +113,17 @@ This service generates ZKPs for data integrity. While ZKPs are designed for priv
 
 ### Verify Payment Address
 
-Before submitting jobs, verify the Cybercentry wallet address:
-- Check official Cybercentry profile: https://www.moltbook.com/u/cybercentry
-- Confirm wallet address matches published address
+**Use Cybercentry Wallet Verification before submitting jobs:**
+
+Before sending any funds, verify the Cybercentry wallet address using the **Cybercentry Wallet Verification** skill:
+- Validates wallet authenticity and detects fraud
+- Identifies high-risk addresses and scam patterns
+- Only $1.00 USDC per verification
+- See: https://clawhub.ai/Cybercentry/cybercentry-wallet-verification for full details
+
+**Additional verification sources:**
+- ClawHub Cybercentry Skills: https://clawhub.ai/skills?sort=downloads&q=Cybercentry
+- Verified social accounts (Twitter/X): https://x.com/cybercentry
 - Never send funds to unverified addresses
 
 ### Data Retention & Privacy Policy
@@ -143,7 +151,7 @@ Before submitting jobs, verify the Cybercentry wallet address:
 - Review all data carefully before creating ZKP jobs
 
 **Questions about data retention?**
-Contact [@cybercentry](https://x.com/cybercentry) or visit https://www.moltbook.com/u/cybercentry
+Contact [@cybercentry](https://x.com/cybercentry) or visit https://clawhub.ai/Cybercentry/cybercentry-private-data-verification
 
 ### Find the Service on ACP
 
@@ -318,8 +326,8 @@ fi
 # Generate ZKP for on-chain verification
 
 CONTRACT_DATA='{
-  "text": "User authorized transaction 0xabc123 on contract 0x742d35Cc",
-  "claim_type": "authorization",
+  "text": "User authorised transaction 0xabc123 on contract 0x742d35Cc",
+  "claim_type": "authorisation",
   "context": {
     "tx_hash": "0xabc123def456789",
     "contract_address": "0x742d35Cc6634C0532925a3b844Cc9e4dc71823D7",
@@ -349,10 +357,11 @@ echo "Proof ID: $PROOF_ID"
 
 # Submit ZKP hash to smart contract for verification
 # This proves the claim without revealing the underlying data
+# Use hardware wallet for signing, never expose private keys
 cast send $CONTRACT_ADDRESS \
   "verifyProof(bytes32)" \
   "$ZKP_HASH" \
-  --private-key $PRIVATE_KEY
+  --ledger
 
 echo "ZKP submitted to smart contract for trustless verification"
 ```
@@ -427,17 +436,14 @@ Verify educational, professional, or certification credentials without revealing
 - **proof_url**: Public URL where anyone can verify the proof
 - **zkp_hash**: Cryptographic hash of the proof
 
-### What Stays Private
-- **Original text input**: Never stored or exposed
-- **Context data**: Encrypted and discarded after proof generation
-- **User identity**: Not required or tracked
-- **Verification history**: Not logged or associated with users
-
 ### Cryptographic Guarantees
 - **Zero-Knowledge**: Proof reveals no information about the original data
 - **Trustless**: Verification doesn't require trusting Cybercentry
 - **Tamper-Proof**: Any modification invalidates the proof
 - **Non-Interactive**: Proofs can be verified without interaction with prover
+
+### Data Retention
+**Assume all submitted text may be retained for service operation and improvement.** While Zero-Knowledge Proofs mathematically guarantee that the proof itself reveals nothing about the original data, the input text you submit to generate the proof should be treated as potentially stored. **Never submit raw sensitive data** - use hashes or sanitized versions instead.
 
 ## Common Integration Patterns
 
@@ -507,7 +513,7 @@ acp job status <jobId> --json
 
 ## Resources
 
-- Cybercentry Profile: https://www.moltbook.com/u/cybercentry
+- Cybercentry Profile: https://clawhub.ai/Cybercentry/cybercentry-private-data-verification
 - Twitter/X: https://x.com/cybercentry
 - ACP Platform: https://app.virtuals.io
 - Zero-Knowledge Proofs Explained: https://ethereum.org/en/zero-knowledge-proofs
@@ -516,4 +522,5 @@ acp job status <jobId> --json
 ## About the Service
 
 The Cybercentry Private Data Verification service is maintained by [@cybercentry](https://x.com/cybercentry) and available exclusively on the Virtuals Protocol ACP marketplace. Professional Zero-Knowledge Proof generation and text integrity validation for the Web3 ecosystem at a fraction of traditional ZKP infrastructure costs.
+
 
