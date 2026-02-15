@@ -10,7 +10,9 @@ Long-term memory via ChromaDB with local Ollama embeddings. Auto-recall injects 
 
 **v1.1.1** adds error surfacing — if ChromaDB is unreachable or the collection is missing, the agent now sees a warning in its context instead of silent failure.
 
-**To upgrade:** Update the plugin files and optionally add `collectionName` to your config (default: `longterm_memory`). The `collectionId` field is no longer required.
+**v1.2.0** adds hybrid search — combines vector similarity with keyword matching for much better proper noun recall (names, places, specific terms).
+
+**To upgrade:** Update the plugin files and add `collectionName` to your config (default: `longterm_memory`). The `collectionId` field is no longer required.
 
 ## Setup
 
@@ -56,8 +58,16 @@ Long-term memory via ChromaDB with local Ollama embeddings. Auto-recall injects 
 - **Name-based resolution**: Collection UUID auto-resolved from name (v1.1.0+)
 - **Error surfacing**: Agent sees warnings when ChromaDB is unavailable (v1.1.1+)
 - **Self-healing**: Cached collection ID auto-invalidates on failure and re-resolves
+- **Hybrid search**: Vector + keyword matching for better proper noun recall (v1.2.0+)
 
 ## Changelog
+
+### v1.2.0
+- **Hybrid search**: Combines vector similarity with keyword matching for better proper noun recall
+- Extracts capitalized words and quoted phrases from queries as keywords
+- Runs parallel vector + `$contains` keyword-filtered queries, merges and deduplicates results
+- Score boosts: +0.1 for results found by both methods, +0.05 for keyword-only matches
+- Significantly improves recall for names, places, and specific terms that embeddings struggle with
 
 ### v1.1.1
 - Auto-recall failures now surface as warnings in agent context (no more silent memory loss)
