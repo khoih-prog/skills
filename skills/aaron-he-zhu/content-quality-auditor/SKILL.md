@@ -1,12 +1,56 @@
 ---
 name: content-quality-auditor
-description: Runs a full CORE-EEAT 80-item content quality audit, scoring content across 8 dimensions with weighted scoring by content type. Produces a detailed report with per-item scores, dimension analysis, and a prioritized action plan.
-geo-relevance: "high"
+description: 'Use when the user asks to "audit content quality", "EEAT score", "content quality check", "CORE-EEAT audit", "how good is my content", "is my content good enough to rank", "EEAT check", or "rate my content quality". Runs a full CORE-EEAT 80-item content quality audit, scoring content across 8 dimensions with weighted scoring by content type. Produces a detailed report with per-item scores, dimension analysis, and a prioritized action plan. For SEO-specific page checks, see on-page-seo-auditor. For domain-level assessment, see domain-authority-auditor.'
+license: Apache-2.0
+metadata:
+  author: aaron-he-zhu
+  version: "2.0.0"
+  geo-relevance: "high"
+  tags:
+    - seo
+    - geo
+    - content audit
+    - eeat
+    - content quality
+    - content scoring
+    - quality assessment
+    - expertise
+    - authority
+    - trust
+  triggers:
+    - "audit content quality"
+    - "EEAT score"
+    - "content quality check"
+    - "CORE-EEAT audit"
+    - "how good is my content"
+    - "content assessment"
+    - "quality score"
+    - "is my content good enough to rank"
+    - "EEAT check"
+    - "rate my content quality"
 ---
 
 # Content Quality Auditor
 
 > Based on [CORE-EEAT Content Benchmark](https://github.com/aaron-he-zhu/core-eeat-content-benchmark). Full benchmark reference: [references/core-eeat-benchmark.md](../../references/core-eeat-benchmark.md)
+
+
+> **[SEO & GEO Skills Library](https://skills.sh/aaron-he-zhu/seo-geo-claude-skills)** · 20 skills for SEO + GEO · Install all: `npx skills add aaron-he-zhu/seo-geo-claude-skills`
+
+<details>
+<summary>Browse all 20 skills</summary>
+
+**Research** · [keyword-research](../../research/keyword-research/) · [competitor-analysis](../../research/competitor-analysis/) · [serp-analysis](../../research/serp-analysis/) · [content-gap-analysis](../../research/content-gap-analysis/)
+
+**Build** · [seo-content-writer](../../build/seo-content-writer/) · [geo-content-optimizer](../../build/geo-content-optimizer/) · [meta-tags-optimizer](../../build/meta-tags-optimizer/) · [schema-markup-generator](../../build/schema-markup-generator/)
+
+**Optimize** · [on-page-seo-auditor](../../optimize/on-page-seo-auditor/) · [technical-seo-checker](../../optimize/technical-seo-checker/) · [internal-linking-optimizer](../../optimize/internal-linking-optimizer/) · [content-refresher](../../optimize/content-refresher/)
+
+**Monitor** · [rank-tracker](../../monitor/rank-tracker/) · [backlink-analyzer](../../monitor/backlink-analyzer/) · [performance-reporter](../../monitor/performance-reporter/) · [alert-manager](../../monitor/alert-manager/)
+
+**Cross-cutting** · **content-quality-auditor** · [domain-authority-auditor](../domain-authority-auditor/) · [entity-optimizer](../entity-optimizer/) · [memory-management](../memory-management/)
+
+</details>
 
 This skill evaluates content quality across 80 standardized criteria organized in 8 dimensions. It produces a comprehensive audit report with per-item scoring, dimension and system scores, weighted totals by content type, and a prioritized action plan.
 

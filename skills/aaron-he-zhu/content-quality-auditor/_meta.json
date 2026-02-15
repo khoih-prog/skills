@@ -3,11 +3,16 @@
   "slug": "content-quality-auditor",
   "displayName": "Content Quality Auditor",
   "latest": {
-    "version": "0.1.2",
-    "publishedAt": 1770824051343,
-    "commit": "https://github.com/openclaw/skills/commit/9397ebca3e9ee97ea7f4267f11dc69f508b996ed"
+    "version": "2.0.0",
+    "publishedAt": 1771042696015,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.2",
+      "publishedAt": 1770824051343,
+      "commit": "https://github.com/openclaw/skills/commit/9397ebca3e9ee97ea7f4267f11dc69f508b996ed"
+    },
     {
       "version": "0.1.1",
       "publishedAt": 1770739370213,
