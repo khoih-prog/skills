@@ -1,11 +1,17 @@
 {
   "owner": "lstpsche",
   "slug": "briefing",
-  "displayName": "Briefing",
+  "displayName": "Briefing (Calendar Agenda, Weather, Pending To-Dos)",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1770767518149,
-    "commit": "https://github.com/openclaw/skills/commit/288d966efdffef872c265f3abbbafebc2dcd8b51"
+    "version": "2.1.0",
+    "publishedAt": 1771080012958,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1770767518149,
+      "commit": "https://github.com/openclaw/skills/commit/288d966efdffef872c265f3abbbafebc2dcd8b51"
+    }
+  ]
 }
