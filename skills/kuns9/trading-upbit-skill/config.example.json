@@ -1,0 +1,58 @@
+{
+  "upbit": {
+    "accessKey": "YOUR_UPBIT_ACCESS_KEY",
+    "secretKey": "YOUR_UPBIT_SECRET_KEY"
+  },
+
+  "trading": {
+    "watchlist": ["KRW-BTC", "KRW-ETH", "KRW-SOL"],
+    "monitorHoldings": true,
+
+    "scanUniverse": "watchlist",
+    "excludeMarkets": ["KRW-USDT"],
+
+    "topVolume": {
+      "enabled": true,
+      "quote": "KRW",
+      "topN": 10,
+      "metric": "acc_trade_price_24h",
+      "refreshMs": 900000
+    },
+
+    "volatilityBreakout": { "k": 0.5 },
+
+    "breakoutNearThreshold": 0.98,
+    "emitWatchEvents": false,
+
+    "maxPositions": 5,
+
+    "aggressive": {
+      "enabled": true,
+
+      "entryNearThreshold": 0.99,
+      "momentumCandles": 3,
+      "momentumBullMin": 2,
+
+      "takeProfitHard": 0.03,
+      "trailingActivateAt": 0.01,
+      "trailingStop": 0.01,
+      "stopLoss": -0.02
+    },
+
+    "budgetPolicy": {
+      "mode": "balance_pct_split",
+      "pct": 0.3,
+      "reserveKRW": 0,
+      "minOrderKRW": 5000,
+      "roundToKRW": 1000
+    }
+  },
+
+  "execution": {
+    "dryRun": true
+  },
+
+  "logging": {
+    "level": "info"
+  }
+}

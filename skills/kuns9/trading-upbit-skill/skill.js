@@ -1,178 +1,100 @@
 #!/usr/bin/env node
-'use strict';
-
-require('dotenv').config();
-
 /**
- * CLI Entrypoint (skill.js)
- * OpenClaw exec-only entry. Outputs exactly ONE JSON line.
+ * OpenClaw entrypoint (skill.js)
+ *
+ * Commands:
+ *   node skill.js monitor_once
+ *   node skill.js monitor_loop
+ *   node skill.js worker_once
+ *   node skill.js worker_loop
+ *   node skill.js smoke_test
+ *
+ * Config:
+ *   - requires ./config.json (see config.example.json)
  */
 
-const { monitorOnce } = require('./handlers/monitorOnce');
-const ExecutionAdapter = require('./adapters/execution');
+const { Logger } = require('./scripts/execution/upbitClient');
+const { loadConfig } = require('./scripts/config');
+const { ensureResources } = require('./scripts/state/resources');
 
-function writeJson(obj) {
-  process.stdout.write(JSON.stringify(obj) + '\n');
+function printHelp() {
+  console.log(`Usage: node skill.js <command>
+
+Commands:
+  monitor_once   Run market scan + position check once (recommended for cron)
+  monitor_loop   Run monitor loop (local/dev)
+  worker_once    Process events once (recommended for cron)
+  worker_loop    Run worker loop (local/dev)
+  smoke_test     Validate config + hit public endpoints (no trading)
+
+Files:
+  config.json          required (do not commit)
+  config.example.json  template
+
+Examples:
+  node skill.js smoke_test
+  node skill.js monitor_once
+  node skill.js worker_once
+`);
+}
+
+async function smokeTest() {
+  const cfg = loadConfig();
+  const marketData = require('./scripts/data/marketData');
+
+  Logger.info(`[smoke_test] watchlist=${cfg.trading.watchlist.join(',')}`);
+  const tickers = await marketData.getTickers(cfg.trading.watchlist);
+  for (const t of tickers) {
+    Logger.info(`[ticker] ${t.market} ${t.trade_price}`);
+  }
+  Logger.info('[smoke_test] OK');
 }
 
 async function main() {
-  const args = process.argv.slice(2);
-  const command = args[0] || 'help';
-  const arg1 = args[1];
-
-  const clawTools = global.tools || (typeof tools !== 'undefined' ? tools : null);
+  const cmd = process.argv[2];
+  if (!cmd || cmd === '-h' || cmd === '--help') {
+    printHelp();
+    process.exit(0);
+  }
 
   try {
-    if (command === 'help') {
-      writeJson({
-        ok: true,
-        commands: ['monitor_once', 'price', 'holdings', 'assets', 'help'],
-        description: 'OpenClaw Upbit Trading Bot (A-Plan)',
-      });
+    // Validate config early
+    loadConfig();
+
+    // Ensure local state stores exist (resources/events.json, resources/positions.json)
+    await ensureResources();
+
+    if (cmd === 'monitor_once') {
+      const { monitorOnce } = require('./scripts/workers/monitor');
+      await monitorOnce();
+      return;
+    }
+    if (cmd === 'monitor_loop') {
+      const { monitorLoop } = require('./scripts/workers/monitor');
+      monitorLoop();
+      return;
+    }
+    if (cmd === 'worker_once') {
+      const { workerOnce } = require('./scripts/workers/eventWorker');
+      await workerOnce();
+      return;
+    }
+    if (cmd === 'worker_loop') {
+      const { workerLoop } = require('./scripts/workers/eventWorker');
+      workerLoop();
+      return;
+    }
+    if (cmd === 'smoke_test') {
+      await smokeTest();
       return;
     }
 
-    if (!clawTools) {
-      writeJson({
-        ok: false,
-        runId: null,
-        errors: [{ code: 'NO_TOOLS', message: 'OpenClaw Tools not found in environment.' }],
-      });
-      process.exitCode = 1;
-      return;
-    }
-
-    const adapter = new ExecutionAdapter(clawTools);
-
-    if (command === 'monitor_once') {
-      const result = await monitorOnce({ tools: clawTools });
-      writeJson(result);
-      process.exitCode = result.ok ? 0 : 1;
-      return;
-    }
-
-    if (command === 'price') {
-      const market = (arg1 || 'KRW-BTC').trim();
-      const tickers = await adapter.getTickers([market]);
-      const t = Array.isArray(tickers) ? tickers.find(x => x && x.market === market) : null;
-      const price = t ? Number(t.trade_price) : NaN;
-
-      if (!Number.isFinite(price)) {
-        writeJson({
-          ok: false,
-          market,
-          errors: [{ code: 'NO_PRICE', message: `No price available for ${market}` }],
-        });
-        process.exitCode = 1;
-        return;
-      }
-
-      writeJson({ ok: true, market, price, ts: Date.now(), errors: [] });
-      process.exitCode = 0;
-      return;
-    }
-
-    if (command === 'holdings') {
-      const accounts = await adapter.getAccounts();
-      const list = Array.isArray(accounts) ? accounts : [];
-
-      const holdings = list
-        .map(a => {
-          const currency = a?.currency;
-          const balance = Number(a?.balance || 0);
-          const locked = Number(a?.locked || 0);
-          const total = balance + locked;
-          const unit_currency = a?.unit_currency;
-          const avg_buy_price = a?.avg_buy_price != null ? Number(a.avg_buy_price) : null;
-          const market = (currency && currency !== 'KRW') ? `KRW-${currency}` : null;
-          return { currency, balance, locked, total, avg_buy_price, unit_currency, market };
-        })
-        .filter(h => h.currency && h.currency !== 'KRW' && Number.isFinite(h.total) && h.total > 0);
-
-      writeJson({ ok: true, ts: Date.now(), holdings, count: holdings.length, errors: [] });
-      process.exitCode = 0;
-      return;
-    }
-
-    if (command === 'assets') {
-      const accounts = await adapter.getAccounts();
-      const list = Array.isArray(accounts) ? accounts : [];
-
-      let krw = 0;
-      const coins = [];
-      for (const a of list) {
-        const currency = a?.currency;
-        const balance = Number(a?.balance || 0);
-        const locked = Number(a?.locked || 0);
-        const total = balance + locked;
-        if (!currency || !Number.isFinite(total) || total <= 0) continue;
-
-        if (currency === 'KRW') {
-          krw += total;
-          continue;
-        }
-
-        coins.push({
-          currency,
-          total,
-          avg_buy_price: a?.avg_buy_price != null ? Number(a.avg_buy_price) : null,
-          market: `KRW-${currency}`,
-        });
-      }
-
-      const markets = coins.map(c => c.market);
-      const tickers = markets.length ? await adapter.getTickers(markets) : [];
-      const priceMap = {};
-      if (Array.isArray(tickers)) {
-        for (const t of tickers) {
-          if (t?.market) priceMap[t.market] = Number(t.trade_price);
-        }
-      }
-
-      let coinsValueKrw = 0;
-      const priced = [];
-      const unpriced = [];
-
-      for (const c of coins) {
-        const p = priceMap[c.market];
-        if (Number.isFinite(p)) {
-          const v = c.total * p;
-          coinsValueKrw += v;
-          priced.push({ ...c, price: p, valueKrw: v });
-        } else {
-          unpriced.push({ ...c, reason: 'NO_KRW_MARKET_PRICE' });
-        }
-      }
-
-      const totalKrw = krw + coinsValueKrw;
-
-      writeJson({
-        ok: true,
-        ts: Date.now(),
-        krw,
-        coinsValueKrw,
-        totalKrw,
-        priced,
-        unpriced,
-        errors: [],
-      });
-      process.exitCode = 0;
-      return;
-    }
-
-    writeJson({
-      ok: false,
-      errors: [{ code: 'UNKNOWN_COMMAND', message: `Command '${command}' not found.` }],
-    });
-    process.exitCode = 1;
-    return;
+    Logger.error(`Unknown command: ${cmd}`);
+    printHelp();
+    process.exit(1);
   } catch (err) {
-    writeJson({
-      ok: false,
-      runId: null,
-      errors: [{ code: 'RUNTIME_ERROR', message: err?.message || String(err) }],
-    });
-    process.exitCode = 1;
+    Logger.error(err?.stack || err?.message || String(err));
+    process.exit(1);
   }
 }
 

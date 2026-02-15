@@ -1,0 +1,17 @@
+{
+  "lastRunAt": "2026-02-15T12:49:18.132Z",
+  "lastSummary": {
+    "scanned": 9,
+    "breakoutCandidates": 0,
+    "nearCandidates": 0,
+    "nearBull": 0,
+    "breakoutBull": 0,
+    "signals": 0
+  },
+  "lastWatchAt": "2026-02-15T12:49:17.861Z",
+  "lastWatch": {
+    "KRW-BTC": 103050000,
+    "KRW-ETH": 3014000,
+    "KRW-SOL": 130300
+  }
+}

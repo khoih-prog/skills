@@ -1,0 +1,17 @@
+{
+  "updatedAt": 1771159757465,
+  "quote": "KRW",
+  "metric": "acc_trade_price_24h",
+  "topN": 10,
+  "markets": [
+    "KRW-XRP",
+    "KRW-BTC",
+    "KRW-ETH",
+    "KRW-DOGE",
+    "KRW-SOL",
+    "KRW-KITE",
+    "KRW-AQT",
+    "KRW-IP",
+    "KRW-QKC"
+  ]
+}

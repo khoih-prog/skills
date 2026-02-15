@@ -1,136 +1,79 @@
 ---
-name: Upbit Trading Bot (A-Plan)
-description: Cron-driven, single-run automated trading engine for Upbit, optimized for OpenClaw.
-version: 3.2.0
-author: sgyeo
-metadata:
-  openclaw:
-    runtime: nodejs
-    entry: skill.js
-    scheduler:
-      cron: "*/5 * * * *"
-      command: "node skill.js monitor_once"
+name: trading-upbit-skill
+description: Upbit automated trading (aggressive breakout) with cron-friendly run-once commands, TopVolume monitoring, and percent-based budget splitting.
+user-invocable: true
+metadata: {"version":"13.1.0","author":"Kuns9","type":"automated-trading","openclaw":{"requires":{"bins":["node"],"env":["UPBIT_ACCESS_KEY","UPBIT_SECRET_KEY"]},"primaryEnv":"UPBIT_ACCESS_KEY"}}
 ---
 
-# Upbit Trading Bot (A-Plan)
+# trading-upbit-skill
 
-A high-reliability automated trading SKILL designed for the OpenClaw environment. It operates using a **single-run execution model (A-Plan)**, where each execution performs a full market scan and trade cycle before exiting.
+Upbit automated trading skill for OpenClaw and local execution.
 
----
+## What it does
 
-# 1. Overview
+- Monitors markets (watchlist + optional TopVolume)
+- Generates BUY/SELL events in `resources/events.json`
+- Processes events in a worker (places orders or dry-run), and persists positions in `resources/positions.json`
+- Designed for **cron**: `monitor_once` and `worker_once` are **run-once** commands
 
-This SKILL provides:
-- **Single-Run Orchestration**: Triggered by cron every 5 minutes.
-- **Volatility Breakout Strategy**: Identifies entries based on daily range breakouts.
-- **State-Aware Execution**: Manages positions using isolated Storage/KV keys to prevent duplicates.
-- **Safety Locks**: Distributed locking prevents overlapping cron runs.
-- **Strict JSON Output**: Emits a single line of JSON for seamless logging and monitoring.
+## Commands
 
-This SKILL also includes exec-only **query commands** so OpenClaw can answer user questions:
-- Price: `node skill.js price KRW-BTC`
-- Holdings: `node skill.js holdings`
-- Assets (KRW valuation): `node skill.js assets`
+### monitor_once
+Run one monitoring cycle, enqueue events.
 
----
+- `node skill.js monitor_once`
 
-# 2. Execution Flow (monitor_once)
+### worker_once
+Process pending events (BUY/SELL), update positions.
 
-When `node skill.js monitor_once` is executed:
+- `node skill.js worker_once`
 
-1.  **Concurrency Check**: Checks for `lock:monitor_once` in Storage. Exits if a valid lock (TTL active) exists.
-2.  **Sell Evaluation**:
-    - Loads all `OPEN` positions from Storage.
-    - Fetches current prices via OpenClaw `getTickers`.
-    - Calculates PnL. If `PnL >= TARGET_PROFIT` or `PnL <= STOP_LOSS`, executes market sell.
-3.  **Buy Scanning**:
-    - Iterates through the `WATCHLIST`.
-    - Fetches daily and hourly candles via OpenClaw `getCandles`.
-    - Validates **Volatility Breakout** (Breakout > Target) and **Bullish Filter** (Current > Hour Open).
-4.  **Buy Execution**:
-    - Performs risk check (Balance vs. Budget).
-    - Places market buy order via OpenClaw `placeOrder`.
-    - Updates position state to `OPEN`.
-5.  **Termination**: Prints execution summary (including diagnostic logs) as a single JSON line and exits.
+### smoke_test
+Validate config and public endpoints (no trading).
 
----
+- `node skill.js smoke_test`
 
-# 3. Storage / KV Schema
+## Budget Policy (v13)
 
-| Key | Format | Purpose |
-| :--- | :--- | :--- |
-| `lock:monitor_once` | `JSON` | Concurrency lock with `runId` and `ts`. |
-| `positions:<market>`| `JSON` | Active state (`OPEN`, `FLAT`), entry price, and quantity. |
-| `cooldown:<market>` | `JSON` | Timestamp to prevent rapid re-entry after a buy. |
-| `active_markets`    | `Array`| List of all markets that have ever been traded. |
-
----
-
-# 4. Strategy Logic
-
-### Entry Conditions (Both must be TRUE)
-1. **Breakout**: `price > (today_open + (yesterday_high - yesterday_low) * K_VALUE)`
-2. **Bullish Hour**: `current_price > hour_opening_price`
-
-### Exit Conditions (Either must be TRUE)
-1. **Profit Take**: `PnL >= TARGET_PROFIT` (Default: 0.05 / 5%)
-2. **Stop Loss**: `PnL <= STOP_LOSS` (Default: -0.05 / -5%)
-
----
-
-# 5. Environment Variables
-
-Configure the bot using the following environment variables:
-
-| Variable | Default | Description |
-| :--- | :--- | :--- |
-| `WATCHLIST` | `KRW-BTC,KRW-ETH,KRW-SOL` | Comma-separated market symbols. |
-| `TARGET_PROFIT` | `0.05` | Profit target ratio. |
-| `STOP_LOSS` | `-0.05` | Stop loss ratio. |
-| `K_VALUE` | `0.5` | Volatility factor for breakout. |
-| `BUDGET_KRW` | `10000` | KRW amount per buy order. |
-| `BUY_COOLDOWN_SEC` | `1800` | Prevention time before re-buying same market. |
-| `LOCK_TTL_SEC` | `120` | Max duration for a single run lock. |
-
----
-
-# 6. JSON Output Specification
-
-On completion, the bot outputs a single line:
+Order sizing can be set to a **percentage of available KRW**, split equally across multiple buys in the same worker run.
 
 ```json
 {
-  "ok": true,
-  "runId": "run_1707920000000",
-  "actions": [
-    { "type": "BUY", "market": "KRW-BTC", "result": "SUCCESS" }
-  ],
-  "errors": [],
-  "logs": [
-    { "level": "INFO", "message": "Signal: BUY KRW-BTC breakout detected" }
-  ],
-  "timestamp": "2026-02-14T23:30:00Z"
+  "trading": {
+    "budgetPolicy": {
+      "mode": "balance_pct_split",
+      "pct": 0.3,
+      "reserveKRW": 0,
+      "minOrderKRW": 5000,
+      "roundToKRW": 1000
+    }
+  }
 }
 ```
 
----
+Behavior:
+- totalBudget = floor((availableKRW - reserveKRW) * pct)
+- if there are N BUY_SIGNALs pending, perOrderKRW = floor(totalBudget / N) rounded down to `roundToKRW`
 
-# 7. Directory Structure
+## Cron (recommended)
 
-```
-skill.js                # CLI Entrypoint & Runner
-handlers/
-  monitorOnce.js        # Main A-Plan Orchestrator
-repo/
-  positionsRepo.js      # Storage/KV Abstraction
-domain/
-  strategies.js         # Strategy Math (Pure)
-  riskManager.js        # Balance & Order Validation
-adapters/
-  execution.js          # OpenClaw Tool Interface
-services/
-  orderService.js       # Trade Execution logic
-utils/
-  log.js                # In-memory log buffer (NO stdout)
-  time.js               # Time & Config Utilities
-```
+Monitor (every 5 minutes):
+- `cd <skillRoot> && node skill.js monitor_once`
+
+Worker (every 1 minute):
+- `cd <skillRoot> && node skill.js worker_once`
+
+## Files
+
+Required:
+- `config.json` (do not commit)
+
+Auto-created:
+- `resources/events.json`
+- `resources/positions.json`
+- `resources/topVolumeCache.json`
+- `resources/nearCounter.json`
+- `resources/heartbeat.json`
+
+Testing utilities:
+- `scripts/tests/*` (see README_TESTING.md)
