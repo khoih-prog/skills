@@ -3,11 +3,16 @@
   "slug": "chatgpt-exporter-ultimate",
   "displayName": "Chatgpt Exporter Ultimate",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1771020761071,
-    "commit": "https://github.com/openclaw/skills/commit/9afce2b09a951d5432022f82a5cb0b15171fb24d"
+    "version": "2.0.0",
+    "publishedAt": 1771172818869,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1771020761071,
+      "commit": "https://github.com/openclaw/skills/commit/9afce2b09a951d5432022f82a5cb0b15171fb24d"
+    },
     {
       "version": "1.0.3",
       "publishedAt": 1770816012076,
