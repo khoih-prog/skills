@@ -3,9 +3,15 @@
   "slug": "discord-voice",
   "displayName": "Discord Voice",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1769456717738,
-    "commit": "https://github.com/clawdbot/skills/commit/b575aceaaef7db6b62f8899d35cd13c496207ae9"
+    "version": "0.1.2",
+    "publishedAt": 1771202319795,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1769456717738,
+      "commit": "https://github.com/clawdbot/skills/commit/b575aceaaef7db6b62f8899d35cd13c496207ae9"
+    }
+  ]
 }
