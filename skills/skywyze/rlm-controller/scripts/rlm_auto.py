@@ -5,7 +5,9 @@ This does not invoke LLMs; it prepares artifacts for OpenClaw root session.
 Usage:
   rlm_auto.py --ctx <path> --goal "..." --outdir <dir>
 """
-import argparse, json, os, subprocess
+import argparse, json, os, subprocess, sys
+from rlm_path import validate_path as _validate_path
+from rlm_redact import redact_secrets
 
 def run_plan(ctx, goal):
     cmd = ["python3", os.path.join(os.path.dirname(__file__), "rlm_plan.py"),
@@ -14,7 +16,8 @@ def run_plan(ctx, goal):
     return json.loads(out)
 
 def read_text(path):
-    with open(path, 'r', encoding='utf-8', errors='replace') as f:
+    rp = _validate_path(path)
+    with open(rp, 'r', encoding='utf-8', errors='replace') as f:
         return f.read()
 
 def main():
@@ -24,8 +27,13 @@ def main():
     p.add_argument('--outdir', required=True)
     p.add_argument('--max-subcalls', type=int, default=32)
     p.add_argument('--slice-max', type=int, default=16000)
+    p.add_argument('--redact', dest='redact', action='store_true', default=True,
+                   help='Redact secrets from slice text in subcall prompts (default: enabled)')
+    p.add_argument('--no-redact', dest='redact', action='store_false',
+                   help='Disable secret redaction in subcall prompts')
     args = p.parse_args()
 
+    _validate_path(args.outdir)
     os.makedirs(args.outdir, exist_ok=True)
     plan = run_plan(args.ctx, args.goal)
     slices = plan.get("slices", [])
@@ -53,12 +61,16 @@ def main():
     prompt_files = []
     for i, sl in enumerate(trimmed, 1):
         slice_text = text[sl["start"]:sl["end"]]
+        goal_text = args.goal
+        if args.redact:
+            slice_text = redact_secrets(slice_text)
+            goal_text = redact_secrets(goal_text)
         prompt_path = os.path.join(prompts_dir, f"subcall_{i:02d}.txt")
         with open(prompt_path, "w", encoding="utf-8") as f:
             f.write("Slice:\n")
             f.write(slice_text)
             f.write("\n\nGoal:\n")
-            f.write(args.goal)
+            f.write(goal_text)
         prompt_files.append({"file": prompt_path, **sl})
 
     out = {
