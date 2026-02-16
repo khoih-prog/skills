@@ -1,0 +1,11 @@
+{
+  "owner": "titunito",
+  "slug": "ha-ultimate",
+  "displayName": "Home Assistant",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1771242550527,
+    "commit": null
+  },
+  "history": []
+}
