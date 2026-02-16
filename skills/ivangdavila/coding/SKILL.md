@@ -1,60 +1,83 @@
 ---
-name: "Coding"
-version: "1.0.1"
-changelog: "Migrate to external memory storage at ~/coding/"
-description: "Auto-learns your stack, style, and preferences. Starts empty, grows with every project."
+name: Coding
+slug: coding
+version: 1.0.2
+description: Learns your coding preferences from explicit feedback. Starts empty, grows as you correct and guide.
+changelog: Replace vague observe/detect with explicit feedback learning, require user confirmation before storing preferences
+metadata: {"clawdbot":{"emoji":"💻","requires":{"bins":[]},"os":["linux","darwin","win32"]}}
 ---
 
-## Auto-Adaptive Code Preferences
+## How This Skill Learns
 
-This skill auto-evolves. Observe user decisions, detect patterns, store preferences.
+This skill learns your preferences ONLY from:
+- **Explicit corrections** — "Actually, I prefer X over Y"
+- **Direct statements** — "Always use snake_case" 
+- **Repeated requests** — You ask for the same thing 2+ times
 
-**Rules:**
-- Detect patterns from user choices (not just explicit requests)
-- Confirm after 2+ consistent decisions
-- Keep each entry ultra-compact (5 words max)
-- Check `dimensions.md` for categories, `criteria.md` for when to add
-
----
+This skill NEVER:
+- Reads your project files to infer preferences
+- Observes without your knowledge
+- Stores data you haven't explicitly approved
 
 ## Memory Storage
 
-User preferences stored at `~/coding/memory.md`. Read on activation.
+Preferences stored at `~/coding/memory.md`. Created on first use.
 
-**Structure:**
 ```
 ~/coding/
-├── memory.md      # Active preferences (load always)
-└── history.md     # Old/archived preferences
+├── memory.md      # Active preferences (≤100 lines)
+└── history.md     # Archived old preferences
 ```
 
-**Rules:**
-- Load `memory.md` at skill start (always)
-- Keep `memory.md` ≤ 100 lines
-- Archive old patterns to `history.md`
+**To create:** `mkdir -p ~/coding`
 
-**Format for memory.md:**
+## Memory Format
+
 ```markdown
 # Coding Memory
 
 ## Stack
-- context: tech
+- python: prefer 3.11+
+- js: use TypeScript always
 
 ## Style
-- rule or thing: preference
+- naming: snake_case for Python, camelCase for JS
+- imports: absolute over relative
 
 ## Structure
-- project organization preference
+- tests: same folder as code, not separate /tests
 
 ## Never
-- thing user rejected
-
----
-*Last updated: YYYY-MM-DD*
+- var in JavaScript
+- print debugging in production
 ```
 
-**On first use:** Create `~/coding/memory.md` if missing.
+## How Preferences Are Added
 
----
+1. **User corrects output** → Agent asks: "Should I remember this preference?"
+2. **User confirms** → Agent adds to `~/coding/memory.md`
+3. **User can review** → "Show my coding preferences" lists current memory
 
-*Empty memory = no preference yet. Observe and fill.*
+No preference is stored without explicit user confirmation.
+
+## Rules
+
+- Keep each entry ultra-compact (5 words max)
+- Confirm before adding any preference
+- Check `dimensions.md` for categories
+- Check `criteria.md` for when to add
+- Never exceed 100 lines in memory.md
+- Archive old patterns to history.md
+
+## On Session Start
+
+1. Load `~/coding/memory.md` if exists
+2. Apply stored preferences to responses
+3. If no file exists, start with no assumptions
+
+## Auxiliary Files
+
+| File | Purpose |
+|------|---------|
+| `dimensions.md` | Categories of preferences to track |
+| `criteria.md` | When to suggest adding a preference |
