@@ -2,7 +2,7 @@
 name: ai-sentinel
 description: "Prompt injection detection and security scanning for OpenClaw agents. Installs ai-sentinel-sdk, configures openclaw.config.ts middleware, and offers local (Community) or remote (Pro) classification. All file writes require explicit user confirmation."
 user-invocable: true
-homepage: https://github.com/amandiwakar/ai-sentinel
+homepage: https://zetro.ai
 disable-model-invocation: true
 optional-env:
   - name: AI_SENTINEL_API_KEY
@@ -29,7 +29,7 @@ metadata: {"openclaw":{"emoji":"🛡️","os":["darwin","linux","win32"],"instal
 ### Data Transmission Notice
 
 - **Community tier:** All classification runs locally. No data leaves your machine.
-- **Pro tier:** Message content, tool outputs, and document text are sent to `https://api.zetro.ai/v1/classify` for remote classification. This is required for the higher-accuracy model. Review the [privacy policy](https://app.zetro.ai/privacy) and [SDK source](https://github.com/amandiwakar/ai-sentinel/tree/main/packages/sdk-node) before enabling Pro.
+- **Pro tier:** Message content, tool outputs, and document text are sent to `https://api.zetro.ai/v1/classify` for remote classification. This is required for the higher-accuracy model. Review the [privacy policy](https://zetro.ai/privacy) and [SDK source](https://www.npmjs.com/package/ai-sentinel-sdk) before enabling Pro.
 
 ### File Write Policy
 
@@ -422,7 +422,7 @@ Here's what was configured:
 
 ## Resources
 
-- SDK docs: https://github.com/amandiwakar/ai-sentinel/tree/main/packages/sdk-node
+- SDK docs: https://www.npmjs.com/package/ai-sentinel-sdk
 - Dashboard: https://app.zetro.ai
 - Support: support@zetro.ai
 
