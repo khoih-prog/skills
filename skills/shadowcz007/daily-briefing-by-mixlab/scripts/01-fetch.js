@@ -17,7 +17,7 @@ import https from 'https';
 const __dirname = path.dirname(fileURLToPath(
     import.meta.url));
 const API_URL = 'https://www.mixdao.world/api/latest';
-const SKIP_KEYS = new Set(['sources', 'sourceLabels', 'hasMore']);
+const SKIP_KEYS = new Set(['sources', 'sourceLabels', 'hasMore', 'date']);
 
 /** 与 api/latest 一致：日期按 Asia/Shanghai */
 const DATE_TZ = 'Asia/Shanghai';
@@ -101,15 +101,14 @@ function flatten(data) {
 
 function main() {
     fetchLatest()
-        .then((raw) => flatten(raw))
-        .then((items) => {
+        .then((raw) => {
+            const date = raw.date || getTodayDateStrInTz(DATE_TZ);
+            const items = flatten(raw);
             if (!items.length) {
                 console.error('01-fetch.js: no items from API');
                 process.exit(1);
             }
-
-            const timestamp = getTodayDateStrInTz(DATE_TZ);
-            const tempFileName = `briefing-${timestamp}.json`;
+            const tempFileName = `briefing-${date}.json`;
             const tempFilePath = path.join(__dirname, '..', 'temp', tempFileName);
 
             const tempDir = path.join(__dirname, '..', 'temp');
@@ -117,7 +116,7 @@ function main() {
                 fs.mkdirSync(tempDir, { recursive: true });
             }
 
-            const outputData = items;
+            const outputData = { date, items };
 
             fs.writeFileSync(tempFilePath, JSON.stringify(outputData, null, 2), 'utf8');
 

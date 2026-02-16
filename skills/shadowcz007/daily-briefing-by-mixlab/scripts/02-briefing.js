@@ -343,12 +343,17 @@ async function main() {
         console.error('错误: 无法读取或解析 JSON', e.message);
         process.exit(1);
     }
-    if (!Array.isArray(data) || !data.length) {
-        console.error('错误: 文件内容应为非空 JSON 数组（01-fetch 输出格式）');
+    const date = data?.date;
+    const items = data?.items;
+    if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        console.error('错误: 文件内容应为 { date, items }，且 date 为 YYYY-MM-DD（01-fetch 输出格式）');
         process.exit(1);
     }
-    const items = data;
-    debugLog('加载文件', 'items=', items.length);
+    if (!Array.isArray(items) || !items.length) {
+        console.error('错误: 文件内容应为 { date, items }，且 items 为非空数组（01-fetch 输出格式）');
+        process.exit(1);
+    }
+    debugLog('加载文件', 'date=', date, 'items=', items.length);
 
     const client = getClient();
     debugLog(`步骤 1/3: 分组（至多 ${MAX_GROUPS} 组，每组至少 ${MIN_ITEMS_PER_GROUP} 条）…`);
@@ -361,8 +366,7 @@ async function main() {
     debugLog(`步骤 3/3: 提交推荐语（共 ${toSubmit.length} 条）…`);
 
     const mdPath = path.join(path.dirname(filepath), path.basename(filepath, '.json') + '.md');
-    const titleFromFile = path.basename(filepath, '.json');
-    const mdLines = [`# Daily Briefing - ${titleFromFile}`, ''];
+    const mdLines = [`# Daily Briefing - ${date}`, ''];
     for (const g of groupsWithSummaries) {
         mdLines.push(`## ${g.name}`, '');
         if (g.groupSummary) mdLines.push(g.groupSummary, '');
@@ -377,7 +381,6 @@ async function main() {
     const mdContent = mdLines.join('\n');
     fs.writeFileSync(mdPath, mdContent, 'utf8');
 
-    const date = titleFromFile.replace('briefing-', '');
     try {
         await updateBriefing(date, '每日简报', mdContent);
     } catch (e) {

@@ -3,11 +3,16 @@
   "slug": "daily-briefing-by-mixlab",
   "displayName": "Mixlab Daily Briefing（ 高价值内容筛选）",
   "latest": {
-    "version": "3.2.0",
-    "publishedAt": 1771201943424,
-    "commit": "https://github.com/openclaw/skills/commit/5f9ba58b40c120dc3149fff6bdf9734e506fb232"
+    "version": "3.2.2",
+    "publishedAt": 1771203182765,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.2.0",
+      "publishedAt": 1771201943424,
+      "commit": "https://github.com/openclaw/skills/commit/5f9ba58b40c120dc3149fff6bdf9734e506fb232"
+    },
     {
       "version": "3.1.2",
       "publishedAt": 1771138506009,

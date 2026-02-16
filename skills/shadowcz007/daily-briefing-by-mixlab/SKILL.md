@@ -9,7 +9,7 @@ description: 从 mixdao latest 获取数据 → 用 MiniMax-M2.5 做分类整理
 
 | 脚本 | 作用 |
 |------|------|
-| `scripts/01-fetch.js` | 拉取 mixdao `GET /api/latest`（环境变量 `MIXDAO_API_KEY`）→ 解析并扁平化 → 写入 `temp/briefing-YYYY-MM-DD.json` → 输出 `[FILE PATH] <path>`。 |
+| `scripts/01-fetch.js` | 拉取 mixdao `GET /api/latest`（环境变量 `MIXDAO_API_KEY`）→ 使用接口返回的 `date`，解析并扁平化为 `items` → 写入 `temp/briefing-{date}.json`（内容为 `{ date, items }`）→ 输出 `[FILE PATH] <path>`。 |
 | `scripts/02-briefing.js` | 读取步骤 1 的 temp 文件 → 调用 **MiniMax-M2.5** 做分组（agent loop 直至满足约束）→ 生成分组摘要（20 字内）与每条推荐语（140 字内，创业者视角：场景、问题、解决方案、价值）→ 按 **cachedStoryId** 调用 mixdao PATCH 提交推荐语。 |
 
 ## 工作流程
@@ -39,7 +39,7 @@ node scripts/02-briefing.js ./temp/briefing-2026-02-14.json
 ```
 
 **02-briefing 内部流程**：
-1. 读取 JSON（根级条目数组），校验非空。
+1. 读取 JSON（格式 `{ date, items }`，`date` 为 YYYY-MM-DD，`items` 为非空数组），校验 `date` 与 `items`。
 2. **分组 Agent Loop**（MiniMax-M2.5）：对类似话题分组，**至多 5 组**，**每组至少 3 条**；不满足则反馈重试，最多 3 次。
 3. **生成摘要与推荐语**：每组一段分组摘要（20 字内）；每条站在**创业者角度**生成推荐语（140 字内），格式：**xxx场景、xxx问题、xxx解决方案、xxx价值**。
 4. 按 **cachedStoryId** 批量调用 mixdao `PATCH /api/latest/recommendation`（body: `{ items: [{ cachedStoryId, recommendationText }, ...] }`，Bearer `MIXDAO_API_KEY`）提交推荐语。根据返回的 `results` 统计成功/失败并打 log。
