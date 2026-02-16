@@ -1,0 +1,11 @@
+{
+  "owner": "tkuehnl",
+  "slug": "dep-audit",
+  "displayName": "Dependency Audit",
+  "latest": {
+    "version": "0.1.4",
+    "publishedAt": 1771229233340,
+    "commit": null
+  },
+  "history": []
+}
