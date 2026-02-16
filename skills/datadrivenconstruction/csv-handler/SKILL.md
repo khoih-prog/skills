@@ -1,9 +1,9 @@
 ---
-slug: "csv-handler"
-display_name: "CSV Handler"
+name: "csv-handler"
 description: "Handle CSV files from construction software exports. Auto-detect delimiters, encodings, and clean messy data."
+homepage: "https://datadrivenconstruction.io"
+metadata: {"openclaw": {"emoji": "🏷️", "os": ["darwin", "linux", "win32"], "homepage": "https://datadrivenconstruction.io", "requires": {"bins": ["python3"]}}}
 ---
-
 # CSV Handler for Construction Data
 
 ## Overview
