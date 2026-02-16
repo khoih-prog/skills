@@ -1,490 +1,208 @@
 ---
 name: seisoai
-description: Pay-per-request AI inference (image, video, music, 3D, audio) via x402 USDC payments on Base. Use when user asks to generate images, videos, music, audio, 3D models, or mentions SeisoAI, FLUX, Veo, or AI generation. Requires curl, internet, and host x402 signer with per-request user approval.
-license: Apache-2.0
-compatibility: Requires curl and internet access. Host must provide x402-signer capability with per-request user approval.
-version: 1.4.0
-last_synced: 2026-02-13
-metadata: {"openclaw":{"homepage":"https://seisoai.com","emoji":"🎨"},"author":"seisoai","autonomous":"requires-approval","x402":{"network":"eip155:8453","asset":"USDC","payTo":"0xa0aE05e2766A069923B2a51011F270aCadFf023a","userApproval":"per-request","autoSign":"forbidden","paytoVerification":"required"}}
+description: "Generate images, videos, music, 3D models, and audio via SeisoAI (120+ tools). Pay-per-request with x402 USDC on Base. Use when user asks to generate, edit, upscale, or train AI content."
+homepage: https://seisoai.com
+version: 2.1.0
+last_synced: 2026-02-15
+files: ["scripts/x402-sign.mjs", "scripts/package.json"]
+metadata: {"openclaw": {"emoji": "🎨", "homepage": "https://seisoai.com", "requires": {"bins": ["curl", "node"], "env": ["SEISOAI_WALLET_KEY"]}, "primaryEnv": "SEISOAI_WALLET_KEY"}}
 ---
 
-# SeisoAI x402 Skill
+# SeisoAI
 
-**Base URL**: `https://seisoai.com`  
-**Payment**: USDC on Base (eip155:8453)  
-**Recipient**: `0xa0aE05e2766A069923B2a51011F270aCadFf023a`
+120+ AI generation tools. Payment: x402 USDC on Base.
 
----
+## Setup
 
-## Security Profile
+### `SEISOAI_WALLET_KEY`
 
-| Category | Status | Details |
-|----------|--------|---------|
-| **Purpose & Capability** | ✅ Aligned | Pay-per-request AI generation via x402 USDC payments. Requires: `curl`, internet access, host x402 signer with per-request approval. |
-| **Instruction Scope** | ✅ Narrow | Only contacts `seisoai.com` gateway. Does not read local files, env vars, or system data. Requires explicit user consent for each payment. |
-| **Install Mechanism** | ✅ Minimal | Instruction-only skill. No install hooks, no bundled code, no on-disk persistence. |
-| **Credentials** | ✅ None | No API keys, no env vars, no stored secrets, no filesystem config. Authentication is per-request via x402 signatures. |
-| **Persistence & Privilege** | ✅ Limited | `always: false` (no persistent presence). `autonomous: requires-approval` (payments require user consent even in autonomous workflows). |
+x402 signing key — used only to authorize per-request USDC payments to SeisoAI via EIP-3009 `transferWithAuthorization`. The key never leaves your machine; the signing script hard-codes SeisoAI's recipient address and rejects any other payTo.
 
----
+Use a dedicated wallet with a small USDC balance ($5–$20). Most generations cost $0.01–$0.33.
 
-## Pre-Installation Checklist
-
-Before installing or using this skill, complete these verification steps:
-
-### 1. Verify Host Signer Compliance
-Confirm your host's x402 signer enforces per-request user approval:
-- [ ] Signer prompts user before each payment (no auto-signing)
-- [ ] Signer displays human-readable USDC amount (e.g., "0.0325 USDC")
-- [ ] Signer displays recipient address and network (Base)
-- [ ] Signer has no "approve all" or "trust this skill" mode enabled
-- [ ] Signer requires explicit user action (button/confirmation) to proceed
-
-### 2. Verify Domain & TLS
-Before approving any payment, confirm the gateway domain:
-- [ ] Verify `https://seisoai.com` presents a valid TLS certificate
-- [ ] Confirm the domain resolves to the expected service (not a phishing site)
-- [ ] Check that all API calls use HTTPS (never HTTP)
-
-### 3. Verify Recipient Address
-The only authorized payment recipient is:
+```bash
+export SEISOAI_WALLET_KEY="0x<key>"
 ```
-0xa0aE05e2766A069923B2a51011F270aCadFf023a
+
+### Dependencies
+
+```bash
+cd {baseDir}/scripts && npm ci --ignore-scripts
 ```
-- [ ] Confirm this address matches the `payTo` field in 402 responses
-- [ ] Abort if a different address is presented
-- [ ] Optionally verify this address on Base block explorer (basescan.org)
 
-### 4. Test with Small Payment First
-- [ ] Start with a low-cost tool (e.g., `image.generate.flux-2` at ~$0.03)
-- [ ] Verify the payment flow works as expected before larger payments
-- [ ] Confirm you receive the generated content after payment
+Pinned via lockfile. Run once before first use.
 
-### 5. Disable Any Auto-Approval Settings
-- [ ] Ensure your wallet/signer has no "auto-confirm" or "whitelist" settings for this skill
-- [ ] Disable any session-based "remember my choice" options
-- [ ] Each payment must require fresh manual approval
+## Discovery
 
----
-
-## ⚠️ USER CONSENT REQUIRED
-
-Before signing ANY payment, you MUST:
-1. Display to user: tool name, amount (USDC), network (Base), payTo address
-2. Wait for EXPLICIT user approval
-3. Only proceed if user confirms
-
-**NEVER auto-approve payments. NEVER skip confirmation.**
-
-### Autonomous Invocation Policy
-
-This skill sets `autonomous: requires-approval` because every invocation involves a financial transaction. Even when the host permits autonomous skill invocation, **payment signing MUST still require per-request user approval**. The autonomous policy applies to the skill invocation itself; payment authorization is a separate consent gate that cannot be bypassed.
-
-Agents invoking this skill autonomously (e.g., as part of a multi-step workflow) must still pause for user payment approval before the x402 signing step.
-
----
-
-## Dependencies & Credentials
-
-### Required Binaries
-- **curl**: Used for all HTTP requests to the SeisoAI gateway
-
-### Required Capabilities (Host-Provided)
-- **x402-signer**: Payment signing capability (see Host Signer Requirements below)
-- **internet**: Outbound HTTPS access to `seisoai.com`
-
-### Environment Variables
-**None required.** This skill does not use API keys, tokens, or any stored credentials. All authentication is handled per-request via x402 payment signatures.
-
-### Credential Model
-This is a **pay-to-invoke** service. Instead of pre-provisioned API keys:
-- Each request triggers a 402 Payment Required response
-- The host x402 signer creates a one-time payment signature
-- Payment is settled on-chain (Base network) per invocation
-- No secrets, keys, or credentials are stored or transmitted
-
----
-
-## Host Signer Requirements
-
-This skill requires the host environment to provide an x402 payment signer. **Callers integrating this skill MUST ensure their host signer meets these requirements.**
-
-> **WARNING**: A host signer that auto-signs payments without user approval renders this skill's consent requirements ineffective and creates disproportionate financial risk. Such implementations are non-compliant.
-
-### CRITICAL: No Auto-Signing
-
-1. **User prompting REQUIRED**: The host signer **MUST** prompt the user before signing any payment. It **MUST NOT** auto-sign, batch-approve, or silently authorize payments.
-2. **Amount display**: The signer must display the exact USDC amount (human-readable, not micro-units) and recipient address to the user before signing.
-3. **Explicit approval**: The signer must require an affirmative user action (e.g., clicking "Approve" or typing "yes") before creating the signature.
-4. **Per-request consent**: Each payment requires fresh user approval. "Remember my choice" or session-based auto-approval patterns are **NOT compliant**.
-
-### Compliant vs Non-Compliant Host Signer Implementations
-
-| Behavior | Compliant | Non-Compliant |
-|----------|-----------|---------------|
-| Prompt user with amount/recipient before each signature | ✅ | |
-| Require explicit approve/cancel action per request | ✅ | |
-| Verify payTo matches expected address | ✅ | |
-| Auto-sign without user interaction | | ❌ |
-| "Trust this skill" or "approve all" session settings | | ❌ |
-| Batch approval for multiple payments | | ❌ |
-| Sign without displaying amount to user | | ❌ |
-| Skip verification of payTo address | | ❌ |
-
-### Recipient Address Verification
-
-**Expected recipient address**: `0xa0aE05e2766A069923B2a51011F270aCadFf023a`
-
-This is the **only authorized payment recipient** for SeisoAI. The host signer **MUST**:
-- Verify that `accepts[0].payTo` in the 402 response matches this address exactly
-- Display a warning or block signing if the address differs from the expected value
-- Allow the user to abort if the recipient address is unexpected
-
-**Why this matters**: If the gateway were compromised or the agent were tricked into calling a malicious endpoint, an incorrect `payTo` address would redirect funds. Verifying the recipient protects users from payment misdirection.
-
-### Host Implementer Checklist
-
-Before deploying a host signer for use with this skill, verify:
-
-- [ ] Signer prompts user with human-readable amount (e.g., "0.0325 USDC", not "32500")
-- [ ] Signer displays recipient address before signing
-- [ ] Signer displays network (Base / eip155:8453)
-- [ ] Signer requires explicit user action (button click, "yes" input) to proceed
-- [ ] Signer has no "auto-approve" or "trust once" mode
-- [ ] Signer validates payTo against expected address (`0xa0aE05e2766A069923B2a51011F270aCadFf023a`)
-- [ ] Signer allows user to cancel/abort at any point
-- [ ] Each invocation requires fresh approval (no session caching)
-
-### No Credential Storage
-
-This skill does not use API keys, environment variables, or any stored secrets. All authentication is per-request via x402 payment signatures. The host signer handles wallet access; this skill never touches private keys.
-
----
-
-## Supported Gateway Routes (x402 Boundary)
-
-x402 payment is **only supported** on gateway endpoints. Do not attempt x402 on other routes.
-
-| Route | Method | Description |
-|-------|--------|-------------|
-| `/api/gateway/invoke/:toolId` | POST | Invoke single tool |
-| `/api/gateway/invoke` | POST | Invoke with toolId in body |
-| `/api/gateway/batch` | POST | Batch invocation |
-| `/api/gateway/orchestrate` | POST | Multi-tool orchestration |
-| `/api/gateway/orchestrate/plan` | POST | Generate execution plan |
-| `/api/gateway/orchestrate/execute` | POST | Execute plan |
-| `/api/gateway/workflows/:workflowId` | POST | Execute workflow |
-| `/api/gateway/agent/:agentId/invoke` | POST | Agent-scoped invocation |
-| `/api/gateway/agent/:agentId/orchestrate` | POST | Agent orchestration |
-| `/api/gateway/jobs/:jobId` | GET | Job status polling |
-| `/api/gateway/jobs/:jobId/result` | GET | Job result retrieval |
-
----
-
-## Payment Signing Boundary (OpenClaw)
-
-1. **Use host signer only**: Use only the runtime-managed payment signer provided by the OpenClaw host
-2. **No raw keys**: Never request, store, or derive raw private keys/seed phrases
-3. **Challenge-bound signing**: Only sign x402 payment payloads tied to the current 402 challenge
-4. **Fail closed**: If no authorized signer capability is available, return `payment signer unavailable`
-5. **No auto-approval**: Require a fresh sign operation for each new challenge
-
----
-
-## Invariants (Do Not Violate)
-
-1. Keep request intent identical between 402 challenge and paid retry
-2. Do not mutate method/path semantics between retries
-3. Do not reuse stale or previously consumed payment signatures
-4. Treat successful queue submission as billable success
-5. Enforce destination wallet integrity: signed payment must target challenge `payTo`
-
----
-
-## Agent Execution Flow
-
-### Step 1: List tools
 ```bash
 curl -s "https://seisoai.com/api/gateway/tools"
-```
-
-### Step 2: Get price
-```bash
+curl -s "https://seisoai.com/api/gateway/tools/{toolId}"
 curl -s "https://seisoai.com/api/gateway/price/{toolId}"
 ```
 
-### Step 3: Initial invoke (triggers 402)
+## Invoke (full x402 flow)
+
+### Step 1: Send request, capture 402 challenge
+
 ```bash
-curl -s -X POST "https://seisoai.com/api/gateway/invoke/{toolId}" \
+CHALLENGE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "https://seisoai.com/api/gateway/invoke/{toolId}" \
   -H "Content-Type: application/json" \
-  -d '{"prompt": "..."}'
-```
-
-### Step 4: ⚠️ MANDATORY - Display payment to user, get approval
-Parse `accepts[0]` from 402 response. Show user:
-- Tool name
-- Amount: `maxAmountRequired` (in USDC micro-units, divide by 1000000)
-- Recipient: `payTo`
-- Network: Base
-
-**Wait for explicit "yes" before proceeding.**
-
-### Step 5: Sign x402 payment
-Use host x402 signer with: `amount`, `payTo`, `network` from 402 response.
-
-### Step 6: Paid invoke
-```bash
-curl -s -X POST "https://seisoai.com/api/gateway/invoke/{toolId}" \
+  -d '{"prompt": "..."}')
+# Expect HTTP 402. Capture the full body:
+BODY=$(curl -s -X POST "https://seisoai.com/api/gateway/invoke/{toolId}" \
   -H "Content-Type: application/json" \
-  -H "payment-signature: {signed_x402_payload}" \
-  -d '{"prompt": "..."}'
+  -d '{"prompt": "..."}')
+echo "$BODY"
 ```
 
-### Step 7: Poll if queued
-If `executionMode="queue"`, poll until complete:
-```bash
-curl -s "https://seisoai.com/api/gateway/jobs/{jobId}?model={model}"
-```
-Then fetch result:
-```bash
-curl -s "https://seisoai.com/api/gateway/jobs/{jobId}/result?model={model}"
-```
+The 402 response contains a standard x402 payment challenge:
 
-### Step 8: Return result URL to user
-
----
-
-## API Endpoints
-
-### Discovery
-```
-GET  /api/gateway                         → Gateway info, protocols, tool count
-GET  /api/gateway/tools                   → All tools (63 available)
-GET  /api/gateway/tools?category={cat}    → Filter by category
-GET  /api/gateway/tools/{toolId}          → Tool details, input schema
-GET  /api/gateway/price/{toolId}          → Pricing (USD, USDC units)
-```
-
-### Invocation (x402 payment required)
-```
-POST /api/gateway/invoke/{toolId}         → Invoke single tool
-POST /api/gateway/invoke                  → Invoke with toolId in body
-POST /api/gateway/batch                   → Multiple tools in one request
-```
-
-### Job Polling
-```
-GET  /api/gateway/jobs/{jobId}?model={m}        → Check status
-GET  /api/gateway/jobs/{jobId}/result?model={m} → Get completed result
-```
-
----
-
-## Tool Categories
-
-| Category | Tools |
-|----------|-------|
-| image-generation | `image.generate.flux-2`, `image.generate.flux-pro-kontext`, `image.generate.nano-banana-pro` |
-| video-generation | `video.generate.veo3`, `video.generate.kling-2`, `video.generate.minimax` |
-| music-generation | `music.generate` |
-| audio-generation | `audio.tts`, `audio.tts.minimax-hd`, `video.video-to-audio` |
-| 3d-generation | `3d.image-to-3d`, `3d.text-to-3d.hunyuan-pro` |
-| image-editing | `image.generate.flux-2-edit`, `image.generate.flux-pro-kontext-edit` |
-| video-editing | `video.animate.wan` |
-| image-processing | `image.upscale`, `image.extract-layer` |
-| audio-processing | `audio.transcribe`, `audio.stem-separation` |
-| vision | `vision.describe` |
-| training | `training.flux-lora`, `training.flux-2` |
-
----
-
-## x402 Payment Protocol
-
-### Step 1: Initial Request
-```http
-POST https://seisoai.com/api/gateway/invoke/image.generate.flux-2
-Content-Type: application/json
-
-{"prompt": "cyberpunk city at sunset", "aspect_ratio": "16:9"}
-```
-
-### Step 2: 402 Payment Challenge
-
-Server returns HTTP 402 with:
-- **Response body**: JSON with payment requirements
-- **`PAYMENT-REQUIRED` header**: Base64-encoded JSON (same content)
-
-```http
-HTTP/1.1 402 Payment Required
-PAYMENT-REQUIRED: eyJ4NDAyVmVyc2lvbiI6Miw...
-Content-Type: application/json
-
+```json
 {
   "x402Version": 2,
   "error": "Payment required",
+  "resource": { "url": "...", "description": "...", "mimeType": "application/json" },
   "accepts": [{
     "scheme": "exact",
     "network": "eip155:8453",
     "maxAmountRequired": "32500",
     "asset": "USDC",
     "payTo": "0xa0aE05e2766A069923B2a51011F270aCadFf023a",
-    "extra": {"priceUsd": "$0.0325"}
+    "extra": { "priceUsd": "$0.0325" }
   }]
 }
 ```
 
-Parse payment requirements from either body or decode `PAYMENT-REQUIRED` header (base64).
+The `PAYMENT-REQUIRED` response header contains the same payload base64-encoded.
 
-### Step 3: User Confirmation (MANDATORY)
-Display to user before signing:
+### Step 2: Display payment to user, get approval
+
+Parse `accepts[0]` from the 402 JSON. Show the user:
+- Tool name and what it does
+- `asset`: USDC
+- Amount: `maxAmountRequired` (divide by 1000000 for human-readable USD)
+- Recipient (`payTo`): `0xa0aE05e2766A069923B2a51011F270aCadFf023a` (SeisoAI)
+- Network: Base (`eip155:8453`)
+
+**Wait for explicit user approval. Never auto-approve.**
+
+### Step 3: Sign and retry
+
+```bash
+PAYMENT=$(echo "$BODY" | node {baseDir}/scripts/x402-sign.mjs)
+
+curl -s -X POST "https://seisoai.com/api/gateway/invoke/{toolId}" \
+  -H "Content-Type: application/json" \
+  -H "payment-signature: $PAYMENT" \
+  -d '{"prompt": "..."}'
 ```
-Payment Required
-Tool: image.generate.flux-2
-Amount: 0.0325 USDC (~$0.03)
-Recipient: 0xa0aE...023a (SeisoAI)
-Network: Base
-[Approve] [Cancel]
-```
-**Do not proceed without explicit user approval.**
 
-### Step 4: Paid Request
-```http
-POST https://seisoai.com/api/gateway/invoke/image.generate.flux-2
-Content-Type: application/json
-payment-signature: <signed_x402_payload>
+The request body MUST be identical to step 1.
 
-{"prompt": "cyberpunk city at sunset", "aspect_ratio": "16:9"}
-```
+### Step 4: Handle response
 
----
+**Sync** (`executionMode: "sync"`): result is in the response body, with settlement info:
 
-## Response Handling
-
-### Synchronous (`executionMode: "sync"`)
-Result is immediate. Extract URL from `result` field (see Result Field Reference).
-
-### Queued (`executionMode: "queue"`)
-Poll `job.statusUrl` every 5s until `status` is `COMPLETED` or `FAILED`, then fetch `job.resultUrl`.
-
-| Status | Action |
-|--------|--------|
-| `QUEUED` / `IN_PROGRESS` | Poll again after 5s delay |
-| `COMPLETED` | Fetch result from `job.resultUrl` |
-| `FAILED` | Return error to user |
-
----
-
-## Result Field Reference
-
-| Tool Type | Primary Field | Fallback Fields | Example Payload |
-|-----------|---------------|-----------------|-----------------|
-| Image | `result.images[0].url` | `result.images[0]` | `{"prompt": "...", "aspect_ratio": "16:9"}` |
-| Video | `result.video.url` | `result.video_url` | `{"prompt": "...", "duration": 5}` |
-| Audio/TTS | `result.audio.url` | `result.audio_url` | `{"text": "...", "voice": "alloy"}` |
-| Music | `result.audio.url` | `result.audio_url` | `{"prompt": "...", "duration": 30}` |
-| 3D Model | `result.model_glb.url` | `result.model_mesh.url` | `{"image_url": "https://..."}` |
-
----
-
-## Error Handling
-
-| Status | Meaning | Action |
-|--------|---------|--------|
-| 402 | Payment required | Parse accepts[], sign payment, retry |
-| 402 + "already used" | Signature replay | Generate fresh signature, retry |
-| 400 | Invalid request | Check payload against tool schema |
-| 401 | Wrong endpoint | Use /api/gateway/* routes only |
-| 404 | Tool not found | Check toolId spelling |
-| 429 | Rate limited | Wait `Retry-After` seconds |
-| 500 | Server error | Retry with exponential backoff |
-
----
-
-## Security
-
-### Agent MUST
-- Display payment amount to user before signing
-- Wait for explicit user approval ("yes"/"approve")
-- Use host x402 signer (never handle private keys)
-- Verify `payTo` matches 402 challenge exactly
-- Use identical request body for retry after payment
-
-### Agent MUST NEVER
-- Auto-approve any payment
-- Skip user confirmation step
-- Reuse a payment signature (one-time use only)
-- Request or store user private keys
-- Modify request body between 402 and paid retry
-
-### Server Protections
-- Replay prevention (Redis-backed signature dedup)
-- Wallet/amount/network verification via CDP
-- Rate limiting: 500 req/15min, 10 payments/5min
-
----
-
-## ClawBot/OpenClaw Response Schema
-
-All gateway endpoints return normalized responses for ClawBot/OpenClaw compatibility.
-
-### Success Response
 ```json
 {
-  "status": "success",
-  "generation_id": "req_abc123",
-  "confirmation_id": "0x...",
-  "data": { /* tool-specific result */ },
-  "error": null
-}
-```
-
-### Error Response
-```json
-{
-  "status": "error",
-  "generation_id": "req_abc123",
-  "confirmation_id": "",
-  "data": {},
-  "error": "Error description"
-}
-```
-
-### x402 Tracking Fields (SkillMD-required)
-
-When x402 payment is used, responses include:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `x402_amount` | string | USDC amount in micro-units |
-| `x402_status` | string | `verified` \| `settled` \| `settlement_failed` |
-| `x402_confirmation_id` | string | Transaction hash or signature hash |
-| `x402_timestamp` | string | ISO-8601 timestamp |
-| `x402_recipient` | string | Payment recipient address |
-
-Plus nested `x402` object:
-```json
-{
+  "success": true,
+  "result": { ... },
   "x402": {
     "settled": true,
     "transactionHash": "0x...",
     "amount": "32500",
-    "recipient": "0xa0aE05e2766A069923B2a51011F270aCadFf023a",
-    "confirmationId": "0x...",
     "status": "settled"
-  }
+  },
+  "x402_amount": "32500",
+  "x402_status": "settled",
+  "x402_confirmation_id": "...",
+  "x402_timestamp": "2025-06-15T00:00:00.000Z",
+  "x402_recipient": "0xa0aE05e2766A069923B2a51011F270aCadFf023a"
 }
 ```
 
----
+**Queue** (`executionMode: "queue"`): poll every 5s:
 
-## Quick Reference
+```bash
+curl -s "https://seisoai.com/api/gateway/jobs/{jobId}?model={model}"
+curl -s "https://seisoai.com/api/gateway/jobs/{jobId}/result?model={model}"
+```
 
-```
-Base URL:    https://seisoai.com
-Tools:       GET /api/gateway/tools
-Price:       GET /api/gateway/price/{toolId}
-Invoke:      POST /api/gateway/invoke/{toolId}
-Job Status:  GET /api/gateway/jobs/{id}?model={m}
-Job Result:  GET /api/gateway/jobs/{id}/result?model={m}
-Payment:     USDC on Base to 0xa0aE05e2766A069923B2a51011F270aCadFf023a
-```
+## Result fields
+
+| Type | Field | Fallback |
+|------|-------|----------|
+| Image | `result.images[0].url` | `result.images[0]` |
+| Video | `result.video.url` | `result.video_url` |
+| Audio | `result.audio.url` | `result.audio_url` |
+| 3D | `result.model_glb.url` | `result.model_mesh.url` |
+
+## Error handling
+
+| HTTP | Action |
+|------|--------|
+| 402 | Normal — parse, sign, retry (steps above) |
+| 402 + "already used" | Fresh signature, retry |
+| 400 | Check payload vs tool schema (`GET /tools/{toolId}`) |
+| 429 | Wait `Retry-After` seconds |
+| 500 | Retry with backoff |
+
+## Tools (120+ total)
+
+### Image Generation (19)
+`image.generate.flux-pro-kontext` $0.065 · `image.generate.flux-2` $0.03 · `image.generate.flux-2-flex` $0.03 · `image.generate.flux-2-klein-realtime` $0.016 · `image.generate.nano-banana-pro` $0.33 (360°) · `image.generate.flux-controlnet-canny` $0.065 · `image.generate.grok-imagine` $0.05 · `image.generate.kling-image-v3` $0.06 · `image.generate.kling-image-o3` $0.065 · `image.generate.hunyuan-instruct` $0.05 · `image.generate.qwen-image-max` $0.04 · `image.generate.bria-fibo` $0.05 · `image.generate.seedream-4` $0.05 · `image.generate.recraft-v3` $0.05 (SOTA, vector) · `image.generate.omnigen-v2` $0.05 (try-on, multi-modal) · `image.generate.pulid` $0.04 (face ID) · `image.generate.imagineart` $0.05 · `training.lora-inference` $0.04
+
+### Image Editing (15)
+`image.generate.flux-pro-kontext-edit` $0.065 · `image.generate.flux-pro-kontext-multi` $0.065 · `image.generate.flux-2-edit` $0.03 · `image.edit.flux-2-flex` $0.03 (multi-ref) · `image.generate.nano-banana-pro-edit` $0.33 · `image.edit.grok-imagine` $0.05 · `image.edit.seedream-4` $0.05 · `image.edit.recraft-v3` $0.05 · `image.edit.kling-image-v3` $0.06 · `image.edit.kling-image-o3` $0.065 · `image.edit.bria-fibo` $0.05 · `image.edit.reve` $0.05 · `image.face-swap` $0.03 · `image.inpaint` $0.04 · `image.outpaint` $0.04
+
+### Image Processing (9)
+`image.upscale` $0.04 · `image.upscale.topaz` $0.065 (premium) · `image.extract-layer` $0.01 · `image.background-remove` $0.01 · `image.segment.sam2` $0.01 · `image.depth.depth-anything-v2` $0.01 · `image.generate.genfocus` $0.03 · `image.generate.genfocus-all-in-focus` $0.03
+
+### Vision (3)
+`vision.describe` $0.01 · `vision.describe.florence-2` $0.01 (OCR, detection) · `vision.nsfw-detect` $0.007
+
+### Video Generation (29) — per second
+`video.generate.veo3` $0.13/s · `video.generate.veo3-image-to-video` $0.13/s · `video.generate.veo3-first-last-frame` $0.13/s · `video.generate.veo3-reference` $0.13/s · `video.generate.sora-2-text` $0.20/s · `video.generate.sora-2-image` $0.20/s · `video.generate.sora-2-pro-text` $0.26/s · `video.generate.sora-2-pro-image` $0.26/s · `video.generate.ltx-2-19b-image` $0.13/s · `video.generate.kling-3-pro-text` $0.20/s · `video.generate.kling-3-pro-image` $0.20/s · `video.generate.kling-3-std-text` $0.16/s · `video.generate.kling-3-std-image` $0.16/s · `video.generate.kling-o3-image` $0.18/s · `video.generate.kling-o3-reference` $0.18/s · `video.generate.kling-o3-pro-text` $0.23/s · `video.generate.kling-o3-pro-image` $0.23/s · `video.generate.kling-o3-pro-reference` $0.23/s · `video.generate.kling-o3-std-text` $0.18/s · `video.generate.grok-imagine-text` $0.16/s · `video.generate.grok-imagine-image` $0.16/s · `video.generate.vidu-q3-text` $0.18/s · `video.generate.vidu-q3-image` $0.18/s · `video.generate.wan-2.6-reference` $0.09/s · `video.generate.dreamactor-v2` $0.13/s · `video.generate.pixverse-v5` $0.13/s · `video.generate.lucy-14b` $0.10/s · `audio.lip-sync` $0.05
+
+### Video Editing (10)
+`video.animate.wan` $0.065/s · `video.edit.grok-imagine` $0.13/s · `video.edit.sora-2-remix` $0.20/s · `video.edit.kling-o3-std` $0.18/s · `video.edit.kling-o3-pro` $0.23/s · `video.generate.kling-o3-std-reference` $0.18/s · `video.generate.kling-o3-pro-reference` $0.23/s · `video.upscale.topaz` $0.13/s · `video.background-remove` $0.04/s
+
+### Avatar & Lip Sync (6)
+`avatar.creatify-aurora` $0.13/s · `avatar.veed-fabric` $0.13/s · `avatar.omnihuman-v15` $0.13/s · `avatar.ai-text` $0.10/s · `avatar.sync-lipsync-v2` $0.065/s · `avatar.pixverse-lipsync` $0.065/s
+
+### Audio Generation (10)
+`audio.tts` $0.03 · `audio.tts.minimax-hd` $0.04 · `audio.tts.minimax-turbo` $0.03 · `audio.tts.chatterbox` $0.03 · `audio.tts.dia-voice-clone` $0.04 · `audio.personaplex` $0.05 · `audio.kling-video-to-audio` $0.05 · `audio.sfx` $0.04 · `audio.sfx.stable-audio` $0.04 · `audio.sfx.beatoven` $0.04 · `audio.sfx.mirelo-video` $0.04 · `video.video-to-audio` $0.04
+
+### Audio Processing (2)
+`audio.transcribe` $0.01 · `audio.stem-separation` $0.04
+
+### Music (2)
+`music.generate` $0.03/min · `music.generate.beatoven` $0.04/min (royalty-free)
+
+### 3D Generation (9)
+`3d.image-to-3d` $0.065 · `3d.image-to-3d.hunyuan-pro` $0.13 · `3d.text-to-3d.hunyuan-pro` $0.16 · `3d.image-to-3d.hunyuan-rapid` $0.05 · `3d.text-to-3d.hunyuan-rapid` $0.065 · `3d.smart-topology` $0.04 · `3d.part-splitter` $0.04 · `3d.image-to-3d.meshy-v6` $0.10 · `3d.text-to-3d.meshy-v6` $0.10
+
+### Training (12) — per step
+`training.flux-lora` $0.004/step · `training.flux-2` $0.007/step · `training.flux-2-v2` $0.007/step · `training.flux-kontext` $0.005/step · `training.flux-portrait` $0.005/step · `training.flux-2-klein-4b` $0.004/step · `training.flux-2-klein-9b` $0.005/step · `training.qwen-image` $0.007/step · `training.qwen-image-edit` $0.007/step · `training.wan-video` $0.007/step · `training.wan-22-image` $0.005/step · `training.z-image` $0.004/step
+
+### Workflow Utilities (5)
+`utility.trim-video` $0.007 · `utility.blend-video` $0.007 · `utility.extract-frame` $0.007 · `utility.audio-compressor` $0.007 · `utility.impulse-response` $0.007
+
+## Claude API Features
+
+The chat assistant supports these advanced Anthropic API capabilities:
+
+- **Web Search** (`web_search_20250305`): Claude searches the web for real-time info, auto-cites sources. Great for creative research.
+- **Code Execution** (`code_execution_20250825`): Claude runs Python/Bash in a sandbox for data analysis, calculations, and visualizations.
+- **Citations**: Claude cites specific passages from provided documents for source-grounded responses.
+- **Prompt Caching**: System prompts cached up to 1 hour for reduced costs on repeated conversations.
+- **Message Batches**: Process up to 10,000 requests at 50% lower cost for bulk operations.
+
+## Notes
+
+- `GET /api/gateway/tools/{toolId}` returns the full input schema — check before invoking.
+- Payment signatures are one-time use. Never reuse between requests.
+- Request body must be identical between 402 challenge and paid retry.
+- Cheapest image: `flux-2-klein-realtime` ($0.016). Cheapest video: `wan-2.6-reference` ($0.09/s).
+- The signing script requires `SEISOAI_WALLET_KEY` — see **Setup** above.
+- The script only authorizes payments to SeisoAI's hard-coded address; any other payTo is rejected.
