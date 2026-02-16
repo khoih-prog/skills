@@ -2,7 +2,7 @@
 
 const WebSocket = require('ws');
 
-const WS_URL = 'ws://127.0.0.1:8788';
+const WS_URL = process.env.NOTNATIVE_WS_URL || 'ws://127.0.0.1:8788';
 
 let ws = null;
 let idCounter = 1;
@@ -21,7 +21,6 @@ function sendRequest(method, params = {}) {
       params
     }));
 
-    // 10 second timeout
     setTimeout(() => {
       if (pendingRequests.has(id)) {
         pendingRequests.delete(id);
@@ -36,16 +35,11 @@ async function initialize() {
     protocolVersion: '2024-11-05',
     capabilities: {},
     clientInfo: {
-      name: 'clawdbot-skill',
+      name: 'notnative-skill',
       version: '1.0.0'
     }
   });
   return result;
-}
-
-async function listTools() {
-  const result = await sendRequest('tools/list', {});
-  return result.tools;
 }
 
 async function callTool(name, args = {}) {
@@ -63,25 +57,32 @@ async function main() {
   if (!command) {
     console.error('Usage: mcp-client.js <command> [args...]');
     console.error('');
-    console.error('Commands:');
-    console.error('  list                    - List all available tools');
-    console.error('  call <tool> <args>     - Call a tool with JSON args');
-    console.error('  search <query>         - Search notes by query');
-    console.error('  semantic <query>       - Semantic search by meaning');
-    console.error('  read <name>            - Read a note by name');
-    console.error('  active                 - Get currently active note');
-    console.error('  create <content>       - Create a new note');
-    console.error('  insert <args>          - Insert content into note');
-    console.error('  append <content>       - Append content to note');
-    console.error('  update <name> <content> - Update a note');
-    console.error('  list-folders           - List all folders');
-    console.error('  list-notes [folder]    - List notes (optional folder filter)');
-    console.error('  list-tags              - List all tags');
-    console.error('  tasks                  - List pending tasks');
-    console.error('  events                 - Get upcoming calendar events');
-    console.error('  stats                  - Get workspace statistics');
-    console.error('  docs <query>           - Get app documentation');
-    console.error('  run-python <code>      - Execute Python code');
+    console.error('Note Commands:');
+    console.error('  search <query>           - Search notes');
+    console.error('  semantic <query>         - Semantic search');
+    console.error('  read <name>              - Read a note');
+    console.error('  active                  - Get active note');
+    console.error('  create <content> <name> <folder> - Create note');
+    console.error('  append <content> [name]  - Append to note');
+    console.error('  update <name> <content>  - Update note');
+    console.error('  list-notes [folder]      - List notes');
+    console.error('  list-folders            - List folders');
+    console.error('  list-tags               - List tags');
+    console.error('');
+    console.error('Memory Commands:');
+    console.error('  store <content>         - Store in memory');
+    console.error('  recall <query>          - Search memories');
+    console.error('  forget <query>          - Delete memories');
+    console.error('  profile                 - Get profile');
+    console.error('  profile-update <k:v>    - Update profile');
+    console.error('');
+    console.error('Other Commands:');
+    console.error('  tasks                   - List tasks');
+    console.error('  events                  - Get calendar events');
+    console.error('  stats                   - Workspace stats');
+    console.error('  docs <query>            - Get docs');
+    console.error('  run-python <code>       - Execute Python');
+    console.error('  list                    - List all tools');
     process.exit(1);
   }
 
@@ -92,22 +93,10 @@ async function main() {
       await initialize();
 
       switch (command) {
-        case 'list':
-          const tools = await listTools();
-          console.log(JSON.stringify(tools, null, 2));
-          break;
-
-        case 'call': {
-          const toolName = args[1];
-          const toolArgs = args[2] ? JSON.parse(args[2]) : {};
-          const result = await callTool(toolName, toolArgs);
-          console.log(JSON.stringify(result, null, 2));
-          break;
-        }
-
+        // ========== NOTE COMMANDS ==========
         case 'search': {
           const query = args[1];
-          const limit = args[2] ? parseInt(args[2]) : undefined;
+          const limit = args[2] ? parseInt(args[2]) : 10;
           const result = await callTool('search_notes', { query, limit });
           console.log(JSON.stringify(result, null, 2));
           break;
@@ -115,7 +104,7 @@ async function main() {
 
         case 'semantic': {
           const query = args[1];
-          const limit = args[2] ? parseInt(args[2]) : undefined;
+          const limit = args[2] ? parseInt(args[2]) : 10;
           const result = await callTool('semantic_search', { query, limit });
           console.log(JSON.stringify(result, null, 2));
           break;
@@ -143,13 +132,6 @@ async function main() {
           break;
         }
 
-        case 'insert': {
-          const toolArgs = JSON.parse(args[1]);
-          const result = await callTool('insert_into_note', toolArgs);
-          console.log(JSON.stringify(result, null, 2));
-          break;
-        }
-
         case 'append': {
           const content = args[1];
           const name = args[2];
@@ -160,14 +142,8 @@ async function main() {
 
         case 'update': {
           const name = args[1];
-          const content = args[2];
+          const content = args.slice(2).join(' ');
           const result = await callTool('update_note', { name, content });
-          console.log(JSON.stringify(result, null, 2));
-          break;
-        }
-
-        case 'list-folders': {
-          const result = await callTool('list_folders', {});
           console.log(JSON.stringify(result, null, 2));
           break;
         }
@@ -180,12 +156,65 @@ async function main() {
           break;
         }
 
+        case 'list-folders': {
+          const result = await callTool('list_folders', {});
+          console.log(JSON.stringify(result, null, 2));
+          break;
+        }
+
         case 'list-tags': {
           const result = await callTool('list_tags', {});
           console.log(JSON.stringify(result, null, 2));
           break;
         }
 
+        // ========== MEMORY COMMANDS ==========
+        case 'store':
+        case 'remember': {
+          const content = args.slice(1).join(' ');
+          const result = await callTool('memory_store', { content });
+          console.log(JSON.stringify(result, null, 2));
+          break;
+        }
+
+        case 'search':
+        case 'recall': {
+          const query = args.slice(1).join(' ');
+          const limit = 5;
+          const result = await callTool('memory_search', { query, limit });
+          console.log(JSON.stringify(result, null, 2));
+          break;
+        }
+
+        case 'forget': {
+          const query = args.slice(1).join(' ');
+          const result = await callTool('memory_forget', { query });
+          console.log(JSON.stringify(result, null, 2));
+          break;
+        }
+
+        case 'profile': {
+          const action = args[1];
+          if (action === 'update') {
+            const keyValue = args.slice(2).join(' ');
+            const idx = keyValue.indexOf(':');
+            if (idx === -1) {
+              console.error('Error: Use format key:value');
+              process.exit(1);
+            }
+            const key = keyValue.substring(0, idx);
+            const value = keyValue.substring(idx + 1);
+            const data = { [key]: value };
+            const result = await callTool('memory_profile', { action: 'update', data });
+            console.log(JSON.stringify(result, null, 2));
+          } else {
+            const result = await callTool('memory_profile', { action: 'get' });
+            console.log(JSON.stringify(result, null, 2));
+          }
+          break;
+        }
+
+        // ========== OTHER COMMANDS ==========
         case 'tasks': {
           const result = await callTool('list_tasks', {});
           console.log(JSON.stringify(result, null, 2));
@@ -212,8 +241,22 @@ async function main() {
         }
 
         case 'run-python': {
-          const code = args[1];
+          const code = args.slice(1).join(' ');
           const result = await callTool('run_python', { code });
+          console.log(JSON.stringify(result, null, 2));
+          break;
+        }
+
+        case 'list': {
+          const result = await sendRequest('tools/list', {});
+          console.log(JSON.stringify(result.tools, null, 2));
+          break;
+        }
+
+        case 'call': {
+          const toolName = args[1];
+          const toolArgs = args[2] ? JSON.parse(args[2]) : {};
+          const result = await callTool(toolName, toolArgs);
           console.log(JSON.stringify(result, null, 2));
           break;
         }
@@ -236,7 +279,6 @@ async function main() {
     const msg = JSON.parse(data.toString());
 
     if (msg.method === 'endpoint') {
-      // Ignore endpoint messages
       return;
     }
 

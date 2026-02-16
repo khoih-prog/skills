@@ -3,9 +3,15 @@
   "slug": "notnative",
   "displayName": "Notnative",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1769356919170,
-    "commit": "https://github.com/clawdbot/skills/commit/92c69e8ff776895f84c482db2053750b73737a3d"
+    "version": "1.0.1",
+    "publishedAt": 1771176892128,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1769356919170,
+      "commit": "https://github.com/clawdbot/skills/commit/92c69e8ff776895f84c482db2053750b73737a3d"
+    }
+  ]
 }
