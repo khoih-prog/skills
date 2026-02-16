@@ -1,16 +1,15 @@
 ---
 name: universal-skills-manager
-description: The master coordinator for AI skills. Discovers skills from multiple sources (SkillsMP.com, SkillHub, and ClawHub), manages installation, and synchronization across Claude Code, Gemini CLI, Google Anti-Gravity, OpenCode, and other AI tools. Handles User-level (Global) and Project-level (Local) scopes.
-homepage: https://github.com/jbendavi/universal-skills_mp-manager
-disable-model-invocation: true
+description: "The master coordinator for AI skills. Discovers skills from multiple sources (SkillsMP.com, SkillHub, and ClawHub), manages installation, and synchronization across Claude Code, Gemini CLI, Google Anti-Gravity, OpenCode, and other AI tools. Handles User-level (Global) and Project-level (Local) scopes."
+compatibility: "Requires python3, curl, and network access to skillsmp.com, skills.palebluedot.live, clawhub.ai, and github.com"
 metadata:
-  clawdbot:
-    requires:
-      bins: ["python3", "curl"]
-    primaryEnv: SKILLSMP_API_KEY
+  homepage: https://github.com/jacob-bd/universal-skills-manager
+  disable-model-invocation: "true"
+  requires-bins: "python3, curl"
+  primaryEnv: SKILLSMP_API_KEY
 ---
 
-<!-- Version: 1.5.5 -->
+<!-- Version: 1.6.0 -->
 
 # Universal Skills Manager
 
@@ -59,14 +58,16 @@ This skill (Universal Skills Manager) requires network access to call the Skills
 - **If user asks to package/ZIP the Universal Skills Manager itself for claude.ai:**
   Tell the user: "The Universal Skills Manager won't work on claude.ai because it requires network access to call the SkillsMP API, SkillHub API, ClawHub API, and GitHub APIs. claude.ai's code execution environment doesn't allow outbound network requests. However, I can package OTHER skills for claude.ai upload - those will work as long as they don't require network access."
 
-- **If user wants to try the Universal Skills Manager on Claude Desktop with Coworker:**
-  Tell the user: "Claude Desktop with Coworker has network access capabilities. To use the Universal Skills Manager there, you may need to extend network access to these domains in your Cowork settings:
+- **If user wants to try the Universal Skills Manager on Claude Desktop:**
+  Tell the user: "Claude Desktop has network access capabilities, but there is a **known bug** where custom domains added to the 'Additional allowed domains' setting are not included in the network egress JWT token. This means the skill cannot reach the required APIs even after whitelisting them.
+
+  **Required domains** (for when the bug is fixed):
   - `skillsmp.com` (for SkillsMP skill searches)
   - `skills.palebluedot.live` (for SkillHub skill searches)
   - `clawhub.ai` (for ClawHub skill searches and direct file downloads)
   - `api.github.com` and `raw.githubusercontent.com` (for skill downloads from GitHub)
-  
-  This is experimental - Cowork's default network access is restricted. Check your Cowork network egress settings."
+
+  **Workaround:** Use Claude Code CLI instead, which has unrestricted network access and works with all three skill sources. You can install via: `curl -fsSL https://raw.githubusercontent.com/jacob-bd/universal-skills-manager/main/install.sh | sh -s -- --tools claude`"
 
 *(Note: If a tool uses a different directory structure, ask the user to confirm the path, then note it for future reference.)*
 
@@ -103,6 +104,38 @@ This skill (Universal Skills Manager) requires network access to call the Skills
 4.  **Determine Primary Target:**
     *   Ask: "Should this be installed Globally (User) or Locally (Project)?"
     *   Determine the primary tool (e.g., if user is in Claude Code, Claude is primary)
+    *   **If the user specifies claude.ai or Claude Desktop as the target**, go to Step 4a instead of Step 5.
+
+    **4a. Claude Desktop / claude.ai Target Flow:**
+    If the user wants the skill for claude.ai or Claude Desktop:
+    1.  **Validate frontmatter** by running `validate_frontmatter.py` against the downloaded SKILL.md:
+        ```bash
+        python3 scripts/validate_frontmatter.py /path/to/downloaded/SKILL.md
+        ```
+    2.  **If the skill passes validation**, package it as a ZIP and provide upload instructions (see Step 6a below).
+    3.  **If the skill fails validation**, notify the user with the exact issues before doing anything:
+        > "This skill isn't formatted correctly for Claude Desktop. I found these issues:
+        > - [list each issue from the validator, e.g., 'Unsupported top-level key: version', 'Description uses a YAML block scalar']
+        >
+        > I can fix these automatically — unsupported keys will be moved into metadata, block scalars will be converted to inline strings, etc. The skill's functionality won't change.
+        >
+        > Would you like me to fix it and package it for Claude Desktop?"
+    4.  **If the user agrees**: Run the fix and re-validate:
+        ```bash
+        python3 scripts/validate_frontmatter.py /path/to/downloaded/SKILL.md --fix
+        ```
+        Then package as ZIP (Step 6a).
+    5.  **If the user declines**: Skip Claude Desktop. Offer to install the skill as-is to other locally detected tools instead.
+
+    **6a. Package and deliver ZIP:**
+    *   Create a ZIP containing the skill folder (with fixed SKILL.md if applicable)
+    *   Provide upload instructions:
+        > "Your skill is packaged and ready. To install on Claude Desktop:
+        > 1. Go to Settings → Capabilities
+        > 2. Click 'Upload skill' in the Skills section
+        > 3. Select the ZIP file and upload"
+    *   Continue to Step 5 to offer syncing to other local tools as well.
+
 5.  **The "Sync Check" (CRITICAL):**
     *   **Scan:** Check if other supported tools are installed on the system (look for their config folders)
     *   **Propose:** "I see you also have OpenCode and Cursor installed. Do you want to sync this skill to them as well?"
@@ -305,7 +338,21 @@ This skill (Universal Skills Manager) requires network access to call the Skills
 1.  **Explain the Process:**
     "I'll create a ZIP file with this skill ready for upload to claude.ai or Claude Desktop. Since cloud environments don't have access to your local environment variables, I can optionally embed your API key in the package. Note: the API key is optional — SkillHub and ClawHub search work without one."
 
-2.  **Collect API Key (Optional):**
+2.  **Validate Frontmatter Compatibility (CRITICAL — do this BEFORE packaging):**
+    Run `validate_frontmatter.py` to check the SKILL.md against the Agent Skills spec:
+    ```bash
+    # Validate only (report issues)
+    python3 scripts/validate_frontmatter.py /path/to/SKILL.md
+
+    # Validate and auto-fix (overwrites file)
+    python3 scripts/validate_frontmatter.py /path/to/SKILL.md --fix
+
+    # Validate a ZIP file
+    python3 scripts/validate_frontmatter.py /path/to/skill.zip --fix
+    ```
+    The script checks for unsupported top-level keys, nested metadata, non-string metadata values, and field length violations. With `--fix`, it automatically moves unsupported keys into `metadata`, flattens nested objects, and converts values to strings. Tell the user what was fixed. See Operational Rule 5 for the full spec.
+
+3.  **Collect API Key (Optional):**
     *   Ask: "Would you like to include your SkillsMP API key for curated search? This is optional — SkillHub and ClawHub work without a key. If you skip this, the packaged skill will still work for SkillHub and ClawHub searches."
     *   If user wants to include a key:
         -   Ask: "Please provide your SkillsMP API key. You can get one at https://skillsmp.com"
@@ -321,7 +368,7 @@ This skill (Universal Skills Manager) requires network access to call the Skills
         > - **Rotate your key** if you suspect the ZIP was exposed
         > - The key is stored locally in `config.json` inside the ZIP and is only used at runtime to authenticate with the SkillsMP API"
 
-3.  **Create Package Contents:**
+4.  **Create Package Contents:**
     *   Create a temporary directory structure:
         ```
         universal-skills-manager/
@@ -337,7 +384,7 @@ This skill (Universal Skills Manager) requires network access to call the Skills
         }
         ```
 
-4.  **Create ZIP File:**
+5.  **Create ZIP File:**
     *   Use Python to create the ZIP:
         ```python
         import zipfile
@@ -373,7 +420,7 @@ This skill (Universal Skills Manager) requires network access to call the Skills
         ```
     *   Alternatively, provide the ZIP as a downloadable artifact
 
-5.  **Provide Upload Instructions:**
+6.  **Provide Upload Instructions:**
     *   "Your skill package is ready! To use it:"
     *   "1. Download the ZIP file: `universal-skills-manager.zip`"
     *   "2. Go to claude.ai → Settings → Capabilities"
@@ -381,7 +428,7 @@ This skill (Universal Skills Manager) requires network access to call the Skills
     *   "4. Select the ZIP file and upload"
     *   "5. Enable the skill and start using it!"
 
-6.  **Security Reminder:**
+7.  **Security Reminder:**
     *   If a key was embedded: "This ZIP contains your API key. Do NOT share it publicly, distribute it to others, or commit it to version control. If you need to share the skill, create a key-free version (without `config.json`) and let each user add their own key."
     *   If no key was embedded: "This ZIP is safe to share — it contains no credentials. Recipients can add their own API key later, or use SkillHub/ClawHub search which requires no key."
 
@@ -394,6 +441,49 @@ This skill (Universal Skills Manager) requires network access to call the Skills
     *   Gemini uses `SKILL.md`.
     *   Cline uses the same `SKILL.md` format with `name` and `description` frontmatter. The `name` field must match the directory name. No manifest generation required. Note: Cline also reads `.claude/skills/` at the project level, so Claude Code project skills work in Cline automatically.
     *   If OpenCode or Anti-Gravity require a specific manifest (e.g., `manifest.json`), generate a basic one based on the `SKILL.md` frontmatter during installation.
+5.  **claude.ai / Claude Desktop Frontmatter Compatibility Check:**
+    When a user wants to upload or package a skill for **claude.ai** or **Claude Desktop**, validate the SKILL.md frontmatter against the [Agent Skills specification](https://agentskills.io/specification). Claude Desktop uses `strictyaml` (not standard PyYAML) which rejects ambiguous YAML constructs like block scalars. It will reject non-compliant skills with "malformed YAML frontmatter" or "unexpected key" errors.
+
+    **Allowed top-level frontmatter fields (Agent Skills spec):**
+
+    | Field | Required | Constraints |
+    | :--- | :--- | :--- |
+    | `name` | Yes | Max 64 chars, lowercase letters/numbers/hyphens only, must match directory name |
+    | `description` | Yes | Max 1024 chars. No angle brackets (`<` or `>`). Avoid literal block scalars (`|`) — known to fail with blank lines. Folded scalars (`>`) work but inline strings are safest |
+    | `license` | No | License name or reference to bundled file |
+    | `compatibility` | No | Max 500 chars, environment requirements |
+    | `metadata` | No | Flat key-value pairs only (string keys to string values — no nested objects, no arrays) |
+    | `allowed-tools` | No | Space-delimited list of pre-approved tools (experimental) |
+
+    **Use the validation script (preferred — avoids manual YAML errors):**
+    ```bash
+    # Validate a SKILL.md
+    python3 scripts/validate_frontmatter.py /path/to/SKILL.md
+
+    # Validate and auto-fix in place
+    python3 scripts/validate_frontmatter.py /path/to/SKILL.md --fix
+
+    # Validate and fix a ZIP file (rewrites SKILL.md inside the ZIP)
+    python3 scripts/validate_frontmatter.py /path/to/skill.zip --fix
+    ```
+    The script (`scripts/validate_frontmatter.py`) is zero-dependency Python 3. It checks all constraints and with `--fix` automatically applies these corrections:
+    -   Moves unsupported top-level keys (e.g., `version`, `author`, `homepage`, `category`) into `metadata` as string values
+    -   Flattens nested `metadata` objects (e.g., `metadata.clawdbot.requires.bins: [x, y]` → `metadata.clawdbot-requires-bins: "x, y"`)
+    -   Converts non-string metadata values to quoted strings (e.g., `true` → `"true"`)
+    -   Collapses literal block scalar (`|`) descriptions to inline quoted strings (known to fail with blank lines). Folded scalars (`>`) trigger a warning but work in current Claude Desktop
+    -   Strips angle brackets (`<` `>`) from description (Anthropic's validator rejects them)
+    -   Converts YAML list-format `allowed-tools` to space-delimited string
+    -   Truncates `description` if over 1024 chars
+    -   Validates the fix and reports if any issues remain
+
+    **If the script is not available**, do the validation manually:
+    1.  Read the SKILL.md frontmatter
+    2.  Check all top-level keys are in the allowed set: `name`, `description`, `license`, `compatibility`, `metadata`, `allowed-tools`
+    3.  If `metadata` is present, verify all values are strings (no nested objects or arrays)
+    4.  Verify `name` is lowercase with hyphens only, max 64 chars
+    5.  Verify `description` is max 1024 chars
+
+    **If validation fails**, tell the user exactly what's wrong and offer to fix it (run the script with `--fix`, or apply the fixes manually).
 
 ## Available Tools
 - `bash` (curl): Make API calls to SkillsMP.com, SkillHub (skills.palebluedot.live), and ClawHub (clawhub.ai); fetch skill content from GitHub or ClawHub directly.
