@@ -3,11 +3,16 @@
   "slug": "personas",
   "displayName": "Personas",
   "latest": {
-    "version": "2.2.3",
-    "publishedAt": 1770801824680,
-    "commit": "https://github.com/openclaw/skills/commit/6b0163448badb1c452c20b5a169c963a0b659231"
+    "version": "2.2.6",
+    "publishedAt": 1771184618372,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.2.3",
+      "publishedAt": 1770801824680,
+      "commit": "https://github.com/openclaw/skills/commit/6b0163448badb1c452c20b5a169c963a0b659231"
+    },
     {
       "version": "2.2.0",
       "publishedAt": 1770378957355,
