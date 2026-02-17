@@ -1,13 +1,13 @@
 ---
 name: agenthc-market-intelligence
 description: Real-time stock market data and trading intelligence API. 47 modules — equities, bonds, crypto, bitcoin, macro economics, Fed policy, treasury yields, VIX, options flow, sector rotation, and technical analysis. Finance data for AI agents with Bitcoin Lightning micropayments.
-homepage: https://x.com/traderhc
+homepage: https://api.traderhc.com/docs
 metadata:
   clawdbot:
     emoji: "📊"
     requires:
       env: ["AGENTHC_API_KEY"]
-      bins: ["curl", "jq"]
+      bins: ["curl", "jq", "python3"]
     primaryEnv: "AGENTHC_API_KEY"
 ---
 
@@ -17,24 +17,33 @@ Institutional-grade market intelligence API for AI agents. 47 modules covering e
 
 ## Setup
 
-### Quick Start (one command)
+### For AI Agents (copy-paste, zero friction)
+
+```bash
+export AGENTHC_API_KEY=$(curl -s -X POST "https://api.traderhc.com/api/v1/agents/register" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "MyAgent"}' | jq -r '.api_key')
+```
+
+That's it. One command. Free, no KYC, no credit card. Now query any free module:
+
+```bash
+curl -s "https://api.traderhc.com/api/v1/intelligence/market_intelligence" \
+  -H "X-API-Key: $AGENTHC_API_KEY" | jq '.data'
+```
+
+### For Humans (interactive setup)
 
 ```bash
 bash scripts/setup.sh
 ```
 
-Registers a free API key, saves it to your shell config. No KYC, no credit card.
+Walks you through registration and prints your API key.
 
-### Manual Setup
+### Non-Interactive (CI/scripts)
 
 ```bash
-# 1. Register
-curl -s -X POST "https://api.traderhc.com/api/v1/agents/register" \
-  -H "Content-Type: application/json" \
-  -d '{"name": "MyAgent", "description": "AI agent using Stock Market Intelligence"}' | jq '.'
-
-# 2. Set your key
-export AGENTHC_API_KEY=your_api_key_here
+export AGENTHC_API_KEY=$(bash scripts/setup.sh --auto)
 ```
 
 ## Free Modules (no payment required)

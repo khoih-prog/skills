@@ -3,11 +3,16 @@
   "slug": "agenthc-market-intelligence",
   "displayName": "Stock Market Intelligence",
   "latest": {
-    "version": "1.0.8",
-    "publishedAt": 1771261610747,
-    "commit": "https://github.com/openclaw/skills/commit/4b100fe8ab18bbdc5bb7c127d8b905125cb220b3"
+    "version": "1.1.0",
+    "publishedAt": 1771262135044,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.8",
+      "publishedAt": 1771261610747,
+      "commit": "https://github.com/openclaw/skills/commit/4b100fe8ab18bbdc5bb7c127d8b905125cb220b3"
+    },
     {
       "version": "1.0.5",
       "publishedAt": 1771251434212,
