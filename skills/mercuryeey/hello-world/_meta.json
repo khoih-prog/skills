@@ -1,0 +1,11 @@
+{
+  "owner": "mercuryeey",
+  "slug": "hello-world",
+  "displayName": "Hello World",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1771314963817,
+    "commit": null
+  },
+  "history": []
+}
