@@ -3,11 +3,16 @@
   "slug": "discogs-cli",
   "displayName": "Discogs Cli",
   "latest": {
-    "version": "1.2.1",
-    "publishedAt": 1771215560108,
-    "commit": "https://github.com/openclaw/skills/commit/478956d35994751b357fb0c214aff43b220b64ab"
+    "version": "1.3.1",
+    "publishedAt": 1771293413514,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.2.1",
+      "publishedAt": 1771215560108,
+      "commit": "https://github.com/openclaw/skills/commit/478956d35994751b357fb0c214aff43b220b64ab"
+    },
     {
       "version": "1.2.0",
       "publishedAt": 1771207606442,
