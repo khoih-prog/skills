@@ -1,0 +1,11 @@
+{
+  "owner": "saikatkumardey",
+  "slug": "searxng-selfhost",
+  "displayName": "SearXNG Self-Host",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1771348306908,
+    "commit": null
+  },
+  "history": []
+}
