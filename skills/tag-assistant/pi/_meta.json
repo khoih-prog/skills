@@ -1,0 +1,11 @@
+{
+  "owner": "tag-assistant",
+  "slug": "pi",
+  "displayName": "People Investigation",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1771341189091,
+    "commit": null
+  },
+  "history": []
+}
