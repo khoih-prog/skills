@@ -3,9 +3,15 @@
   "slug": "browser-auth",
   "displayName": "Browser Auth Tunnel",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1771327905991,
-    "commit": "https://github.com/openclaw/skills/commit/9e64b6dab91c54b145752a68efc7f1121004bbf7"
+    "version": "1.2.1",
+    "publishedAt": 1771329156091,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1771327905991,
+      "commit": "https://github.com/openclaw/skills/commit/9e64b6dab91c54b145752a68efc7f1121004bbf7"
+    }
+  ]
 }

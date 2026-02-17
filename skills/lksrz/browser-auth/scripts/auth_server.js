@@ -12,22 +12,27 @@ async function startServer({
     chromiumPath = '/usr/bin/chromium-browser', 
     sessionFile = 'session.json',
     token = crypto.randomBytes(16).toString('hex'),
-    proxy = process.env.BROWSER_PROXY || 'socks5://127.0.0.1:40000'
+    proxy = process.env.BROWSER_PROXY || null
 }) {
     const app = express();
     const server = http.createServer(app);
     const io = new Server(server);
 
-    // Middleware to check token in URL
     app.get('/', (req, res) => {
         if (req.query.token !== token) {
             return res.status(403).send('Forbidden: Invalid or missing token');
         }
-        const indexPath = path.join(__dirname, '../assets/index.html');
+        // Use path.resolve to ensure we have an absolute path
+        const indexPath = path.resolve(__dirname, '../assets/index.html');
+        
+        if (!fs.existsSync(indexPath)) {
+            console.error(`Asset not found at: ${indexPath}`);
+            return res.status(404).send(`NotFoundError: Asset not found at ${indexPath}`);
+        }
+        
         res.sendFile(indexPath);
     });
 
-    // Socket.io middleware for token auth
     io.use((socket, next) => {
         const socketToken = socket.handshake.query.token;
         if (socketToken === token) {
@@ -37,27 +42,25 @@ async function startServer({
     });
 
     io.on('connection', async (socket) => {
-        console.log('User authenticated and connected to browser tunnel');
+        console.log('User authenticated and connected');
         
-        let useProxy = false;
-        if (proxy) {
-            // Simple check if proxy is available (optional improvement)
-            useProxy = true;
+        const launchArgs = [
+            '--disable-dev-shm-usage',
+            '--no-first-run',
+            '--no-zygote'
+        ];
+
+        if (process.env.BROWSER_NO_SANDBOX === 'true') {
+            console.warn('WARNING: Running browser without sandbox (RCE risk)');
+            launchArgs.push('--no-sandbox');
+            launchArgs.push('--disable-setuid-sandbox');
         }
 
         const browser = await chromium.launch({
             executablePath: chromiumPath,
             headless: true,
-            proxy: useProxy ? { server: proxy } : undefined,
-            args: [
-                '--no-sandbox', 
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas',
-                '--no-first-run',
-                '--no-zygote',
-                '--single-process'
-            ]
+            proxy: proxy ? { server: proxy } : undefined,
+            args: launchArgs
         });
         
         const context = await browser.newContext({
@@ -98,23 +101,18 @@ async function startServer({
             const cookies = await context.cookies();
             const storage = await page.evaluate(() => JSON.stringify(localStorage));
             fs.writeFileSync(sessionFile, JSON.stringify({ cookies, storage }, null, 2));
-            console.log(`Session saved to ${sessionFile}`);
             socket.emit('captured', { success: true });
         });
 
         socket.on('disconnect', async () => {
             clearInterval(interval);
             await browser.close();
-            console.log('Browser closed on disconnect');
         });
     });
 
     server.listen(port, host, () => {
         console.log(`\n🚀 BROWSER AUTH SERVER READY`);
-        console.log(`Host: ${host}`);
-        console.log(`Port: ${port}`);
-        console.log(`Token: ${token}`);
-        console.log(`\nAccess URL: http://${host === '0.0.0.0' ? 'YOUR_IP' : host}:${port}/?token=${token}\n`);
+        console.log(`URL: http://${host === '0.0.0.0' ? 'YOUR_IP' : host}:${port}/?token=${token}\n`);
     });
 
     return server;
@@ -126,7 +124,6 @@ if (require.main === module) {
     const sessionFile = args[1] || 'session.json';
     const host = process.env.AUTH_HOST || '127.0.0.1';
     const token = process.env.AUTH_TOKEN || crypto.randomBytes(16).toString('hex');
-    
     startServer({ port, host, sessionFile, token });
 }
 
