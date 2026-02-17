@@ -3,9 +3,15 @@
   "slug": "agent-brain",
   "displayName": "Agent Brain",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1771287055212,
-    "commit": "https://github.com/openclaw/skills/commit/9caa7de8bf713b42d8bdb399d003a8fca96ec8bd"
+    "version": "1.0.9",
+    "publishedAt": 1771288589612,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1771287055212,
+      "commit": "https://github.com/openclaw/skills/commit/9caa7de8bf713b42d8bdb399d003a8fca96ec8bd"
+    }
+  ]
 }

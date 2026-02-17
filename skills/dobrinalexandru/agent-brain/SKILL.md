@@ -1,80 +1,111 @@
 ---
 name: agent-brain
-description: "Continuous learning system for AI agents with 6 cognitive modules"
+description: "Memory system for AI agents - never repeat yourself"
 homepage: https://github.com/alexdobri/clawd/tree/main/skills/agent-brain
 metadata:
-  clawdbot:
+  openclaw:
     emoji: 🧠
-    modules: [archive, ingest, vibe, gauge, signal, ritual]
+    disable-model-invocation: true
+    user-invocable: true
 ---
 
 # Agent Brain 🧠
 
-Continuous learning system for AI agents. Like a human brain - learns, remembers, and improves from experience.
+*Your AI's personal memory that never forgets*
 
-## External Endpoints
+## The Problem
 
-| Endpoint | Data Sent | Data Received |
-|----------|-----------|---------------|
-| None | This is an instruction-only skill | N/A |
+Every conversation starts from zero. You repeat yourself. The AI forgets what you taught it yesterday.
 
-## Security & Privacy
+## The Solution
 
-This skill runs locally. No data leaves your machine. Memory is stored in `memory/` folder only.
-
-## Model Invocation
-
-This skill runs autonomously on every task. You can disable by unloading the skill.
-
-## Trust
-
-By using this skill, you agree to its instructions operating in your sessions. Only install if you trust the skill author.
-
-## Overview
-
-One skill with 6 cognitive modules:
-
-| Module | File | Function |
-|--------|------|----------|
-| **Archive** | `modules/archive/SKILL.md` | Memory encoding, retrieval |
-| **Ingest** | `modules/ingest/SKILL.md` | External knowledge ingestion |
-| **Vibe** | `modules/vibe/SKILL.md` | Emotional tone detection |
-| **Gauge** | `modules/gauge/SKILL.md` | Confidence, resources |
-| **Signal** | `modules/signal/SKILL.md` | Conflict detection |
-| **Ritual** | `modules/ritual/SKILL.md` | Habit formation |
-
-## How It Works
-
-This skill runs automatically. The dispatcher selects only relevant modules per task - not all modules run every time.
-
-## Core Loop
+Agent Brain gives your AI a memory that actually works.
 
 ```
-Task received
-    ↓
-[DISPATCHER] → Determine which modules needed
-    ↓
-[RELEVANT MODULES] → Only run these
-    ↓
-[EXECUTE]
-    ↓
-[ARCHIVE] → Store outcome (always)
+┌─────────────────────────────────────────────────────────┐
+│                    👤 YOU                               
+│  "Remember: I prefer prose over bullets"              
+└──────────────────────┬──────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────┐
+│                    🧠 AGENT BRAIN                      
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐              
+│  │ Archive │  │ Signal  │  │  Gauge  │              
+│  │   📦    │  │   ⚡    │  │   📊    │              
+│  │ Stores  │  │ Catches │  │ Confidence              
+│  │ facts   │  │ conflicts│  │  level  │              
+│  └────┬────┘  └────┬─────┘  └────┬────┘              
+│       │           │            │                     
+│  ┌─────────┐  ┌─────────┐                           
+│  │ Ritual  │  │  Vibe   │                           
+│  │   🔄    │  │   🎭    │                           
+│  │ Habits  │  │  Tone   │                           
+│  └─────────┘  └─────────┘                           
+└──────────────────────┬──────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────┐
+│              💾 MEMORY (Local Only)                    
+│  ┌─────────────────────────────────────────────────┐   
+│  │           memory/index.json                     │   
+│  │           All data stays on your machine       │   
+│  └─────────────────────────────────────────────────┘   
+└─────────────────────────────────────────────────────────┘
 ```
 
-### Module Selection by Task Type
+## What You Get
 
-| Task Type | Modules Run |
-|-----------|-------------|
-| Simple question | Gauge + Archive |
-| URL provided | Gauge + Ingest + Archive + Vibe |
-| Recurring task | Gauge + Ritual + Vibe |
-| Error check | Gauge + Signal + Vibe |
-| New topic | Gauge + Archive + Ingest + Signal + Vibe |
+| Feature | Benefit |
+|---------|---------|
+| **Never repeat yourself** | Teach once, remember forever |
+| **Catch contradictions** | AI warns when you contradict yourself |
+| **Confidence tracking** | Knows when it's sure vs. unsure |
+| **Habit learning** | Remembers your workflows |
+| **Tone detection** | Adjusts to your mood |
 
-## Usage
+## What Each Module Does
+
+| Module | What It Does | Example |
+|--------|--------------|---------|
+| **Archive** | Stores facts & knowledge | "Remember: Alex prefers prose" |
+| **Signal** | Detects contradictions | Warns if you contradict yourself |
+| **Gauge** | Tracks confidence level | Says "I'm not sure" when appropriate |
+| **Ritual** | Learns your habits | Remembers "Alex always starts with research" |
+| **Vibe** | Detects emotional tone | Adjusts response to match your mood |
+| **Ingest** | Fetches URLs (⚠️ disabled) | "Ingest: https://..." |
+
+## Storage (Local Only)
+
+**All data stays on your machine:**
+
+- File: `memory/index.json`
+- No cloud sync by default
+- You control where data goes
+
+### Optional: SuperMemory Sync
+
+If you want cloud backup, you can enable SuperMemory:
+
+1. Install SuperMemory integration separately
+2. Edit Archive module to enable sync
+3. Data stays local unless YOU enable cloud
+
+## Commands
 
 ```
-/skill agent-brain
+"Remember: <fact>"        → Store a fact
+"Check conflicts"          → Look for contradictions
+"How confident are you?"   → Gauge module
 ```
 
-All 6 modules included - no extra installs needed.
+## Security
+
+- Ingest module disabled by default
+- Runs only on explicit commands
+- All data stored locally
+- No automatic cloud sync
+
+---
+
+*Install once. Works forever. Your data stays yours.*

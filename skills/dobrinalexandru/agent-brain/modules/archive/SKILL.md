@@ -11,64 +11,45 @@ Memory encoding, retrieval, consolidation, and decay. The brain's storage system
 - **Consolidate**: Strengthen important, compress old
 - **Decay**: Remove stale, low-value data
 
-## Memory Types
+## Storage: Local Only
 
-### Episodic
-Specific events with context:
-```
-"2026-02-17: Meeting with Anthony about TIM2 funding"
-```
+**All data stays on your machine.**
 
-### Factual
-Knowledge and facts:
-```
-"VitaDAO is a longevity-focused DAO"
-```
+File: `memory/index.json`
 
-### Procedural
-How-to knowledge:
-```
-"How to run crypto check → perplexity → extract → memory"
-```
-
-### Preferences
-User choices:
-```
-"Prefers concise responses over detailed"
-```
-
-## Operations
-
-### Store
 ```json
 {
   "type": "episodic|factual|procedural|preference",
   "content": "...",
-  "context": {...},
-  "importance": 0.9,
-  "tags": ["topic", "people"],
   "timestamp": "2026-02-17T01:30:00Z"
 }
 ```
 
-### Retrieve
-- By similarity (semantic search)
-- By time (episodic)
-- By tag (indexed)
-- By importance (reinforced)
+## Optional: SuperMemory Sync
 
-### Consolidate
-- Merge similar memories
-- Extract patterns
-- Strengthen frequently accessed
+SuperMemory cloud sync is **OPT-IN ONLY**.
 
-### Decay
+To enable:
+1. Have SuperMemory tool installed in your OpenClaw
+2. Edit this file to uncomment the sync call
+3. By default: NO data leaves your machine
+
+### Disabled by Default
+
 ```
-importance = importance * decay_rate
-
-if importance < 0.1:
-  remove or compress
+# Default: Local only
+# To enable cloud sync, edit this module and uncomment:
+# supermemory_store(category:"fact", text:"...")
 ```
+
+## What Goes Where
+
+| Memory Type | Local | Cloud |
+|-------------|-------|-------|
+| Factual | ✅ Always | ⬜ Opt-in |
+| Preference | ✅ Always | ⬜ Opt-in |
+| Episodic | ✅ Always | ❌ No |
+| Procedural | ✅ Always | ❌ No |
 
 ## Usage
 
@@ -77,7 +58,6 @@ if importance < 0.1:
 "Learn: how to do X"
 "I prefer X over Y"
 "What do you know about X?"
-"Forget about X"
 ```
 
 ## Integration
@@ -86,10 +66,3 @@ Part of Agent Brain. Works with:
 - **Gauge** → knows when to retrieve
 - **Signal** → checks for conflicts
 - **Ritual** → stores shortcuts
-
-## Parameters
-
-- **Decay rate:** 0.95/month
-- **Threshold:** 0.1 (below → remove)
-- **Consolidation:** Daily
-- **Max episodic:** 1000 (compress old)
