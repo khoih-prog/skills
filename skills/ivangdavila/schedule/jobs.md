@@ -1,36 +1,58 @@
-# Scheduled Jobs
+# Job Storage Format
 
-Active jobs for this user. Update on add/remove/edit.
+Jobs are stored in ~/schedule/jobs.json. Each job captures what the USER requested.
 
 ## Format
-```
-## [id]
-- Description: [what]
-- Schedule: [cron/interval/one-shot]
-- Timezone: [zone]
-- Next: [ISO timestamp]
-- Created: [date]
-- Status: active | paused | completed
-```
 
-## Example
-```
-## reminder_standup
-- Description: Daily standup reminder
-- Schedule: 0 9 * * 1-5 (weekdays 9am)
-- Timezone: Europe/Madrid
-- Next: 2026-02-12T09:00:00+01:00
-- Created: 2026-02-10
-- Status: active
+```json
+{
+  "job_id": {
+    "task": "User's exact request",
+    "cron": "cron expression or ISO timestamp",
+    "timezone": "Europe/Madrid",
+    "requires": ["skill1", "skill2"],
+    "created": "2024-03-15",
+    "status": "active"
+  }
+}
 ```
 
----
+## Fields
 
-## Active Jobs
-<!-- Add jobs here as created -->
+| Field | Required | Description |
+|-------|----------|-------------|
+| task | Yes | What user asked to do (their words) |
+| cron | Yes | When to run (cron expr or ISO for one-shot) |
+| timezone | Yes | User's timezone |
+| requires | No | Skills/permissions this job needs |
+| created | Yes | When job was created |
+| status | Yes | active, paused, or completed |
 
-## Paused Jobs
-<!-- Jobs temporarily disabled -->
+## Example Jobs
 
-## Completed
-<!-- One-shot jobs that fired -->
+```json
+{
+  "morning_reminder": {
+    "task": "Remind me to check calendar",
+    "cron": "0 8 * * *",
+    "timezone": "Europe/Madrid",
+    "requires": [],
+    "created": "2024-03-15",
+    "status": "active"
+  },
+  "weekly_summary": {
+    "task": "Summarize my week and send to my email",
+    "cron": "0 18 * * 5",
+    "timezone": "Europe/Madrid",
+    "requires": ["mail"],
+    "created": "2024-03-15",
+    "status": "active"
+  }
+}
+```
+
+## Notes
+
+- `requires` is populated when user explicitly grants access
+- Empty `requires` = notification/reminder only
+- Jobs with `requires` will use those skills when executing

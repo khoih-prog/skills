@@ -1,76 +1,105 @@
 ---
-name: "Schedule"
-description: "Program any recurring or one-time task. Daily reports, reminders, checks. Simple requests stay simple."
+name: Schedule
+slug: schedule
+version: 1.0.2
+description: Program recurring or one-time tasks. User defines what to do, skill handles when.
+changelog: Clarified user-driven execution model, removed assumed access patterns
+metadata: {"clawdbot":{"emoji":"📅","requires":{"bins":[]},"os":["linux","darwin","win32"]}}
 ---
 
-## Core Behavior
-
-Simple requests → simple execution. Don't overcomplicate.
-
-- "Every morning send me X" → create, confirm, done
-- "Remind me Friday 3pm" → one-shot, confirm, done
-- "Check Y every hour" → interval, confirm, done
-
-Only ask if genuinely ambiguous. "Every morning" = reasonable hour (ask once, remember).
-
-## When to Ask
-
-| Request | Ask? |
-|---------|------|
-| "Every morning do X" | Time once, then remember |
-| "Remind me tomorrow" | Hour if unclear |
-| "Every weekday" | No — clear enough |
-
-## Confirmation
+## Data Storage
 
 ```
-✅ [what]
+~/schedule/
+├── jobs.json           # Job definitions
+├── preferences.json    # Timezone, preferred times
+└── history/            # Execution logs
+    └── YYYY-MM.jsonl
+```
+
+Create on first use: `mkdir -p ~/schedule/history`
+
+## Scope
+
+This skill:
+- ✅ Stores scheduled job definitions in ~/schedule/
+- ✅ Triggers jobs at specified times
+- ✅ Learns timezone and time preferences from user
+
+**Execution model:**
+- User explicitly defines WHAT the job does
+- User grants any permissions needed for the job
+- Skill only handles WHEN, not WHAT
+
+This skill does NOT:
+- ❌ Assume access to any external service
+- ❌ Modify system crontab or launchd
+- ❌ Execute jobs without user-defined instructions
+
+## Quick Reference
+
+| Topic | File |
+|-------|------|
+| Cron expression syntax | `patterns.md` |
+| Common mistakes | `traps.md` |
+| Job format | `jobs.md` |
+
+## Core Rules
+
+### 1. User Defines Everything
+When user requests a scheduled task:
+1. **WHAT**: User specifies the action (may require other skills/permissions)
+2. **WHEN**: This skill handles timing
+3. **HOW**: User grants any needed access explicitly
+
+Example flow:
+```
+User: "Every morning, summarize my emails"
+Agent: "I'll schedule this for 8am. This will need email access — 
+        do you want me to use the mail skill for this?"
+User: "Yes"
+→ Job stored with explicit reference to mail skill
+```
+
+### 2. Simple Requests
+| Request | Action |
+|---------|--------|
+| "Remind me to X at Y" | Store job, confirm |
+| "Every morning do X" | Ask time, store job |
+| "Cancel X" | Remove from jobs.json |
+
+### 3. Confirmation Format
+```
+✅ [what user requested]
 📅 [when] ([timezone])
+🔧 [permissions/skills needed, if any]
 🆔 [id]
 ```
 
-Then execute. No lengthy setup unless requested.
-
-## Scaling Complexity
-
-Start simple. Add only when requested:
-
-| Level | Example |
-|-------|---------|
-| Basic | "Every morning summarize emails" |
-| Conditional | "Only weekdays" / "Skip if empty" |
-| Silent | "Don't notify, just log" |
-| Chained | "After X, do Y" |
-
-User builds up. Don't front-load options.
-
-## System Supports
-
-All work — user discovers as needed:
-- One-shot, daily, weekly, cron
-- Conditions (if X then skip)
-- Delivery (notify/silent/email)
-- Dependencies, pause/resume
-
-Check `patterns.md` for cron, `traps.md` for mistakes.
-
-## Managing
-
-"What do I have scheduled":
-```
-1. [daily_summary] Emails — daily 8am
-2. [friday_review] Review — Fri 5pm
+### 4. Job Persistence
+In ~/schedule/jobs.json:
+```json
+{
+  "daily_review": {
+    "cron": "0 9 * * 1-5",
+    "task": "User-defined task description",
+    "requires": ["mail"],
+    "created": "2024-03-15",
+    "timezone": "Europe/Madrid"
+  }
+}
 ```
 
-Cancel/pause/edit by name or ID. Track in `jobs.md`.
+The `requires` field explicitly lists any skills/access the job needs.
 
-## Learned
+### 5. Execution
+When scheduled time arrives:
+- Agent executes the user-defined task
+- Uses only permissions user explicitly granted
+- Logs result to history/
 
-Avoid repeat questions:
-- Preferred morning time
+### 6. Preferences
+After first job, store in preferences.json:
 - Timezone
+- Preferred "morning" / "evening" times
 - Default notification style
-
----
-
-*Simple stays simple. Complexity when needed.*

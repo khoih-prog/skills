@@ -15,9 +15,9 @@ Check before creating any job. Prevent common failures.
 
 | Trap | Fix |
 |------|-----|
-| Stored in memory | Use cron tool — survives restarts |
-| Session reset loses jobs | Always persist, never rely on context |
-| "I'll remember" | You won't. Persist. |
+| Stored in memory only | Write to ~/schedule/jobs.json |
+| Session reset loses jobs | Always persist to file, never rely on context |
+| "I'll remember" | You won't. Save to jobs.json. |
 
 ## Confirmation
 
@@ -51,8 +51,7 @@ Checklist:
 ```
 □ Timezone explicit?
 □ Exact date/time confirmed?
-□ Persistence (cron tool) not memory?
+□ Saved to ~/schedule/jobs.json?
 □ Unique ID assigned?
 □ Confirmation includes WHAT + WHEN + ID?
-□ Failure handling defined?
 ```
