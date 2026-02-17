@@ -3,9 +3,15 @@
   "slug": "skill-vetting",
   "displayName": "Skill Vetting",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1770042032111,
-    "commit": "https://github.com/clawdbot/skills/commit/b9fc3ade46f19ddf3dca17a73c8cd90acf506048"
+    "version": "1.1.0",
+    "publishedAt": 1771269554901,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1770042032111,
+      "commit": "https://github.com/clawdbot/skills/commit/b9fc3ade46f19ddf3dca17a73c8cd90acf506048"
+    }
+  ]
 }
