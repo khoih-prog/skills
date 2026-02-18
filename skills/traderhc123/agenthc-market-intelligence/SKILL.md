@@ -1,6 +1,6 @@
 ---
 name: agenthc-market-intelligence
-description: Real-time stock market data and trading intelligence API. 47 modules — equities, bonds, crypto, bitcoin, macro economics, Fed policy, treasury yields, VIX, options flow, sector rotation, and technical analysis. Finance data for AI agents with Bitcoin Lightning micropayments.
+description: Real-time stock market data and trading intelligence API. 85 intelligence modules including 40 encoded intelligence skills — equities, bonds, crypto, bitcoin, macro economics, Fed policy, treasury yields, VIX, options flow, sector rotation, regime detection, and technical analysis. Finance data for AI agents with Bitcoin Lightning micropayments.
 homepage: https://api.traderhc.com/docs
 metadata:
   clawdbot:
@@ -13,7 +13,7 @@ metadata:
 
 # Stock Market Intelligence
 
-Institutional-grade market intelligence API for AI agents. 47 modules covering equities, bonds, crypto, macro, Fed, liquidity, regime detection, alpha signals, options flow, and more. Bitcoin Lightning micropayments. Built by @traderhc.
+Institutional-grade market intelligence API for AI agents. 85 intelligence modules (including 40 encoded intelligence skills with historical calibration) covering equities, bonds, crypto, macro, Fed, liquidity, regime detection, alpha signals, options flow, and more. Bitcoin Lightning micropayments. Built by @traderhc.
 
 ## Setup
 
@@ -270,10 +270,12 @@ Connect via Model Context Protocol (streamable-http transport):
 ```
 Endpoint: https://api.traderhc.com/mcp
 Protocol: 2025-03-26
-Tools: 28
+Tools: 73
 ```
 
-## All 47 Modules
+## All 85 Modules
+
+### Base Intelligence Modules (45)
 
 | Module | Tier | Description |
 |--------|------|-------------|
@@ -325,11 +327,58 @@ Tools: 28
 | historical_parallels | Institutional | Historical analogue engine |
 | agent_consensus | Institutional | Agent attention signal |
 
+### Encoded Intelligence Skills (40)
+
+Pre-scored, historically-calibrated pattern recognition. Each skill returns structured data with scores, labels, probabilities, historical analogues, and forward return expectations — not raw data.
+
+| Skill | Tier | Description |
+|-------|------|-------------|
+| liquidity_fair_value | Institutional | Net Liquidity vs SPX fair value with deviation scoring |
+| regime_duration | Institutional | How long current regime has persisted vs historical average |
+| momentum_contagion | Institutional | Cross-asset momentum spillover detection |
+| cross_asset_momentum | Institutional | Multi-asset momentum composite scoring |
+| credit_impulse_sequence | Institutional | Credit cycle phase with 3-6 month equity lead |
+| vol_regime_premium | Institutional | Implied vs realized vol premium by regime |
+| sector_cycle_position | Institutional | ISM-based sector rotation positioning |
+| institutional_conviction | Institutional | Smart money conviction scoring from COT/AAII/NAAIM |
+| tail_risk_phase | Institutional | Crisis lifecycle phase (early warning → capitulation) |
+| carry_unwind_cascade | Institutional | Yen carry trade stress with cascade probability |
+| macro_inflection | Institutional | Economic surprise index with inflection detection |
+| stress_propagation | Institutional | Cross-market stress contagion scoring |
+| valuation_mean_reversion | Institutional | CAPE/Buffett forward return estimates by percentile |
+| sentiment_exhaustion | Institutional | Multi-source sentiment exhaustion detection |
+| regime_transition_probability | Institutional | 12-regime Markov transition matrix |
+| signal_confluence_strength | Institutional | Multi-factor signal alignment scoring (82% hit rate >90) |
+| signal_flip_velocity | Institutional | Category-level signal reversal detection |
+| opex_gamma_mechanics | Institutional | OpEx gamma impact with dealer hedging mechanics |
+| microstructure_flow_composite | Institutional | CTA/vol-target/pension/buyback flow scoring |
+| central_bank_divergence_index | Institutional | Global CB policy divergence with FX implications |
+| narrative_lifecycle_exhaustion | Institutional | Market narrative exhaustion and contrarian scoring |
+| narrative_conflict_tension | Institutional | Competing narrative tension with resolution probability |
+| factor_crowding_composite | Institutional | Factor crowding systemic risk detection |
+| factor_leadership_momentum | Institutional | Factor rotation velocity and cycle alignment |
+| crypto_leverage_cycle | Institutional | Derivatives leverage phase detection (5 phases) |
+| onchain_miner_capitulation | Institutional | Hash rate distress and bottom signal detection |
+| onchain_network_health | Institutional | Network activity and adoption trend scoring |
+| crypto_halving_cycle_phase | Institutional | 7-phase halving cycle positioning |
+| breadth_regime_confirmation | Institutional | Price-breadth divergence with correction probability |
+| etf_flow_regime_shift | Institutional | Cross-asset ETF flow regime shift detection |
+| risk_drawdown_expectation | Institutional | Risk-adjusted drawdown estimates with Kelly sizing |
+| bond_yield_regime | Institutional | Yield regime classification with equity/credit implications |
+| geopolitical_risk_premium | Institutional | Composite geopolitical risk premium in basis points |
+| vix_regime_intelligence | Institutional | VIX regime (7 levels) with 30d forward SPX returns |
+| yield_curve_stress_signal | Institutional | 2s10s recession probability, un-inversion alert |
+| commodity_macro_signal | Institutional | Gold/Oil/Copper cross-commodity macro regime |
+| dxy_impact_matrix | Institutional | Dollar regime with cross-asset impact mapping |
+| cross_asset_momentum_regime | Institutional | Synchronized vs divergent momentum scoring |
+| sector_dispersion_signal | Institutional | Macro-driven vs stock-picker market classification |
+| fear_greed_extreme_signal | Institutional | Contrarian signal with calibrated forward returns |
+
 ## Pricing
 
-- **Free**: 3 modules, 10/min, 100/day
-- **Premium**: 23 modules, 60/min, 5,000/day, 100 sats/query (~$0.10)
-- **Institutional**: All 47 modules, 120/min, 50,000/day, 500 sats/query (~$0.50)
+- **Free**: 4 modules, 10/min, 100/day
+- **Premium**: 23 modules, 60/min, 5,000/day, ~$50/mo (50K sats)
+- **Institutional**: All 85 modules (including 40 encoded intelligence skills), 120/min, 50,000/day, ~$500/mo (500K sats)
 
 Payment via Bitcoin Lightning Network. Instant settlement, no KYC.
 
