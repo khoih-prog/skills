@@ -1,0 +1,11 @@
+{
+  "owner": "jon-xo",
+  "slug": "testflight-monitor",
+  "displayName": "TestFlight Seat Monitor",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1771414633653,
+    "commit": null
+  },
+  "history": []
+}
