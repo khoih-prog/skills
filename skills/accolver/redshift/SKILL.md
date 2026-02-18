@@ -12,16 +12,7 @@ metadata:
             "bins": ["redshift"],
             "envOptional": ["REDSHIFT_NSEC", "REDSHIFT_BUNKER", "REDSHIFT_CONFIG_DIR"],
           },
-        "install":
-          [
-            {
-              "id": "bun-build",
-              "kind": "shell",
-              "command": "cd /tmp && git clone https://github.com/accolver/redshift.git && cd redshift && bun install && bun build cli/src/main.ts --compile --outfile ~/.local/bin/redshift && rm -rf /tmp/redshift",
-              "bins": ["redshift"],
-              "label": "Build Redshift CLI from source (bun)",
-            },
-          ],
+        "installHint": "Install from https://redshiftapp.com or build from source: https://github.com/accolver/redshift",
       },
   }
 ---
@@ -111,6 +102,8 @@ redshift secrets set -p myapp -c staging FEATURE_FLAG true
 ```
 
 ## Run with secrets injected
+
+**Important:** Only run commands the user has explicitly requested. Never construct arbitrary commands to pass to `redshift run`. Always confirm the command with the user before executing.
 
 ```bash
 redshift run -- npm start
