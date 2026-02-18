@@ -1,6 +1,6 @@
 ---
 name: apple-mail-search
-description: "Apple Mail search on macOS. USE WHEN: searching Apple Mail app, need body content search, Mac node available. DON'T USE WHEN: Gmail (use gog), sending email (use himalaya), on Linux without Mac."
+description: "Apple Mail search on macOS with fast metadata and full body lookup. Use for finding messages in Mail.app by subject/sender/recipient/date, opening messages, and reading full body text. "
 homepage: https://clawdhub.com/gumadeiras/apple-mail-search-safe
 repository: https://github.com/gumadeiras/fruitmail-cli
 metadata: {"clawdbot":{"emoji":"📧","requires":{"bins":["fruitmail"]},"install":[{"id":"node","kind":"node","package":"apple-mail-search-cli","bins":["fruitmail"],"label":"Install fruitmail CLI (npm)"}]}}
