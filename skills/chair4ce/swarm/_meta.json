@@ -3,11 +3,16 @@
   "slug": "swarm",
   "displayName": "Swarm",
   "latest": {
-    "version": "1.1.1",
-    "publishedAt": 1771197414389,
-    "commit": "https://github.com/openclaw/skills/commit/570fa35e165801c09afb8f8c250f023173853418"
+    "version": "1.2.0",
+    "publishedAt": 1771375451851,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.1.1",
+      "publishedAt": 1771197414389,
+      "commit": "https://github.com/openclaw/skills/commit/570fa35e165801c09afb8f8c250f023173853418"
+    },
     {
       "version": "1.1.0",
       "publishedAt": 1771197358972,
