@@ -1,17 +1,14 @@
 ---
 name: google-veo
-description: |
-  Generate videos with Google Veo models via inference.sh CLI.
-  Models: Veo 3.1, Veo 3.1 Fast, Veo 3, Veo 3 Fast, Veo 2.
-  Capabilities: text-to-video, cinematic output, high quality video generation.
-  Triggers: veo, google veo, veo 3, veo 2, veo 3.1, vertex ai video, google video generation,
-  google video ai, veo model, veo video
+description: "Generate videos with Google Veo models via inference.sh CLI. Models: Veo 3.1, Veo 3.1 Fast, Veo 3, Veo 3 Fast, Veo 2. Capabilities: text-to-video, cinematic output, high quality video generation. Triggers: veo, google veo, veo 3, veo 2, veo 3.1, vertex ai video, google video generation, google video ai, veo model, veo video"
 allowed-tools: Bash(infsh *)
 ---
 
 # Google Veo Video Generation
 
 Generate videos with Google Veo models via [inference.sh](https://inference.sh) CLI.
+
+![Google Veo Video Generation](https://cloud.inference.sh/app/files/u/4mg21r6ta37mpaz6ktzwtt8krr/01kg2c0egyg243mnyth4y6g51q.jpeg)
 
 ## Quick Start
 
@@ -20,6 +17,8 @@ curl -fsSL https://cli.inference.sh | sh && infsh login
 
 infsh app run google/veo-3-1-fast --input '{"prompt": "drone shot over a mountain lake"}'
 ```
+
+> **Install note:** The [install script](https://cli.inference.sh) only detects your OS/architecture, downloads the matching binary from `dist.inference.sh`, and verifies its SHA-256 checksum. No elevated permissions or background processes. [Manual install & verification](https://dist.inference.sh/cli/checksums.txt) available.
 
 ## Veo Models
 
@@ -104,16 +103,16 @@ infsh app run google/veo-3-1-fast --input input.json
 
 ```bash
 # Full platform skill (all 150+ apps)
-npx skills add inference-sh/agent-skills@inference-sh
+npx skills add inference-sh/skills@inference-sh
 
 # All video generation models
-npx skills add inference-sh/agent-skills@ai-video-generation
+npx skills add inference-sh/skills@ai-video-generation
 
 # AI avatars & lipsync
-npx skills add inference-sh/agent-skills@ai-avatar-video
+npx skills add inference-sh/skills@ai-avatar-video
 
 # Image generation (for image-to-video)
-npx skills add inference-sh/agent-skills@ai-image-generation
+npx skills add inference-sh/skills@ai-image-generation
 ```
 
 Browse all video apps: `infsh app list --category video`
