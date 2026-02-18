@@ -1,18 +1,14 @@
 ---
 name: python-sdk
-description: |
-  Python SDK for inference.sh - run AI apps, build agents, and integrate with 150+ models.
-  Package: inferencesh (pip install inferencesh). Supports sync/async, streaming, file uploads.
-  Build agents with template or ad-hoc patterns, tool builder API, skills, and human approval.
-  Use for: Python integration, AI apps, agent development, RAG pipelines, automation.
-  Triggers: python sdk, inferencesh, pip install, python api, python client, async inference,
-  python agent, tool builder python, programmatic ai, python integration, sdk python
+description: "Python SDK for inference.sh - run AI apps, build agents, and integrate with 150+ models. Package: inferencesh (pip install inferencesh). Supports sync/async, streaming, file uploads. Build agents with template or ad-hoc patterns, tool builder API, skills, and human approval. Use for: Python integration, AI apps, agent development, RAG pipelines, automation. Triggers: python sdk, inferencesh, pip install, python api, python client, async inference, python agent, tool builder python, programmatic ai, python integration, sdk python"
 allowed-tools: Bash(pip install inferencesh), Bash(python *)
 ---
 
 # Python SDK
 
 Build AI applications with the [inference.sh](https://inference.sh) Python SDK.
+
+![Python SDK](https://cloud.inference.sh/app/files/u/4mg21r6ta37mpaz6ktzwtt8krr/01kgvftjwhby36trvaj66bwzcf.jpeg)
 
 ## Quick Start
 
@@ -465,16 +461,16 @@ response = agent.send_message(
 
 ```bash
 # JavaScript SDK
-npx skills add inference-sh/agent-skills@javascript-sdk
+npx skills add inference-sh/skills@javascript-sdk
 
 # Full platform skill (all 150+ apps via CLI)
-npx skills add inference-sh/agent-skills@inference-sh
+npx skills add inference-sh/skills@inference-sh
 
 # LLM models
-npx skills add inference-sh/agent-skills@llm-models
+npx skills add inference-sh/skills@llm-models
 
 # Image generation
-npx skills add inference-sh/agent-skills@ai-image-generation
+npx skills add inference-sh/skills@ai-image-generation
 ```
 
 ## Documentation
