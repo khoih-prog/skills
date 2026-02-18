@@ -1,0 +1,11 @@
+{
+  "owner": "globalcaos",
+  "slug": "memory-bench-pioneer",
+  "displayName": "Memory Bench Pioneer",
+  "latest": {
+    "version": "2.0.0",
+    "publishedAt": 1771282629924,
+    "commit": null
+  },
+  "history": []
+}
