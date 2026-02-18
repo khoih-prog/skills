@@ -76,6 +76,10 @@ is_int() {
   [[ "${1:-}" =~ ^-?[0-9]+$ ]]
 }
 
+is_uint() {
+  [[ "${1:-}" =~ ^[0-9]+$ ]]
+}
+
 # Rate limiting helper
 rate_limit() {
   if [[ "$DELAY" -gt 0 ]]; then
@@ -154,6 +158,7 @@ case "$cmd" in
   
   list)
     collection="${1:-0}"
+    is_int "$collection" || die "Collection ID must be an integer"
     api GET "/raindrops/${collection}?perpage=${LIMIT}&page=${PAGE}" | format_bookmarks
     ;;
   
@@ -170,6 +175,7 @@ case "$cmd" in
       elif [[ "$collection" == "-99" ]]; then
         api GET "/raindrops/-99?perpage=1" | jq -r '.count'
       else
+        is_int "$collection" || die "Collection ID must be an integer"
         api GET "/collection/$collection" | jq -r '.item.count'
       fi
     fi
@@ -179,13 +185,16 @@ case "$cmd" in
     [[ -z "${1:-}" ]] && die "Search query required"
     query="$1"
     collection="${2:-0}"
+    is_int "$collection" || die "Collection ID must be an integer"
     encoded=$(printf '%s' "$query" | jq -sRr @uri)
     api GET "/raindrops/${collection}?search=${encoded}&perpage=${LIMIT}" | format_bookmarks
     ;;
   
   get)
     [[ -z "${1:-}" ]] && die "Bookmark ID required"
-    api GET "/raindrop/$1" | if [[ "$FORMAT" == "json" ]]; then cat; else jq -r '.item | "Title: \(.title)\nURL: \(.link)\nCollection: \(.collectionId)\nTags: \(.tags | join(", "))\nCreated: \(.created)\nNote: \(.note // "-")\nCache: \(.cache.status // "none")"'; fi
+    id="$1"
+    is_uint "$id" || die "Bookmark ID must be an unsigned integer"
+    api GET "/raindrop/$id" | if [[ "$FORMAT" == "json" ]]; then cat; else jq -r '.item | "Title: \(.title)\nURL: \(.link)\nCollection: \(.collectionId)\nTags: \(.tags | join(", "))\nCreated: \(.created)\nNote: \(.note // "-")\nCache: \(.cache.status // "none")"'; fi
     ;;
   
   add)
@@ -199,7 +208,9 @@ case "$cmd" in
   
   delete)
     [[ -z "${1:-}" ]] && die "Bookmark ID required"
-    api DELETE "/raindrop/$1" | if [[ "$FORMAT" == "json" ]]; then cat; else jq -r 'if .result then "Deleted" else "Failed" end'; fi
+    id="$1"
+    is_uint "$id" || die "Bookmark ID must be an unsigned integer"
+    api DELETE "/raindrop/$id" | if [[ "$FORMAT" == "json" ]]; then cat; else jq -r 'if .result then "Deleted" else "Failed" end'; fi
     ;;
   
   move)
@@ -207,6 +218,7 @@ case "$cmd" in
     [[ -z "${2:-}" ]] && die "Collection ID required"
     id="$1"
     collection="$2"
+    is_uint "$id" || die "Bookmark ID must be an unsigned integer"
     is_int "$collection" || die "Collection ID must be an integer"
     payload=$(jq -cn --argjson collectionId "$collection" '{collectionId: $collectionId}')
     api PUT "/raindrop/$id" -d "$payload" | if [[ "$FORMAT" == "json" ]]; then cat; else jq -r '"Moved: \(.item.title) -> collection \(.item.collectionId)"'; fi
@@ -215,6 +227,7 @@ case "$cmd" in
   update)
     [[ -z "${1:-}" ]] && die "Bookmark ID required"
     id="$1"
+    is_uint "$id" || die "Bookmark ID must be an unsigned integer"
     
     if [[ -n "$UPDATE_COLLECTION" ]]; then
       is_int "$UPDATE_COLLECTION" || die "--collection must be an integer"
@@ -282,6 +295,7 @@ case "$cmd" in
   
   list-untagged)
     collection="${1:--1}"
+    is_int "$collection" || die "Collection ID must be an integer"
     # Search for bookmarks and filter those with empty tags
     api GET "/raindrops/${collection}?perpage=${LIMIT}&page=${PAGE}" | \
       if [[ "$FORMAT" == "json" ]]; then
@@ -293,7 +307,9 @@ case "$cmd" in
   
   cache)
     [[ -z "${1:-}" ]] && die "Bookmark ID required"
-    curl -sL -H "Authorization: Bearer $TOKEN" "${API}/raindrop/$1/cache"
+    id="$1"
+    is_uint "$id" || die "Bookmark ID must be an unsigned integer"
+    curl -sL -H "Authorization: Bearer $TOKEN" "${API}/raindrop/$id/cache"
     ;;
   
   ""|help)
