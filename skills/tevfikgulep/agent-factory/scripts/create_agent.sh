@@ -249,6 +249,7 @@ CONFIG_FILE="/home/ubuntu/.openclaw/openclaw.json"
 TEMP_FILE="/tmp/openclaw_agent_$$.json"
 
 # Yeni ajan object'ini oluştur (tek değişkende)
+# Not: Model ayarları agents.defaults'tan gelir - buraya gerek yok
 NEW_AGENT=$(jq -n \
   --arg id "$AGENT_ID" \
   --arg name "$AGENT_NAME" \
@@ -258,17 +259,6 @@ NEW_AGENT=$(jq -n \
     name: $name,
     workspace: ("/home/ubuntu/.openclaw/agents/" + $id),
     agentDir: ("/home/ubuntu/.openclaw/agents/" + $id + "/agent"),
-    model: {
-      primary: "minimax-portal/MiniMax-M2.5",
-      fallbacks: [
-        "ollama/glm-5:cloud",
-        "minimax-portal/MiniMax-M2.1",
-        "google/gemini-3-flash-preview",
-        "ollama/phi3.5",
-        "qwen-portal/coder-model",
-        "qwen-portal/vision-model"
-      ]
-    },
     identity: {
       name: $name,
       emoji: $emoji
