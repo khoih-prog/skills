@@ -1,103 +1,99 @@
 ---
-name: pywayne-cv-tools
-description: OpenCV YAML file read/write utilities. Use when working with pywayne.cv.tools module to read OpenCV FileStorage YAML files with support for nested structures, numpy arrays, basic types, and lists. Handles cv2.FileNode parsing including Map, Seq, and matrix nodes.
+name: pywayne-vio-tools
+description: VIO (Visual Inertial Odometry) data processing utilities for SE(3) pose conversion and 3D visualization. Use when working with SE(3) matrices and need pose representation conversion (tx,ty,tz,qw,qx,qy,qz), 3D visualization of pose trajectories with orientation arrows, or Visual Inertial Odometry data transformation and analysis
 ---
 
-# Pywayne CV YAML I/O
+# Pywayne VIO Tools
 
-This module provides utilities for reading and writing OpenCV `cv2.FileStorage` YAML files.
+## Overview
+
+Provides utilities for VIO data processing: convert between SE(3) transformation matrices and pose representations, and visualize pose trajectories in 3D with orientation indicators.
 
 ## Quick Start
 
 ```python
-from pywayne.cv.tools import read_cv_yaml, write_cv_yaml
+from pywayne.vio.tools import SE3_to_pose, pose_to_SE3, visualize_pose
 import numpy as np
 
-# Write to YAML file
-data = {
-    "camera_name": "test_camera",
-    "image_width": 1920,
-    "image_height": 1080,
-    "calibration_matrix": np.eye(3)
-}
-write_cv_yaml('config.yaml', data)
+# Convert SE(3) to pose
+SE3 = np.eye(4)  # Single 4x4 SE(3) matrix
+pose = SE3_to_pose(SE3)  # Returns [tx, ty, tz, qw, qx, qy, qz]
 
-# Read from YAML file
-data = read_cv_yaml('config.yaml')
-print(data)
+# Batch conversion
+SE3_array = np.random.randn(10, 4, 4)  # 10 SE(3) matrices
+poses = SE3_to_pose(SE3_array)
+
+# Convert back to SE(3)
+SE3_recon = pose_to_SE3(pose)
+
+# Visualize poses
+visualize_pose(poses)  # 3D plot with position markers and orientation arrows
 ```
 
-## Supported Data Types
+## Core Functions
 
-| Type | Handling |
-|------|---------|
-| `int`, `float`, `str` | Written directly |
-| `np.ndarray` | Written using `fs.write()` |
-| `list` | Written using `FileNode_SEQ` |
-| `dict` | Written using `FileNode_MAP` |
-| `None` | Skipped |
+### SE3_to_pose
 
-## Reading Files
+Convert SE(3) transformation matrices to pose representation.
 
-```python
-from pywayne.cv.tools import read_cv_yaml
+**Input:** `SE3_mat` - Single 4x4 SE(3) matrix or array of N SE(3) matrices shape (N, 4, 4)
 
-# Read YAML file (returns dict or None on error)
-data = read_cv_yaml('camera_config.yaml')
-if data:
-    print(data['camera_name'])
-    print(data['image_width'])
+**Output:** `pose` - Array shape (7,) or (N, 7) containing [tx, ty, tz, qw, qx, qy, qz]
+
+**Dependencies:** `qmt.quatFromRotMat()` for quaternion extraction
+
+### pose_to_SE3
+
+Convert pose representation back to SE(3) transformation matrices.
+
+**Input:** `pose_mat` - Single pose shape (7,) or array of N poses shape (N, 7) with [tx, ty, tz, qw, qx, qy, qz]
+
+**Output:** `SE3_mat` - Array of SE(3) matrices shape (4, 4) or (N, 4, 4)
+
+**Dependencies:** `qmt.quatToRotMat()`, `ahrs.Quaternion`
+
+### visualize_pose
+
+3D visualization of SE(3) poses with position markers and orientation arrows.
+
+**Parameters:**
+- `poses`: Array of poses [tx, ty, tz, qw, qx, qy, qz]
+- `arrow_length_ratio`: Scale factor for orientation arrows (default: 0.1)
+
+**Visualization:**
+- Black dots: Position (translation)
+- Red arrow: X-axis orientation
+- Green arrow: Y-axis orientation
+- Blue arrow: Z-axis orientation
+
+**Dependencies:** `matplotlib.pyplot`, `qmt.quatToRotMat()`
+
+## Data Formats
+
+### SE(3) Matrix
+```
+[[R00 R01 R02 tx]
+ [R10 R11 R12 ty]
+ [R20 R21 R22 tz]
+ [  0   0   0  1]]
 ```
 
-**Notes:**
-- Handles nested structures recursively
-- Returns `None` if file cannot be opened
-- Uses `wayne_print` for error messages (red/yellow colors)
-- Supports both `FileNode_MAP` and `FileNode_SEQ` for dictionaries and lists
-- Matrix nodes read using `.mat()` method
-
-## Writing Files
-
-```python
-from pywayne.cv.tools import write_cv_yaml
-
-# Write data to YAML file
-data = {
-    "matrix": np.eye(3),
-    "vector": [1, 2, 3]
-}
-success = write_cv_yaml('config.yaml', data)
-
-if success:
-    print("Write successful")
+### Pose Representation
 ```
+[tx, ty, tz, qw, qx, qy, qz]
+```
+Translation: tx, ty, tz (meters)
+Quaternion: qw, qx, qy, qz (Hamilton convention)
 
-**Notes:**
-- Returns `True` on success, `False` on error
-- Handles lists with empty key convention for OpenCV
-- Supports unnamed sequences using empty key string
-- Skips `None` values during write
+## Dependencies
 
-## Requirements
+Required packages:
+- `numpy` - Array operations
+- `qmt` - Quaternion utilities
+- `ahrs` - Quaternion class
+- `matplotlib` - 3D visualization
 
-- `cv2` (OpenCV) - For FileStorage operations
-- `numpy` - For numpy array handling
-- `pywayne.tools` - For wayne_print logging
-
-## API Reference
-
-| Function | Description |
-|---------|-------------|
-| `read_cv_yaml(path)` | Read OpenCV YAML file, returns dict or None |
-| `write_cv_yaml(path, data)` | Write dict to OpenCV YAML file, returns bool |
-
-## File Structure Handling
-
-The module handles OpenCV's `cv2.FileNode` types:
-
-| Node Type | Handling |
-|-----------|---------|
-| Map | Uses `.keys()` method (requires callable) |
-| Seq | Uses element iteration with recursive parsing |
-| Matrix | Uses `.mat()` method |
-| Int/Float/String | Uses `.real()`, `.int()`, `.string()` methods |
+Install with:
+```bash
+pip install numpy qmt ahrs matplotlib
+```
