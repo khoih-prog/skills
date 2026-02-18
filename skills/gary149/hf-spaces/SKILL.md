@@ -114,9 +114,16 @@ path = file.get("path") if isinstance(file, dict) else file
 
 ## Authentication
 
-`hf auth login` or set `HF_TOKEN` env var. Required for ZeroGPU Spaces and Inference Providers.
+Required for ZeroGPU Spaces and Inference Providers. Before making any authenticated call, check if a token is available:
 
-Create a token: `https://huggingface.co/settings/tokens/new?ownUserPermissions=inference.serverless.write&tokenType=fineGrained`
+```bash
+python3 -c "from huggingface_hub import get_token; t = get_token(); print('HF token found' if t else 'NO TOKEN')"
+```
+
+If no token is found, ask the user to create one at:
+`https://huggingface.co/settings/tokens/new?ownUserPermissions=inference.serverless.write&tokenType=fineGrained`
+
+Then have them run `hf auth login` or set `HF_TOKEN` in their environment.
 
 ## Common Spaces
 
