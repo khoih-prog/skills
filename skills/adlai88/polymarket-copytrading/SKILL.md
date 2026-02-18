@@ -2,10 +2,10 @@
 name: polymarket-copytrading
 displayName: Polymarket Copytrading
 description: Mirror positions from top Polymarket traders using Simmer API. Size-weighted aggregation across multiple wallets.
-metadata: {"clawdbot":{"emoji":"🐋","requires":{"env":["SIMMER_API_KEY"],"pip":["simmer-sdk"]},"cron":null,"autostart":false}}
+metadata: {"clawdbot":{"emoji":"🐋","requires":{"env":["SIMMER_API_KEY","WALLET_PRIVATE_KEY"],"pip":["simmer-sdk"]},"cron":null,"autostart":false}}
 authors:
   - Simmer (@simmer_markets)
-version: "1.3.6"
+version: "1.3.7"
 published: true
 ---
 
@@ -242,3 +242,14 @@ The skill works best when:
 **"Market could not be imported"**
 - Some markets may not be importable (resolved, private, etc.)
 - These are skipped automatically
+
+**"External wallet requires a pre-signed order"**
+- `WALLET_PRIVATE_KEY` is not set in the environment
+- The SDK signs orders automatically when this env var is present — no manual signing code needed
+- Fix: `export WALLET_PRIVATE_KEY=0x<your-polymarket-wallet-private-key>`
+- Do NOT attempt to sign orders manually or modify the skill code — the SDK handles it
+
+**"Balance shows $0 but I have USDC on Polygon"**
+- Polymarket uses **USDC.e** (bridged USDC, contract `0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174`) — not native USDC
+- If you bridged USDC to Polygon recently, you likely received native USDC
+- Swap native USDC to USDC.e, then retry
