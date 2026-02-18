@@ -3,9 +3,15 @@
   "slug": "zoomin-scraper-recklessop",
   "displayName": "Zoomin Docs Portal Scraper Tool",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1771288931064,
-    "commit": "https://github.com/openclaw/skills/commit/28de8d615229f2ccdac76b2a42f54ec0a59e60d4"
+    "version": "1.0.2",
+    "publishedAt": 1771289349323,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1771288931064,
+      "commit": "https://github.com/openclaw/skills/commit/28de8d615229f2ccdac76b2a42f54ec0a59e60d4"
+    }
+  ]
 }
