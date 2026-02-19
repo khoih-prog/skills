@@ -4,7 +4,7 @@ description: Real-time web search and AI-powered answers using the official Brav
 license: MIT
 metadata:
   author: Broedkrummen
-  version: 1.0.0
+  version: 2.0.0
 ---
 
 # Brave API Search
@@ -25,6 +25,8 @@ export BRAVE_ANSWERS_API_KEY=your_key_here
 Get your keys at: https://api-dashboard.search.brave.com
 
 Both keys can be the same if your plan supports both Search and AI Answers endpoints.
+
+> Note: This skill explicitly requires `BRAVE_SEARCH_API_KEY` and `BRAVE_ANSWERS_API_KEY`. It does **not** use a generic `BRAVE_API_KEY` fallback.
 
 ## When to Use This Skill
 

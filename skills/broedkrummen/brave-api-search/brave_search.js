@@ -18,9 +18,9 @@ function parseArgs(argv) {
 }
 
 async function braveGet(path, params) {
-  const apiKey = process.env.BRAVE_SEARCH_API_KEY || process.env.BRAVE_API_KEY;
+  const apiKey = process.env.BRAVE_SEARCH_API_KEY;
   if (!apiKey) {
-    console.error('Error: BRAVE_SEARCH_API_KEY (or BRAVE_API_KEY) environment variable not set.');
+    console.error('Error: BRAVE_SEARCH_API_KEY environment variable not set.');
     console.error('Get your key at: https://api-dashboard.search.brave.com');
     process.exit(1);
   }

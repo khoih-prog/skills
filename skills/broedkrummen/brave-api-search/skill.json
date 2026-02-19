@@ -1,13 +1,17 @@
 {
   "name": "brave-search-skill",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Real-time web search and AI-powered answers using the Brave Search API. Requires BRAVE_SEARCH_API_KEY and BRAVE_ANSWERS_API_KEY environment variables.",
   "author": "Broedkrummen",
+  "requiredEnv": [
+    "BRAVE_SEARCH_API_KEY",
+    "BRAVE_ANSWERS_API_KEY"
+  ],
   "tools": [
     {
       "name": "brave_search",
       "description": "Search the web using Brave Search API. Returns ranked results with titles, URLs, and descriptions. Optionally fetches an AI summary of results.",
-      "command": "node {{workspace}}/brave-search/brave_search.js --query \"{{query}}\" --count {{count|10}} --country {{country|us}} --freshness {{freshness|}} --extra-snippets {{extra_snippets|false}} --summary {{summary|false}}",
+      "command": "node {{workspace}}/brave_search.js --query \"{{query}}\" --count {{count|10}} --country {{country|us}} --freshness {{freshness|}} --extra-snippets {{extra_snippets|false}} --summary {{summary|false}}",
       "args": {
         "query": {
           "type": "string",
@@ -44,7 +48,7 @@
     {
       "name": "brave_answers",
       "description": "Get AI-powered answers grounded in live Brave web search with inline citations. Use for research questions that benefit from multiple sources.",
-      "command": "node {{workspace}}/brave-search/brave_answers.js --query \"{{query}}\" --country {{country|us}} --enable-citations {{enable_citations|true}} --enable-research {{enable_research|false}}",
+      "command": "node {{workspace}}/brave_answers.js --query \"{{query}}\" --country {{country|us}} --enable-citations {{enable_citations|true}} --enable-research {{enable_research|false}}",
       "args": {
         "query": {
           "type": "string",
