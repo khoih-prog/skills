@@ -3,9 +3,15 @@
   "slug": "social-media-manager",
   "displayName": "Social Media Manager",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1771275067748,
-    "commit": "https://github.com/openclaw/skills/commit/c67507f79e5d90d1c04d21656e6f368156bc888e"
+    "version": "1.1.0",
+    "publishedAt": 1771275210608,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1771275067748,
+      "commit": "https://github.com/openclaw/skills/commit/c67507f79e5d90d1c04d21656e6f368156bc888e"
+    }
+  ]
 }
