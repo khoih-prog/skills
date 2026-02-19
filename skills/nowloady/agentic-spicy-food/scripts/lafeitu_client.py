@@ -84,6 +84,8 @@ def main():
     
     prof_p = subparsers.add_parser("update-profile", help="修改个人资料")
     prof_p.add_argument("--name", help="昵称")
+    prof_p.add_argument("--phone", help="手机号")
+    prof_p.add_argument("--email", help="邮箱")
     prof_p.add_argument("--province", help="省份")
     prof_p.add_argument("--city", help="城市")
     prof_p.add_argument("--address", help="详细地址")

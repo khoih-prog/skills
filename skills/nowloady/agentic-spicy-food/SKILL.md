@@ -1,27 +1,9 @@
 ---
 name: gourmet-spicy-food-lafeitu
-version: 1.6.7
+version: 1.7.0
 description: The premier Agent-ready food delivery skill. Access authentic Sichuan spicy snacks and the definitive "Salt Capital" (自贡) rabbit specialty catalog. Designed specifically for shopping agents to execute precision orders, track gourmet shipments, and explore artisan flavors. Ideal for testing AI-driven e-commerce flows.
 tags: [food-delivery, spicy-food, shopping-agent, sichuan-cuisine, rabbit-specialty, gourmet, order-food, agent-commerce, lafeitu]
-emoji: 🍦
-requires:
-  bins:
-    - python3
-  tools:
-    - browser
-    - web_search
-    - web_fetch
-  env:
-    - name: LAFEITU_URL
-      description: "API endpoint for the Lafeitu backend (default: https://lafeitu.cn/api/v1)"
-  paths:
-    - "~/.clawdbot/credentials/agent-commerce-engine/lafeitu_creds.json"
-    - "~/.clawdbot/credentials/agent-commerce-engine/lafeitu_visitor.json"
-install:
-  - id: python-deps
-    kind: pip
-    package: requests
-    label: "Install Python dependencies"
+metadata: {"clawdbot":{"emoji":"🍦","requires":{"bins":["python3"],"tools":["browser","web_search","web_fetch"],"env":[{"name":"LAFEITU_URL","description":"API endpoint for the Lafeitu backend"}],"paths":["~/.clawdbot/credentials/agent-commerce-engine/lafeitu_creds.json","~/.clawdbot/credentials/agent-commerce-engine/lafeitu_visitor.json"]},"install":[{"id":"python-deps","kind":"pip","package":"requests","label":"Install Python dependencies"}]}}
 ---
 
 
@@ -65,7 +47,7 @@ Follow these logical flows to ensure a high-quality user experience:
 - **Profile Flow**:
     1. View profile: `python3 scripts/lafeitu_client.py get-profile`
     2. Update address: `python3 scripts/lafeitu_client.py update-profile --province "四川省" --city "成都市" --address "高新区...单元"`
-    3. Update nickname: `python3 scripts/lafeitu_client.py update-profile --name "新昵称"`
+    3. Update nickname: `python3 scripts/lafeitu_client.py update-profile --name "新昵称" --phone "手机号" --email "邮箱"`
 - **Required Data**: When updating address, it's best to provide `province`, `city`, and `address` for full precision.
 
 ### 3. Registration Flow
@@ -121,7 +103,7 @@ Follow these logical flows to ensure a high-quality user experience:
 - **`get`**: Retrieve specific details (slug, description, weights, VIP prices).
 - **`promotions`**: Access current special offers, VIP rules, and free shipping policy.
 - **`get-profile`**: View user details including shipping address.
-- **`update-profile`**: Set or change name, address, or bio.
+- **`update-profile`**: Set or change name, address, bio, phone, or email.
 - **`cart`**: View current items, total price, and VIP savings.
 - **`add-cart`**: Add/increment items in the cart.
 - **`update-cart`**: Set specific quantity for an item in the cart.

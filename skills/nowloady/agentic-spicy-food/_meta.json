@@ -3,11 +3,16 @@
   "slug": "agentic-spicy-food",
   "displayName": "辣匪兔: Authentic Agentic Spicy Food Delivery",
   "latest": {
-    "version": "1.6.7",
-    "publishedAt": 1771472835199,
-    "commit": "https://github.com/openclaw/skills/commit/1ce13f30f994763b7b5bb6d743e34abc8e8e2417"
+    "version": "1.7.0",
+    "publishedAt": 1771475834437,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.6.7",
+      "publishedAt": 1771472835199,
+      "commit": "https://github.com/openclaw/skills/commit/1ce13f30f994763b7b5bb6d743e34abc8e8e2417"
+    },
     {
       "version": "1.4.3",
       "publishedAt": 1769498734310,
