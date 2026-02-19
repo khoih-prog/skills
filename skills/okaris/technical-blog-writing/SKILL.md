@@ -1,12 +1,6 @@
 ---
 name: technical-blog-writing
-description: |
-  Technical blog post writing with structure, code examples, and developer audience conventions.
-  Covers post types, code formatting, explanation depth, and developer-specific engagement patterns.
-  Use for: engineering blogs, dev tutorials, technical writing, developer content, documentation posts.
-  Triggers: technical blog, dev blog, engineering blog, technical writing, developer tutorial,
-  tech post, code tutorial, programming blog, developer content, technical article,
-  engineering post, coding tutorial, technical content
+description: "Technical blog post writing with structure, code examples, and developer audience conventions. Covers post types, code formatting, explanation depth, and developer-specific engagement patterns. Use for: engineering blogs, dev tutorials, technical writing, developer content, documentation posts. Triggers: technical blog, dev blog, engineering blog, technical writing, developer tutorial, tech post, code tutorial, programming blog, developer content, technical article, engineering post, coding tutorial, technical content"
 allowed-tools: Bash(infsh *)
 ---
 
@@ -29,6 +23,8 @@ infsh app run infsh/html-to-image --input '{
   "html": "<div style=\"width:1200px;height:630px;background:linear-gradient(135deg,#0f172a,#1e293b);display:flex;align-items:center;padding:60px;font-family:ui-monospace,monospace;color:white\"><div><p style=\"font-size:18px;color:#38bdf8;margin:0\">// engineering blog</p><h1 style=\"font-size:48px;margin:16px 0;font-weight:800;font-family:system-ui;line-height:1.2\">How We Reduced API Latency by 90% with Edge Caching</h1><p style=\"font-size:20px;opacity:0.6;font-family:system-ui\">A deep dive into our CDN architecture</p></div></div>"
 }'
 ```
+
+> **Install note:** The [install script](https://cli.inference.sh) only detects your OS/architecture, downloads the matching binary from `dist.inference.sh`, and verifies its SHA-256 checksum. No elevated permissions or background processes. [Manual install & verification](https://dist.inference.sh/cli/checksums.txt) available.
 
 ## Post Types
 
@@ -291,9 +287,9 @@ infsh app run x/post-create --input '{
 ## Related Skills
 
 ```bash
-npx skills add inferencesh/skills@seo-content-brief
-npx skills add inferencesh/skills@content-repurposing
-npx skills add inferencesh/skills@og-image-design
+npx skills add inference-sh/skills@seo-content-brief
+npx skills add inference-sh/skills@content-repurposing
+npx skills add inference-sh/skills@og-image-design
 ```
 
 Browse all apps: `infsh app list`
