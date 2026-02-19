@@ -6,13 +6,22 @@ import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+<<<<<<< HEAD
 const skillRoot = path.resolve(__dirname, '..');
+=======
+const repoRoot = path.resolve(__dirname, '..');
+const skillRoot = path.join(repoRoot, 'consensus-interact');
+>>>>>>> 912d99e075cb64bbc5df2e17a32d3fd12a566428
 
 function read(relPath) {
   return fs.readFileSync(path.join(skillRoot, relPath), 'utf8');
 }
 
+<<<<<<< HEAD
 test('local skill copy has expected core files', () => {
+=======
+test('skill repo has expected core files', () => {
+>>>>>>> 912d99e075cb64bbc5df2e17a32d3fd12a566428
   const required = [
     'SKILL.md',
     'README.md',
@@ -29,7 +38,11 @@ test('local skill copy has expected core files', () => {
   }
 });
 
+<<<<<<< HEAD
 test('README references local docs (not stale /public paths)', () => {
+=======
+test('README references local repo docs (not stale /public paths)', () => {
+>>>>>>> 912d99e075cb64bbc5df2e17a32d3fd12a566428
   const readme = read('README.md');
   assert.ok(!readme.includes('/public/'), 'README still references /public paths');
   assert.match(readme, /SKILL\.md/);

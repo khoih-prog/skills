@@ -3,11 +3,16 @@
   "slug": "consensus-interact",
   "displayName": "consensus-interact",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1771009157487,
-    "commit": "https://github.com/openclaw/skills/commit/e1627ce489890e0690c6608e7f91e7fc44cfa516"
+    "version": "1.0.6",
+    "publishedAt": 1771516231761,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1771009157487,
+      "commit": "https://github.com/openclaw/skills/commit/e1627ce489890e0690c6608e7f91e7fc44cfa516"
+    },
     {
       "version": "1.0.4",
       "publishedAt": 1770991272071,
