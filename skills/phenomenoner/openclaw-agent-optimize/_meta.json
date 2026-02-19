@@ -1,13 +1,18 @@
 {
   "owner": "phenomenoner",
   "slug": "openclaw-agent-optimize",
-  "displayName": "Openclaw Agent Optimize",
+  "displayName": "OpenClaw Agent Optimization",
   "latest": {
-    "version": "1.0.9",
-    "publishedAt": 1770804986153,
-    "commit": "https://github.com/openclaw/skills/commit/19c8d64a3ca0df2f2e9a7dc6b8650342bf6cee95"
+    "version": "1.1.1",
+    "publishedAt": 1771447738344,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.9",
+      "publishedAt": 1770804986153,
+      "commit": "https://github.com/openclaw/skills/commit/19c8d64a3ca0df2f2e9a7dc6b8650342bf6cee95"
+    },
     {
       "version": "1.0.8",
       "publishedAt": 1770618972475,

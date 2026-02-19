@@ -29,24 +29,21 @@ Thank you [@affaan-m](https://github.com/affaan-m) 🎉
 [<img src="https://clawhub.ai/badge.svg" height="24">](https://clawhub.ai/phenomenoner/openclaw-agent-optimize)
 
 ```bash
-clawhub install phenomenoner/openclaw-agent-optimize
+npx clawhub install openclaw-agent-optimize
 ```
 
-> **Note:** If you cannot see the skill on ClawHub immediately after an update, it may be in review (審核中). Please try again later.
+If you don’t see the skill immediately after a publish/update, it may be temporarily hidden while a security scan is running. Try again in a few minutes.
 
 **Canonical page:** https://clawhub.ai/phenomenoner/openclaw-agent-optimize
 
-**Deprecated duplicates:**
-- https://clawhub.ai/phenomenoner/openclaw-agent-optimize-skill
-- https://clawhub.ai/phenomenoner/openclaw-agent-token-optimizer
-
-These exist because we didn’t realize updated skills can temporarily disappear during review, so we re-uploaded under different names. Please use the canonical page above.
-
 ### Manual
-Copy the skill folder into your OpenClaw workspace:
-```bash
-cp -r openclaw-agent-optimize ~/.openclaw/workspace/skills/
-```
+Copy the folder into your OpenClaw skills directory.
+
+Common defaults (may differ by installation):
+- macOS/Linux: `~/.openclaw/workspace/skills/`
+- Windows: `%USERPROFILE%\.openclaw\workspace\skills\`
+
+(If you’re unsure where your install lives, search for a `skills/` folder containing `openclaw-agent-optimize/`.)
 
 ## 📖 How to Use
 
