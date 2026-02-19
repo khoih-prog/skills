@@ -1,0 +1,11 @@
+{
+  "owner": "freestylefly",
+  "slug": "wechat-article-extractor-skill",
+  "displayName": "微信公众号文章解析",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1771492575445,
+    "commit": null
+  },
+  "history": []
+}
