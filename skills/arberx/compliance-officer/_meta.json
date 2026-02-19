@@ -3,11 +3,16 @@
   "slug": "compliance-officer",
   "displayName": "Compliance Officer",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1771113809635,
-    "commit": "https://github.com/openclaw/skills/commit/d1f4cee8f45d8ec44709a564ee8be7161f05c779"
+    "version": "1.0.7",
+    "publishedAt": 1771469286107,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1771113809635,
+      "commit": "https://github.com/openclaw/skills/commit/d1f4cee8f45d8ec44709a564ee8be7161f05c779"
+    },
     {
       "version": "1.0.3",
       "publishedAt": 1771112995125,

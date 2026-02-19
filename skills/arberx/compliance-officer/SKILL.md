@@ -1,9 +1,8 @@
 ---
 name: compliance-officer
 description: >
-  AI Compliance Officer that reviews marketing content, emails, landing pages, and privacy policies
-  against 208 regulatory rules across 8 frameworks (FTC, HIPAA, GDPR, SEC 482, SEC Marketing, CCPA,
-  COPPA, CAN-SPAM). Cites actual regulations with source URLs.
+  Reviews marketing content against FTC, HIPAA, GDPR, SEC 482, SEC Marketing, CCPA, COPPA, and
+  CAN-SPAM — 208 specific laws with URLs.
 license: Apache-2.0
 compatibility: Requires network access for URL fetching. Works with Claude Code and similar agents.
 metadata:
