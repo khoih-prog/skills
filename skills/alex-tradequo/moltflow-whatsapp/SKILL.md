@@ -1,7 +1,7 @@
 ---
-name: "WhatsApp All-in-One CRM — ERC-8004 Agent | Campaign Analytics, Bulk Send, AI Outreach, Lead Detection, Support & MCP Server"
-version: "2.12.2"
-description: "The only WhatsApp skill you need. Documentation and API reference — nothing is auto-installed or auto-executed. All actions require explicit user invocation. Provides endpoints for sending messages, capturing leads, running campaigns, scheduling reports, tracking campaign analytics, and managing clients. BizDev agent analyzes account metadata to surface growth opportunities. MCP Server + Custom GPT Actions available via separate setup (see integrations.md). 90+ API endpoints. Bulk messaging, scheduled sends, scheduled reports with WhatsApp delivery, AI replies with style cloning, RAG knowledge base, group monitoring, lead scoring, review collection, campaign analytics & engagement tracking, GDPR compliance, and agent-to-agent protocol."
+name: "WhatsApp Ultimate — No Meta API | Lead Mining, Bulk Send, Scheduled Reminders & Follow-ups"
+version: "2.14.3"
+description: "The only WhatsApp skill you need. Documentation and API reference — nothing is auto-installed or auto-executed. All actions require explicit user invocation. Provides endpoints for sending messages, capturing leads, running campaigns, scheduling reports, tracking campaign analytics, and managing clients. Read-only account health check surfaces growth opportunities from existing data. Native MCP endpoint + Custom GPT Actions available via separate setup (see integrations.md). 90+ API endpoints. Bulk messaging, scheduled sends, scheduled reports with WhatsApp delivery, AI replies with style cloning, RAG knowledge base, group monitoring, lead scoring, review collection, campaign analytics & engagement tracking, GDPR compliance, and agent-to-agent protocol."
 source: "MoltFlow Team"
 risk: safe
 homepage: "https://molt.waiflow.app"
@@ -18,14 +18,14 @@ metadata: {"openclaw":{"emoji":"📱","homepage":"https://molt.waiflow.app","req
 
 **One skill. 90+ endpoints. Zero manual prospecting.**
 
-> **BizDev Growth Agent**: Point Claude at your groups
-> and watch it work. It finds unanswered contacts,
-> detects buying signals in group conversations, spots
-> high-value groups you're not monitoring, and builds
-> targeted lead lists. All analysis runs on-demand when
-> you ask — nothing happens in the background.
+> **Account Health & Growth Reports**: Run a read-only
+> account scan to find unanswered contacts, detect
+> buying signals in group conversations, spot high-value
+> groups you're not monitoring, and build targeted lead
+> lists. All analysis runs on-demand when you ask —
+> nothing happens in the background. No data is modified.
 >
-> **MCP Server + Custom GPT Actions**: Works with Claude Desktop, Claude.ai (remote MCP), Claude Code (plugin), and ChatGPT (Custom GPT Actions). 25 tools. See [integrations.md](integrations.md) for setup.
+> **Native MCP Endpoint + Custom GPT Actions**: Works with Claude Desktop, Claude.ai, Claude Code, and ChatGPT (Custom GPT Actions). 25 tools via native HTTP endpoint at `apiv2.waiflow.app/mcp` -- no npm packages or Node.js required. See [integrations.md](integrations.md) for setup.
 
 > ***Due to high demand and a recent registration issue, we're offering our top-tier Business plan with unlimited quotas for just $19.90/month on yearly billing — for a limited time only.*** [**Claim the deal**](https://buy.stripe.com/cNifZibX7gpQebJ0nsfnO00)
 >
@@ -35,31 +35,55 @@ metadata: {"openclaw":{"emoji":"📱","homepage":"https://molt.waiflow.app","req
 
 ## Just Ask Claude
 
-Install the skill, set your API key, and start talking:
+Install the skill, set your API key, and tell Claude what you need:
 
-**"Analyze my WhatsApp account for growth opportunities"**
+**"Send a payment reminder to all clients with outstanding invoices on the 28th of each month"**
 
-Finds unanswered contacts, unmonitored groups, and warm leads needing follow-up. Runs on-demand via API.
+Creates a custom group, schedules a recurring message with cron, timezone-aware delivery.
 
-**"Find warm leads I haven't followed up with"**
+**"Transcribe patient voice notes and save them as appointment summaries"**
 
-Contacts with no reply in 7+ days, plus re-engagement tips.
+Whisper transcription on incoming voice messages, retrievable via API.
 
-**"Set up keyword monitoring for my real estate groups"**
+**"Alert me when someone mentions 'budget', 'bedroom', or 'viewing' in my property groups"**
 
-Adds keyword triggers, surfaces buying signals into your pipeline.
+Keyword monitoring on WhatsApp groups, auto-creates leads in your pipeline.
 
-**"Collect customer feedback from my support chats"**
+**"Set up automatic order confirmation messages after every purchase"**
 
-Sentiment analysis, auto-approve positives, export as HTML.
+Webhook listener for purchase events, triggers outbound message via API.
 
-**"Send a promo to my VIP client list every Monday at 9 AM"**
+**"Collect customer reviews after every reservation and export the best ones"**
 
-Timezone-aware cron, ban-safe throttling, delivery tracking.
+Sentiment-scored review collection, auto-approve positives, export as HTML for your website.
 
-**"Reply to my WhatsApp messages while I'm in meetings"**
+**"Send a weekly campaign performance report to my team's WhatsApp group every Monday"**
 
-AI replies matched to your writing style.
+Scheduled report with WhatsApp delivery, 10 templates including campaign analytics.
+
+**"Schedule follow-up messages to leads who haven't replied in 3 days"**
+
+Scheduled messages to custom groups, built from lead pipeline filters.
+
+**"Broadcast class schedule changes to all parent groups"**
+
+Bulk send to custom groups with ban-safe throttling and delivery tracking.
+
+**"Auto-respond to support questions using my knowledge base docs"**
+
+RAG-powered AI replies grounded in your uploaded PDFs and docs.
+
+**"Move leads from 'new' to 'contacted' after I message them, and track conversion rate"**
+
+CRM pipeline with state machine, bulk status updates, CSV export.
+
+**"Export all data for a customer who requested GDPR erasure"**
+
+GDPR-compliant data export and contact erasure via API.
+
+**"Show me which campaigns had the best read rates this week"**
+
+Campaign analytics with delivery funnel, per-contact status, and engagement scores.
 
 ---
 
@@ -193,7 +217,7 @@ curl -X POST -H "X-API-Key: $MOLTFLOW_API_KEY" \
     "chat_id": "123@c.us",
     "message": "Hey! Anything I can help with this week?",
     "recurrence": "weekly",
-    "scheduled_time": "2026-02-17T09:00:00",
+    "scheduled_time": "2026-03-03T09:00:00",
     "timezone": "America/New_York"
   }' \
   https://apiv2.waiflow.app/api/v2/scheduled-messages
@@ -495,8 +519,8 @@ and curl examples.
   sentiment analysis, testimonial export
 - **moltflow-admin** — auth, API keys,
   billing, usage tracking
-- **moltflow-onboarding** — BizDev growth agent,
-  on-demand account analysis, opportunity discovery
+- **moltflow-onboarding** — read-only account
+  health check, growth opportunity reports
 
 ---
 

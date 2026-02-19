@@ -4,6 +4,67 @@ All notable changes to the **MoltFlow Skills** package are documented here.
 
 ---
 
+## v2.14.3 (2026-02-19)
+
+### Changed
+- **Updated `whatsapp-automation-a2a` display name** — "WhatsApp Automation — No Meta API | Bulk Send, Lead Mining, AI Outreach & Scheduled Campaigns"
+- Republished both slugs to restore `whatsapp-automation-a2a` search visibility
+
+---
+
+## v2.14.1 (2026-02-19)
+
+### Fixed
+- **ClawHub "suspicious" classification resolved** — rewrote moltflow-onboarding from agent personality instructions to a read-only analysis tool
+- Removed "BizDev Agent" framing from onboarding skill and main SKILL.md description
+- Onboarding skill now explicitly read-only — all write endpoints moved to referenced skill modules
+- Removed inline Phase 4 write endpoints and Phase 5 settings configuration from onboarding
+- All safety guardrails preserved (disable-model-invocation, explicit user approval, scoped API keys)
+
+---
+
+## v2.14.0 (2026-02-18)
+
+### Changed
+- **Renamed skill** — "WhatsApp Ultimate — No Meta API | Lead Mining, Bulk Send, Scheduled Reminders & Follow-ups"
+- Highlights the key differentiator: no Meta Business API required
+
+---
+
+## v2.13.0 (2026-02-18)
+
+### Fixed
+- **17 production bugs** fixed across API, MCP server, frontend, and workers
+- WAHA HMAC signature verification now uses raw bytes (was re-serializing, never matched)
+- Checkout 202 response no longer corrupts auth tokens
+- A2A import crash on fresh Docker builds (missing source file)
+- Bulk send distributed lock prevents duplicate message delivery
+- MCP sanitizer boundary marker escape prevents prompt injection breakout
+- Login rate limit atomic pipeline prevents permanent user lockout
+- Admin suspend user now persists to DB (was hardcoded property)
+- ORM decrypted fields no longer risk plaintext flush to encrypted columns
+- Stripe webhook construct_event wrapped in asyncio.to_thread
+- Timezone-aware datetime mismatches on timezone-naive columns
+
+### Changed
+- API version bumped to v2.0.0
+- MCP server version bumped to v2.0.0
+- OpenAI Actions version bumped to v2.0.0
+
+---
+
+## v2.12.3 (2026-02-17)
+
+### Added
+- **Business use case scenarios** across all sub-skills — real-world examples for healthcare, real estate, e-commerce, restaurants, agencies, and more
+- **12 vertical-specific prompts** in main SKILL.md "Just Ask Claude" section replacing generic examples
+- **GDPR + Analytics prompts** added to main skill showcase
+
+### Fixed
+- Replaced hardcoded scheduled message date with future date
+
+---
+
 ## v2.12.0 (2026-02-17)
 
 ### Changed

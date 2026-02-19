@@ -18,6 +18,14 @@ disable-model-invocation: true
 
 Manage authentication, billing, API keys, usage tracking, and tenant settings for MoltFlow.
 
+## Real-World Scenarios
+
+**Agency managing 5 clients** — "Create a scoped API key for each client that only lets them send messages and read their own groups — nothing else."
+
+**Startup scaling up** — "Check my current plan usage and tell me if I'm about to hit my message limit so I can upgrade before the campaign."
+
+**Compliance officer** — "Show me the daily usage breakdown for this month so I can audit how many messages each session sent."
+
 ## When to Use
 
 Use this skill when you need to:

@@ -18,6 +18,16 @@ disable-model-invocation: true
 
 Manage WhatsApp sessions, send messages, monitor groups, organize with labels, and receive real-time events via webhooks.
 
+## Real-World Scenarios
+
+**Dental clinic** — "Send an appointment confirmation to each patient after they book, and a reminder 24 hours before their visit."
+
+**Property manager** — "Monitor my tenant WhatsApp groups for maintenance keywords like 'leak', 'broken', and 'urgent', and flag them instantly."
+
+**E-commerce store** — "When a customer messages my support number, auto-label them as 'New Inquiry' and route the chat to the right team."
+
+**Logistics company** — "Set up a webhook so my dispatch system gets notified the moment a driver sends a delivery confirmation photo."
+
 ## When to Use
 
 - "Connect WhatsApp" or "create a session"

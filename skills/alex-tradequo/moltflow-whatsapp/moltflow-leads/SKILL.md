@@ -18,6 +18,16 @@ disable-model-invocation: true
 
 Detect purchase-intent signals from monitored WhatsApp groups, track leads through a sales pipeline, perform bulk operations, and export for your CRM.
 
+## Real-World Scenarios
+
+**Real estate agent** — "Monitor my property groups for keywords like 'looking for', '3 bedrooms', and 'budget' — anyone who matches goes straight into my lead pipeline."
+
+**Car dealership** — "When a lead moves from 'contacted' to 'qualified', automatically add them to my VIP follow-up group for a test drive invite."
+
+**Insurance broker** — "Export all converted leads from this quarter as a CSV so I can import them into my CRM for commission tracking."
+
+**Wedding planner** — "Show me all new leads from my vendor groups that I haven't contacted yet, sorted by detection date."
+
 ## When to Use
 
 - "List leads" or "show detected leads"

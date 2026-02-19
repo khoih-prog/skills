@@ -18,6 +18,16 @@ disable-model-invocation: true
 
 AI-powered capabilities for WhatsApp automation: voice transcription, RAG knowledge base, style profile learning, and intelligent reply generation.
 
+## Real-World Scenarios
+
+**Healthcare clinic** — "Transcribe patient voice notes sent via WhatsApp and save them as searchable text records I can pull up later."
+
+**Law firm** — "Upload our service agreements to the knowledge base so the AI can answer client questions about terms and pricing accurately."
+
+**Sales team** — "Clone my top closer's writing style so AI replies to leads sound like him — casual, confident, uses emojis."
+
+**Customer support** — "Auto-reply to common questions like 'What are your hours?' and 'Where are you located?' using our FAQ document."
+
 ## When to Use
 
 - "Transcribe a voice message" or "convert audio to text"

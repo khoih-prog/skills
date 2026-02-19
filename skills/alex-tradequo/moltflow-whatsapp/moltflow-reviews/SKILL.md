@@ -18,6 +18,14 @@ disable-model-invocation: true
 
 Collect, analyze, and manage customer reviews via the MoltFlow API. Automate sentiment scoring, extract testimonials, and export social proof for your business.
 
+## Real-World Scenarios
+
+**Restaurant owner** — "After every dinner reservation, collect feedback from WhatsApp chats and auto-approve anything with a sentiment score above 0.8."
+
+**Airbnb host** — "Scan my guest conversations for praise keywords like 'amazing', 'clean', and 'recommend', then export the best ones as HTML for my listing page."
+
+**Dentist** — "Set up a review collector on my patient support chat — only capture English messages that mention 'thank' or 'great service'."
+
 ## When to Use
 
 Use this skill when you need to:

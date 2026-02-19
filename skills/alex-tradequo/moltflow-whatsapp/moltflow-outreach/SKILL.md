@@ -18,6 +18,16 @@ disable-model-invocation: true
 
 Broadcast to custom contact lists with ban-safe throttling, schedule recurring messages with timezone support, generate automated reports with WhatsApp delivery, and manage targeted contact groups for WhatsApp outreach.
 
+## Real-World Scenarios
+
+**Gym owner** — "Send a 'Happy New Year' promo with a discount code to all my members, spaced out so I don't get banned."
+
+**Freelance consultant** — "Every Friday at 5 PM, send a 'weekend availability' message to my active client list."
+
+**Marketing agency** — "Build a contact group from 3 WhatsApp groups, deduplicate, and blast a product launch announcement."
+
+**Restaurant chain** — "Schedule a weekly report showing how many reservation confirmations were sent and delivered — send it to my WhatsApp every Monday morning."
+
 ## When to Use
 
 - "Send bulk message" or "broadcast to group"
