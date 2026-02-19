@@ -1,11 +1,17 @@
 {
   "owner": "dannyshmueli",
   "slug": "anima-design-agent",
-  "displayName": "Anima Design Agent",
+  "displayName": "Anima",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1771364029530,
-    "commit": "https://github.com/openclaw/skills/commit/17f9860d9edf2e0f9fbccbb0f4b2b9decaf2ade9"
+    "version": "1.0.2",
+    "publishedAt": 1771493471269,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1771364029530,
+      "commit": "https://github.com/openclaw/skills/commit/17f9860d9edf2e0f9fbccbb0f4b2b9decaf2ade9"
+    }
+  ]
 }
