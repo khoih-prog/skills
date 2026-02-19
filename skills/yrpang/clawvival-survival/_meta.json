@@ -3,11 +3,16 @@
   "slug": "clawvival-survival",
   "displayName": "clawvival-survival",
   "latest": {
-    "version": "2.2.1",
-    "publishedAt": 1771402495739,
-    "commit": "https://github.com/openclaw/skills/commit/d38acd431d6e972636ed1c5f512b9a9af597b68c"
+    "version": "2.2.7",
+    "publishedAt": 1771407691581,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.2.1",
+      "publishedAt": 1771402495739,
+      "commit": "https://github.com/openclaw/skills/commit/d38acd431d6e972636ed1c5f512b9a9af597b68c"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1771309248056,
