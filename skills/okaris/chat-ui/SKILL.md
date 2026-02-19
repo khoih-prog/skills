@@ -1,17 +1,13 @@
 ---
 name: chat-ui
-description: |
-  Chat UI building blocks for React/Next.js from ui.inference.sh.
-  Components: container, messages, input, typing indicators, avatars.
-  Capabilities: chat interfaces, message lists, input handling, streaming.
-  Use for: building custom chat UIs, messaging interfaces, AI assistants.
-  Triggers: chat ui, chat component, message list, chat input, shadcn chat,
-  react chat, chat interface, messaging ui, conversation ui, chat building blocks
+description: "Chat UI building blocks for React/Next.js from ui.inference.sh. Components: container, messages, input, typing indicators, avatars. Capabilities: chat interfaces, message lists, input handling, streaming. Use for: building custom chat UIs, messaging interfaces, AI assistants. Triggers: chat ui, chat component, message list, chat input, shadcn chat,"  react chat, chat interface, messaging ui, conversation ui, chat building blocks
 ---
 
 # Chat UI Components
 
 Chat building blocks from [ui.inference.sh](https://ui.inference.sh).
+
+![Chat UI Components](https://cloud.inference.sh/app/files/u/4mg21r6ta37mpaz6ktzwtt8krr/01kgvftp7hb8wby7z66fvs9asd.jpeg)
 
 ## Quick Start
 
@@ -125,13 +121,13 @@ Components use Tailwind CSS and shadcn/ui design tokens:
 
 ```bash
 # Full agent component (recommended)
-npx skills add inference-sh/agent-skills@agent-ui
+npx skills add inference-sh/skills@agent-ui
 
 # Declarative widgets
-npx skills add inference-sh/agent-skills@widgets-ui
+npx skills add inference-sh/skills@widgets-ui
 
 # Markdown rendering
-npx skills add inference-sh/agent-skills@markdown-ui
+npx skills add inference-sh/skills@markdown-ui
 ```
 
 ## Documentation
