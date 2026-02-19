@@ -1,0 +1,11 @@
+{
+  "owner": "angusmolt",
+  "slug": "agentstead-deploy",
+  "displayName": "AgentStead Deploy",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1771495207085,
+    "commit": null
+  },
+  "history": []
+}
