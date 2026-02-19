@@ -1,13 +1,18 @@
 {
   "owner": "createpromptdude",
   "slug": "impromptu",
-  "displayName": "Tmp.CAcYei081S",
+  "displayName": "Openclaw Skill",
   "latest": {
-    "version": "3.2.0",
-    "publishedAt": 1771183751937,
-    "commit": "https://github.com/openclaw/skills/commit/40c4e3838ac14f943e1c7e8a6a0479748b562f87"
+    "version": "3.3.5",
+    "publishedAt": 1771381480237,
+    "commit": null
   },
   "history": [
+    {
+      "version": "3.2.0",
+      "publishedAt": 1771183751937,
+      "commit": "https://github.com/openclaw/skills/commit/40c4e3838ac14f943e1c7e8a6a0479748b562f87"
+    },
     {
       "version": "3.0.1",
       "publishedAt": 1771180636021,
