@@ -272,10 +272,19 @@ def test_tools_search_gov_programs_no_crash():
 # ─── Test 15: Tools.fetch_realtime — 연결 불가 폴백 ──────────────────────────
 
 def test_tools_fetch_realtime_unreachable():
-    """fetch_realtime: 연결 불가 시 '실시간 조회 불가' 반환."""
+    """fetch_realtime: 허용된 도메인 + 연결 불가 시 '실시간 조회 불가' 반환."""
     tools = Tools()
-    result = tools.fetch_realtime("http://localhost:19999/nonexistent_raon_test")
+    # 허용된 도메인이지만 포트 19999는 연결 불가 → '실시간 조회 불가' 반환
+    result = tools.fetch_realtime("http://k-startup.go.kr:19999/nonexistent_raon_test")
     assert result == "실시간 조회 불가"
+
+
+def test_tools_fetch_realtime_disallowed_domain():
+    """fetch_realtime: 허용되지 않은 도메인은 ValueError 발생."""
+    tools = Tools()
+    import pytest
+    with pytest.raises(ValueError, match="허용되지 않은 도메인"):
+        tools.fetch_realtime("http://localhost:19999/nonexistent_raon_test")
 
 
 # ─── Test 16: AgenticRAG.run() — search 전략 통합 ────────────────────────────

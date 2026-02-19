@@ -327,25 +327,13 @@ case "$MODULE" in
     python3 "$SCRIPT_DIR/server.py" --port "$PORT" "$@"
     ;;
   install)
-    PLIST_SRC="$BASE_DIR/com.yeomyeonggeori.raon-os-server.plist"
-    PLIST_DST="$HOME/Library/LaunchAgents/com.yeomyeonggeori.raon-os-server.plist"
-    if [ ! -f "$PLIST_SRC" ]; then
-      err "plist not found: $PLIST_SRC"
-      exit 1
-    fi
-    mkdir -p "$BASE_DIR/logs"
-    cp "$PLIST_SRC" "$PLIST_DST"
-    launchctl load "$PLIST_DST" 2>/dev/null
-    launchctl start com.yeomyeonggeori.raon-os-server 2>/dev/null
-    info "✅ Raon OS server installed and started (launchd)"
-    info "   Logs: $BASE_DIR/logs/"
+    # 서버 자동시작(launchd 등록)이 필요하면 scripts/install-service.sh 실행
+    # launchctl 관련 코드는 보안상 install-service.sh로 분리되어 있습니다.
+    bash "$SCRIPT_DIR/install-service.sh" install
     ;;
   uninstall)
-    PLIST_DST="$HOME/Library/LaunchAgents/com.yeomyeonggeori.raon-os-server.plist"
-    launchctl stop com.yeomyeonggeori.raon-os-server 2>/dev/null
-    launchctl unload "$PLIST_DST" 2>/dev/null
-    rm -f "$PLIST_DST"
-    info "✅ Raon OS server uninstalled (launchd)"
+    # launchctl 관련 코드는 install-service.sh로 분리되어 있습니다.
+    bash "$SCRIPT_DIR/install-service.sh" uninstall
     ;;
   install-model)
     MODEL="${COMMAND:-qwen3:8b}"

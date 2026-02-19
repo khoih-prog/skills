@@ -28,6 +28,30 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 BASE_DIR = SCRIPT_DIR.parent
 EVAL_DATA_DIR = BASE_DIR / "eval_data"
 
+# ─── URL 허용 도메인 화이트리스트 (SSRF 방지) ────────────────────────────────
+ALLOWED_DOMAINS = [
+    "www.jointips.or.kr",
+    "k-startup.go.kr",
+    "www.nia.or.kr",
+    "www.nipa.kr",
+    "www.keit.re.kr",
+    "www.kibo.or.kr",
+    "www.bizinfo.go.kr",
+    "api.supabase.co",
+    "generativelanguage.googleapis.com",
+    "openrouter.ai",
+]
+
+
+def is_allowed_url(url: str) -> bool:
+    """URL이 허용된 도메인인지 검증 (SSRF 방지)
+    parsed.hostname을 사용해 포트(:PORT)가 포함된 URL도 올바르게 처리.
+    """
+    from urllib.parse import urlparse
+    parsed = urlparse(url)
+    hostname = (parsed.hostname or "").lower()
+    return any(hostname == d or hostname.endswith("." + d) for d in ALLOWED_DOMAINS)
+
 sys.path.insert(0, str(SCRIPT_DIR))
 
 from raon_llm import chat, embed, cosine_sim, prompt_to_messages
@@ -557,7 +581,13 @@ class Tools:
         """
         urllib로 URL 페칭 (실시간 정보).
         k-startup.go.kr 등. 타임아웃 5초, 실패 시 "실시간 조회 불가" 반환.
+        허용된 도메인(ALLOWED_DOMAINS)만 접근 가능 — SSRF 방지.
         """
+        if not is_allowed_url(url):
+            raise ValueError(
+                f"[fetch_realtime] 허용되지 않은 도메인: {url!r}. "
+                f"허용 도메인: {ALLOWED_DOMAINS}"
+            )
         try:
             req = urllib.request.Request(
                 url,

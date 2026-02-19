@@ -59,8 +59,8 @@ PROVIDER_ORDER = ["openrouter", "gemini", "anthropic", "openai", "ollama"]
 
 # 프로바이더별 기본 모델 (RAON_MODEL 환경변수로 전체 override 가능)
 _DEFAULT_MODELS: dict = {
-    "openrouter": "google/gemini-2.0-flash-001",
-    "gemini":     "gemini-2.0-flash",
+    "openrouter": "google/gemini-2.5-flash",
+    "gemini":     "gemini-2.5-flash",
     "anthropic":  "claude-3-5-haiku-latest",
     "openai":     "gpt-4o-mini",
     "ollama":     "qwen3:8b",

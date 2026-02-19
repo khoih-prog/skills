@@ -4,6 +4,9 @@ Raon OS — HTTP API Server
 로컬 REST API로 사업계획서 평가 기능 제공.
 웹챗/k-startup.ai 임베드용.
 
+# ⚠️  보안 정책: 관리자 API는 로컬호스트(127.0.0.1)에서만 접근 가능
+#   /api/keys (POST/DELETE) 엔드포인트는 localhost 이외의 요청을 거부합니다.
+
 Usage:
     python server.py [--port 8400] [--model qwen3:8b]
     raon.sh serve [--port 8400]
@@ -17,6 +20,10 @@ Endpoints:
     POST /v1/chat       — 대화형 평가 세션 (멀티턴)
     GET  /health        — 헬스체크
     GET  /v1/modes      — 지원 모드 목록
+
+Admin Endpoints (localhost only):
+    POST   /api/keys    — API 키 생성 (관리자 전용, localhost만 허용)
+    DELETE /api/keys/:key — API 키 비활성화 (관리자 전용, localhost만 허용)
 """
 
 import base64
@@ -24,6 +31,7 @@ import json
 import os
 import secrets
 import threading
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, Dict, Any
@@ -48,6 +56,14 @@ except ImportError as _ke:
 
 # 전역 카카오 핸들러 인스턴스 (lazy init)
 _kakao_handler = None
+
+# ─── SupabaseClient import (로컬 모드 전용) ──────────────────────────────────
+# SaaS 모드(RAON_API_URL 설정)에서는 사용 안 함 — 피드백은 RAON_API_URL로 라우팅
+_supabase_client = None
+try:
+    import supabase_client as _supabase_client
+except ImportError:
+    pass
 
 from evaluate import (
     build_prompt,
@@ -75,6 +91,12 @@ API_KEYS_FILE = DATA_DIR / "api_keys.json"
 USAGE_FILE = DATA_DIR / "usage.json"
 
 _data_lock = threading.Lock()
+
+# ─── 평가 캐시 (SaaS 피드백 라우팅용 컨텍스트 보관) ─────────────────────────
+# {evaluation_id: {mode, input_text, result_text, score, duration_sec, model}}
+_EVAL_CACHE = {}          # type: Dict[str, Dict]
+_EVAL_CACHE_LOCK = threading.Lock()
+_EVAL_CACHE_MAX = 500     # 오래된 항목부터 자동 제거
 
 # Rate limits per plan: {plan: {generate: N, chat: N}}
 PLAN_LIMITS = {
@@ -198,6 +220,121 @@ try:
     _AGENTIC_RAG_AVAILABLE = True
 except ImportError as _e:
     print(f"[raon-server] AgenticRAG 로드 실패 (기본 모드로 동작): {_e}", file=sys.stderr)
+
+
+# ─── 피드백 수집 파이프라인 ────────────────────────────────────────────────────
+
+def _save_evaluation_to_cache(evaluation_id, mode, input_text, result_text, score, duration_sec, model):
+    # type: (str, str, str, str, Any, float, str) -> None
+    """평가 결과를 메모리 캐시에 저장 (SaaS 피드백 POST 시 컨텍스트 포함용)"""
+    with _EVAL_CACHE_LOCK:
+        _EVAL_CACHE[evaluation_id] = {
+            "mode": mode,
+            "input_text": (input_text or "")[:500],
+            "result_text": result_text or "",
+            "score": score,
+            "duration_sec": round(duration_sec, 3) if duration_sec else None,
+            "model": model,
+        }
+        # 최대 항목 초과 시 가장 오래된 것 제거
+        if len(_EVAL_CACHE) > _EVAL_CACHE_MAX:
+            oldest_key = next(iter(_EVAL_CACHE))
+            del _EVAL_CACHE[oldest_key]
+
+
+def _route_feedback(evaluation_id, rating, comment=""):
+    # type: (str, int, str) -> bool
+    """피드백 라우팅 (3단계 우선순위):
+
+    1. RAON_API_URL 설정 → SaaS 서버로 전달 (평가 컨텍스트 포함)
+    2. 로컬 Supabase 설정 → 사용자 Supabase에 직접 저장
+    3. 둘 다 없음 → history.jsonl에 append (로컬 기록만)
+    """
+    import urllib.request as _ur
+
+    # 컨텍스트 조회 (SaaS POST 시 함께 전달)
+    with _EVAL_CACHE_LOCK:
+        eval_ctx = dict(_EVAL_CACHE.get(evaluation_id, {}))
+
+    # ── 1. SaaS 모드 ──────────────────────────────────────────────────────────
+    if RAON_API_URL and RAON_API_KEY:
+        try:
+            payload = json.dumps({
+                "evaluation_id": evaluation_id,
+                "rating": rating,
+                "comment": comment or "",
+                **eval_ctx,  # mode, input_text, result_text, score, duration_sec, model
+            }, ensure_ascii=False).encode("utf-8")
+            req = _ur.Request(
+                "{}/v1/feedback".format(RAON_API_URL),
+                data=payload,
+                headers={
+                    "Content-Type": "application/json",
+                    "X-API-Key": RAON_API_KEY,
+                },
+                method="POST",
+            )
+            _ur.urlopen(req, timeout=5)
+            return True
+        except Exception as e:
+            print("[raon-server] SaaS 피드백 전송 실패 (무시): {}".format(e), file=sys.stderr)
+            return False
+
+    # ── 2. 로컬 Supabase 모드 ─────────────────────────────────────────────────
+    if _supabase_client is not None and _supabase_client.is_available():
+        # FK 제약 충족: feedback 전에 evaluation을 먼저 upsert (캐시에서 복원)
+        if eval_ctx:
+            _supabase_client.insert_evaluation(
+                evaluation_id,
+                eval_ctx.get("session_id", ""),
+                eval_ctx.get("mode", ""),
+                eval_ctx.get("input_text", ""),
+                eval_ctx.get("result_text", ""),
+                eval_ctx.get("score"),
+                eval_ctx.get("duration_sec") or 0.0,
+                eval_ctx.get("model", ""),
+            )
+        return _supabase_client.insert_feedback(evaluation_id, rating, comment)
+
+    # ── 3. fallback: history.jsonl ────────────────────────────────────────────
+    try:
+        log_entry = {
+            "type": "feedback",
+            "evaluation_id": evaluation_id,
+            "rating": rating,
+            "comment": comment or "",
+            "timestamp": int(time.time()),
+        }
+        hist_file = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "history.jsonl",
+        )
+        with open(hist_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+        return True
+    except Exception as e:
+        print("[raon-server] 피드백 로컬 저장 실패: {}".format(e), file=sys.stderr)
+        return False
+
+
+def _save_evaluation_async(evaluation_id, mode, input_text, result_text, score, duration_sec, model):
+    # type: (str, str, str, str, Any, float, str) -> None
+    """로컬 Supabase에 평가 결과 비동기 저장 (메인 응답에 영향 없음)
+    RAON_API_URL SaaS 모드에서는 호출하지 않음.
+    """
+    if _supabase_client is None or not _supabase_client.is_available():
+        return
+
+    def _do():
+        try:
+            _supabase_client.insert_evaluation(
+                evaluation_id, "", mode,
+                input_text, result_text, score, duration_sec, model,
+            )
+        except Exception as e:
+            print("[raon-server] 평가 Supabase 저장 실패 (무시): {}".format(e), file=sys.stderr)
+
+    threading.Thread(target=_do, daemon=True).start()
 
 
 def extract_text_from_pdf(b64data: str) -> str:
@@ -416,6 +553,49 @@ class RaonHandler(BaseHTTPRequestHandler):
         if api_key and cat:
             _increment_usage(api_key, cat, tokens_in, tokens_out)
 
+    def _handle_feedback(self):
+        """POST /v1/feedback — 사용자 피드백 수집 (👍/👎)
+
+        Body: {"evaluation_id": "uuid", "rating": 1 또는 -1, "comment": "선택"}
+        Response: {"ok": true}
+
+        라우팅:
+          - RAON_API_URL 있음 → SaaS 서버로 전달
+          - 로컬 Supabase 있음 → 직접 저장
+          - 둘 다 없음 → history.jsonl append
+        """
+        content_length = int(self.headers.get("Content-Length", 0))
+        if content_length == 0:
+            self._send_error(400, "empty_body")
+            return
+
+        try:
+            body = json.loads(self.rfile.read(content_length))
+        except json.JSONDecodeError:
+            self._send_error(400, "invalid_json")
+            return
+
+        evaluation_id = body.get("evaluation_id", "").strip()
+        rating = body.get("rating")
+        comment = str(body.get("comment", "")).strip()
+
+        if not evaluation_id:
+            self._send_error(400, "missing evaluation_id")
+            return
+        if rating not in (1, -1):
+            self._send_error(400, "rating must be 1(👍) or -1(👎)")
+            return
+
+        # 비동기 저장 — 응답 지연 없음
+        def _save():
+            try:
+                _route_feedback(evaluation_id, rating, comment)
+            except Exception as e:
+                print("[raon-server] 피드백 저장 오류: {}".format(e), file=sys.stderr)
+
+        threading.Thread(target=_save, daemon=True).start()
+        self._send_json({"ok": True})
+
     def do_OPTIONS(self):
         """CORS preflight"""
         self.send_response(204)
@@ -425,9 +605,13 @@ class RaonHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_DELETE(self):
-        """DELETE /api/keys/:key — deactivate key (admin only)"""
+        """DELETE /api/keys/:key — deactivate key (admin only, localhost only)"""
         path = urlparse(self.path).path
         if path.startswith("/api/keys/"):
+            # 관리자 API는 로컬호스트에서만 접근 가능 (보안 정책)
+            if not _is_localhost(self):
+                self._send_error(403, "admin endpoints are only accessible from localhost")
+                return
             admin = self.headers.get("X-API-Key", "") or self.headers.get("Authorization", "").replace("Bearer ", "")
             if not ADMIN_KEY or admin != ADMIN_KEY:
                 self._send_error(403, "admin key required")
@@ -447,12 +631,13 @@ class RaonHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = urlparse(self.path).path
 
-        # Admin: GET /api/keys/:key/usage
+        # Admin: GET /api/keys/:key/usage (localhost only for admin access)
         if path.startswith("/api/keys/") and path.endswith("/usage"):
             target_key = path.split("/api/keys/")[1].split("/usage")[0]
             requester = self._get_api_key() or ""
             if requester != target_key:
-                if not ADMIN_KEY or requester != ADMIN_KEY:
+                # 관리자 접근은 로컬호스트에서만 허용
+                if not _is_localhost(self) or not ADMIN_KEY or requester != ADMIN_KEY:
                     self._send_error(403, "forbidden")
                     return
             with _data_lock:
@@ -586,8 +771,12 @@ class RaonHandler(BaseHTTPRequestHandler):
             self._handle_kakao()
             return
 
-        # Admin: POST /api/keys — create new API key
+        # Admin: POST /api/keys — create new API key (localhost only)
         if path == "/api/keys":
+            # 관리자 API는 로컬호스트에서만 접근 가능 (보안 정책)
+            if not _is_localhost(self):
+                self._send_error(403, "admin endpoints are only accessible from localhost")
+                return
             admin = self.headers.get("X-API-Key", "") or self.headers.get("Authorization", "").replace("Bearer ", "")
             if not ADMIN_KEY or admin != ADMIN_KEY:
                 self._send_error(403, "admin key required (set ADMIN_KEY env var)")
@@ -621,6 +810,20 @@ class RaonHandler(BaseHTTPRequestHandler):
             return
 
         mode = path[4:]  # strip "/v1/"
+
+        # ── /v1/feedback — 인증 없이 로컬호스트 허용 ─────────────────────────
+        if mode == "feedback":
+            # 외부 요청은 API 키 검증 (로컬은 자동 통과)
+            if not _is_localhost(self):
+                api_key = self._get_api_key()
+                if api_key:
+                    with _data_lock:
+                        keys = _load_api_keys()
+                    if not keys.get(api_key, {}).get("active", False):
+                        self._send_error(401, "invalid api key")
+                        return
+            self._handle_feedback()
+            return
 
         # Determine endpoint category for rate limiting
         if mode in CHAT_ENDPOINTS:
@@ -690,6 +893,7 @@ class RaonHandler(BaseHTTPRequestHandler):
         pdf_b64 = body.get("pdf_base64", "").strip()
         program = body.get("program", "TIPS")
         model = body.get("model", self.model)
+        context = body.get("context", "").strip()  # 이전 평가 결과 등 세션 맥락
 
         # PDF base64 → text extraction
         if pdf_b64 and not text:
@@ -733,6 +937,7 @@ class RaonHandler(BaseHTTPRequestHandler):
 
         # Run evaluation
         start = time.time()
+        evaluation_id = str(uuid.uuid4())
         result = None
 
         # 1st: K-Startup AI API
@@ -741,6 +946,11 @@ class RaonHandler(BaseHTTPRequestHandler):
 
         # 2nd: Ollama fallback
         if not result:
+            # improve 모드에서 context(이전 평가 결과)가 있으면 프롬프트에 주입
+            if context and mode == "improve":
+                text = f"[이전 평가 결과]\n{context}\n\n[사업계획서]\n{text}" if text else f"[이전 평가 결과]\n{context}\n\n위 평가 결과를 바탕으로 구체적인 개선안을 작성해주세요."
+            elif context and mode == "draft":
+                text = f"[참고 아이디어]\n{context}\n\n{text}" if text else f"[참고 아이디어]\n{context}"
             prompt = build_prompt(text, mode, program=program)
             result = call_ollama(prompt, model)
 
@@ -773,6 +983,7 @@ class RaonHandler(BaseHTTPRequestHandler):
             "text_length": len(text),
             "duration": duration,
             "result": result,
+            "evaluation_id": evaluation_id,  # 위젯 피드백 버튼용
         }
         if score is not None:
             response["score"] = score
@@ -781,6 +992,20 @@ class RaonHandler(BaseHTTPRequestHandler):
             response["level"] = gami_result["level"]
             response["title"] = gami_result["title"]
             response["new_badges"] = gami_result["new_badges"]
+
+        # ── 평가 캐시 저장 (피드백 라우팅 시 컨텍스트 포함용) ────────────────
+        try:
+            _save_evaluation_to_cache(
+                evaluation_id, mode, text, result, score, duration, model
+            )
+        except Exception:
+            pass
+
+        # ── 로컬 Supabase 비동기 저장 (SaaS 모드에서는 스킵) ─────────────────
+        if not (RAON_API_URL and RAON_API_KEY):
+            _save_evaluation_async(
+                evaluation_id, mode, text, result, score, duration, model
+            )
 
         # Log to history.jsonl
         try:

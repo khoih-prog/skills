@@ -253,6 +253,23 @@ body{
 .cmd-modal .mode-btn{padding:12px 16px;border-radius:0}
 .cmd-modal .mode-btn:hover{background:var(--bg3)}
 
+/* ── Feedback bar (evaluate / improve 모드) ── */
+.feedback-bar{
+  margin-top:14px;padding-top:12px;
+  border-top:1px solid var(--glass-border);
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.feedback-label{font-size:12px;color:var(--text3);white-space:nowrap}
+.fb-btn{
+  background:var(--bg3);border:1px solid var(--glass-border);
+  color:var(--text2);padding:5px 16px;border-radius:20px;
+  cursor:pointer;font-size:13px;font-family:inherit;
+  transition:all .15s;
+}
+.fb-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+.fb-btn:disabled{opacity:.5;cursor:not-allowed}
+.fb-thanks{font-size:13px;color:var(--accent)}
+
 /* ── Mobile ── */
 @media(max-width:768px){
   .sidebar{position:fixed;left:0;top:0;height:100vh;z-index:200;box-shadow:0 0 30px rgba(0,0,0,.5)}
@@ -786,6 +803,15 @@ async function sendMessage() {
     window._raonPendingProgram = null;
   }
 
+  // 개선 제안 모드: 이전 평가 결과를 context로 전달
+  if (currentMode === 'improve' && sessionContext.lastEvaluation) {
+    payload.context = sessionContext.lastEvaluation;
+  }
+  // 초안 작성 모드: 이전 아이디어를 context로 전달
+  if (currentMode === 'draft' && sessionContext.lastIdea) {
+    payload.context = JSON.stringify(sessionContext.lastIdea);
+  }
+
   if (pendingPdfBase64) {
     payload.pdf_base64 = pendingPdfBase64;
     if (text) payload.text = text;
@@ -819,7 +845,35 @@ async function sendMessage() {
       } catch(e){}
 
       const xpHtml = buildXpHtml(data, profile);
-      addMsg(scoreHtml + result + xpHtml, 'bot');
+      const msgEl = addMsg(scoreHtml + result + xpHtml, 'bot');
+
+      // ── 피드백 버튼 (evaluate / improve 모드만 표시) ──────────────────────
+      if ((currentMode === 'evaluate' || currentMode === 'improve') && data.evaluation_id) {
+        const evalId = data.evaluation_id;
+        const fbBar = document.createElement('div');
+        fbBar.className = 'feedback-bar';
+        fbBar.innerHTML =
+          '<span class="feedback-label">이 평가가 도움이 됐나요?</span>' +
+          '<button class="fb-btn" data-rating="1">👍 도움됐어요</button>' +
+          '<button class="fb-btn" data-rating="-1">👎 아니에요</button>';
+        msgEl.querySelector('.msg-content').appendChild(fbBar);
+
+        fbBar.querySelectorAll('.fb-btn').forEach(function(btn) {
+          btn.addEventListener('click', async function() {
+            const rating = parseInt(this.dataset.rating);
+            // 즉시 UI 업데이트 (중복 클릭 방지)
+            fbBar.querySelectorAll('.fb-btn').forEach(function(b) { b.disabled = true; });
+            fbBar.innerHTML = '<span class="fb-thanks">감사합니다! 🙏</span>';
+            try {
+              await fetch((API_URL || '') + '/v1/feedback', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({evaluation_id: evalId, rating: rating})
+              });
+            } catch(e) { /* UI는 이미 업데이트됨 — 무시 */ }
+          });
+        });
+      }
     } else {
       addMsg(`⚠️ ${data.error||'오류가 발생했습니다.'}`, 'bot');
     }

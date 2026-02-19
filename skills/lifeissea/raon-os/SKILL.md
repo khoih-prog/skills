@@ -79,7 +79,7 @@ OPENROUTER_API_KEY=sk-or-v1-xxxx   # 1순위 (추천)
 GEMINI_API_KEY=AIzaSy-xxxx          # 2순위 + 임베딩
 ANTHROPIC_API_KEY=sk-ant-xxxx       # 3순위
 OPENAI_API_KEY=sk-xxxx              # 4순위 + 임베딩
-RAON_MODEL=google/gemini-2.0-flash-001  # 모델 강제 지정 (선택)
+RAON_MODEL=google/gemini-2.5-flash  # 모델 강제 지정 (선택)
 RAON_LLM_PROVIDER=openrouter       # 프로바이더 강제 지정 (선택)
 ```
 

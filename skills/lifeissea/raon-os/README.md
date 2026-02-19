@@ -76,9 +76,11 @@ raon.sh investor-match profile --file 사업계획서.pdf
 # RAG 검색 + Reranker
 python3 rag_pipeline.py search --query "TIPS" --rerank
 
-# HTTP API 서버 (웹챗 연동)
-raon.sh serve           # 기본 포트 8400
-raon.sh serve 9000      # 커스텀 포트
+# HTTP API 서버 수동 실행
+python3 scripts/server.py       # 기본 포트 8400
+
+# 시스템 자동시작 설정 (선택)
+bash scripts/install-service.sh
 
 # 평가 히스토리 조회
 raon.sh history
@@ -137,7 +139,11 @@ raon.sh history
 웹챗이나 외부 서비스에서 REST API로 연동할 수 있습니다:
 
 ```bash
-raon.sh serve  # http://localhost:8400
+# 서버 수동 실행
+python3 scripts/server.py       # http://localhost:8400
+
+# 시스템 자동시작 설정 (선택)
+bash scripts/install-service.sh
 ```
 
 | 엔드포인트 | 메서드 | 설명 |
@@ -152,21 +158,65 @@ raon.sh serve  # http://localhost:8400
 | `/v1/investor` | POST | 투자자 프로필 분석 |
 | `/v1/chat` | POST | 멀티턴 대화형 평가 세션 |
 | `/v1/valuation` | POST | 기업 밸류에이션 산출 |
+| `/v1/feedback` | POST | 평가 결과 피드백 저장 |
 
 CORS 지원 — 웹 프론트엔드에서 바로 호출 가능.
 
-## ⚙️ API 연동 (선택)
+### `/v1/feedback` 상세
+
+```
+POST /v1/feedback
+Body: {"evaluation_id": "uuid", "rating": 1 또는 -1, "comment": "선택"}
+Response: {"ok": true}
+```
+
+평가 결과에 대한 좋아요(1) / 싫어요(-1) 피드백을 저장합니다. `comment` 필드는 선택사항입니다.
+
+## ⚙️ 환경변수 설정
+
+`.env` 파일 또는 셸 환경에서 아래 변수를 설정합니다. **실제 값은 절대 공유하지 마세요.**
+
+### K-Startup AI 엔진 (선택)
 
 K-Startup AI 엔진 연동 시 더 정밀한 평가가 가능합니다:
 
 ```bash
-export RAON_API_URL="https://api.k-startup.ai"
-export RAON_API_KEY="your-api-key"
+RAON_API_URL=https://api.k-startup.ai   # API 서버 URL
+RAON_API_KEY=<발급받은 키>               # API 인증 키
 ```
 
 API 미설정 시 로컬 LLM + RAG 모드로 동작합니다.
 
 👉 API 키 발급: [k-startup.ai](https://k-startup.ai)
+
+### Supabase 피드백 저장 (선택)
+
+`/v1/feedback` 피드백 데이터를 Supabase에 영속 저장하려면 아래 변수를 설정합니다:
+
+```bash
+SUPABASE_URL=<Supabase 프로젝트 URL>             # Supabase 프로젝트 URL
+SUPABASE_SERVICE_KEY=<서비스 롤 키>               # Supabase 서비스 키 (비공개)
+SUPABASE_ACCESS_TOKEN=<Management API 토큰>       # 테이블 자동 생성용 (선택)
+```
+
+- `SUPABASE_URL` — Supabase 프로젝트 URL (선택, 로컬 피드백 저장용)
+- `SUPABASE_SERVICE_KEY` — Supabase 서비스 키 (선택, 쓰기 권한 필요)
+- `SUPABASE_ACCESS_TOKEN` — Supabase Management API 토큰 (테이블 자동 생성용, 선택)
+
+미설정 시 피드백 데이터는 로컬 SQLite에만 저장됩니다.
+
+## 🔒 보안 제한사항
+
+### Admin API 접근 제한
+`/api/keys/*` 엔드포인트는 **localhost에서만 접근 가능**합니다. 외부 네트워크에서 admin API를 호출하면 `403 Forbidden`이 반환됩니다.
+
+### 외부 URL 차단 (`fetch_realtime`)
+`fetch_realtime` 기능은 허용된 도메인만 접근 가능합니다:
+- **허용 도메인 예시**: `jointips.or.kr`, `k-startup.go.kr` 등 정부/파트너 사이트
+- 모든 외부 URL은 내부 `is_allowed_url()` 함수로 검사 후, 허용 목록에 없으면 **자동 차단**됩니다.
+- 임의의 외부 URL을 `fetch_realtime`에 전달해도 실행되지 않습니다.
+
+> ⚠️ 서버를 공개 인터넷에 노출할 경우 nginx/방화벽으로 `/api/keys/*` 경로를 추가 차단하세요.
 
 ## 🔍 RAG 하이브리드 검색
 
