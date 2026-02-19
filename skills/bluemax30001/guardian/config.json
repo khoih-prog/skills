@@ -27,7 +27,8 @@
   "admin": {
     "bypass_token": null,
     "disable_until": null,
-    "trusted_sources": ["telegram"],
+    "trusted_sources": [],
+    "_trusted_sources_note": "Add your primary channel: telegram, discord, signal, slack",
     "require_confirmation_for_severity": ["critical"]
   },
 

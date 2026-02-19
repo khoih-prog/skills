@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Guardian Security Scanner CLI for text, config audits, and session JSONL reports."""
+"""Guardian Security Scanner CLI for text, files, directories, and session reports."""
 
 from __future__ import annotations
 
@@ -7,9 +7,10 @@ import argparse
 import json
 import re
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, Iterable, List, Tuple
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_ROOT = SCRIPT_DIR.parent
@@ -29,6 +30,7 @@ CHANNEL_MULTIPLIERS = {
     "cron": 0.7,
     "webchat": 1.2,
     "unknown": 1.0,
+    "file": 1.0,
 }
 
 
@@ -155,6 +157,146 @@ def _extract_text(entry: Dict[str, Any]) -> str:
     if isinstance(text, list):
         return " ".join(str(part) for part in text)
     return text if isinstance(text, str) else (str(text) if text else "")
+
+
+def _iter_file_chunks(file_path: Path) -> List[Tuple[int, str]]:
+    """Return text chunks for any file format Guardian can scan."""
+    chunks: List[Tuple[int, str]] = []
+    if file_path.suffix.lower() == ".jsonl":
+        try:
+            with file_path.open(encoding="utf-8") as handle:
+                for line_num, line in enumerate(handle, 1):
+                    stripped = line.strip()
+                    if not stripped:
+                        continue
+                    try:
+                        obj = json.loads(stripped)
+                    except json.JSONDecodeError:
+                        chunks.append((line_num, stripped))
+                        continue
+                    if isinstance(obj, dict):
+                        text = _extract_text(obj)
+                        if text:
+                            chunks.append((line_num, text))
+                    else:
+                        chunks.append((line_num, str(obj)))
+            return chunks
+        except OSError:
+            return chunks
+
+    try:
+        with file_path.open(encoding="utf-8") as handle:
+            for line_num, line in enumerate(handle, 1):
+                text = line.strip()
+                if text:
+                    chunks.append((line_num, text))
+    except (OSError, UnicodeDecodeError):
+        return []
+
+    return chunks
+
+
+def scan_file(file_path: str, definitions: Dict[str, List[Dict[str, Any]]], channel: str = "file") -> Dict[str, Any]:
+    """Scan an arbitrary file by evaluating each text line/chunk."""
+    path = Path(file_path).expanduser().resolve()
+    if not path.exists() or not path.is_file():
+        return {"error": f"File not found: {path}", "threats": [], "files_scanned": 0, "chunks_scanned": 0}
+
+    threats: List[Dict[str, Any]] = []
+    chunks = _iter_file_chunks(path)
+    for line_num, chunk in chunks:
+        result = scan_text(chunk, definitions, channel=channel)
+        for threat in result.get("threats", []):
+            threat["file"] = str(path)
+            threat["line"] = line_num
+            threats.append(threat)
+
+    return {
+        "path": str(path),
+        "files_scanned": 1,
+        "chunks_scanned": len(chunks),
+        "threats": threats,
+        "unique_detections": len({(t["id"], t.get("evidence", "")) for t in threats}),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+def scan_directory(directory: str, definitions: Dict[str, List[Dict[str, Any]]], channel: str = "file") -> Dict[str, Any]:
+    """Recursively scan all regular files in a directory."""
+    root = Path(directory).expanduser().resolve()
+    if not root.exists() or not root.is_dir():
+        return {"error": f"Directory not found: {root}", "threats": [], "files_scanned": 0, "chunks_scanned": 0}
+
+    all_threats: List[Dict[str, Any]] = []
+    files_scanned = 0
+    chunks_scanned = 0
+
+    for path in sorted(root.rglob("*")):
+        if not path.is_file():
+            continue
+        result = scan_file(str(path), definitions, channel=channel)
+        files_scanned += int(result.get("files_scanned", 0))
+        chunks_scanned += int(result.get("chunks_scanned", 0))
+        all_threats.extend(result.get("threats", []))
+
+    return {
+        "path": str(root),
+        "files_scanned": files_scanned,
+        "chunks_scanned": chunks_scanned,
+        "threats": all_threats,
+        "unique_detections": len({(t["id"], t.get("evidence", "")) for t in all_threats}),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+def watch_directory(
+    directory: str,
+    definitions: Dict[str, List[Dict[str, Any]]],
+    interval: int = 30,
+    channel: str = "file",
+    once: bool = False,
+) -> Dict[str, Any]:
+    """Poll directory for changed files and scan changed content."""
+    root = Path(directory).expanduser().resolve()
+    if not root.exists() or not root.is_dir():
+        return {"error": f"Directory not found: {root}", "scans": 0, "threats": []}
+
+    seen_mtime: Dict[str, float] = {}
+    scans = 0
+    collected: List[Dict[str, Any]] = []
+
+    while True:
+        scans += 1
+        cycle_threats: List[Dict[str, Any]] = []
+        files_changed = 0
+        for path in sorted(root.rglob("*")):
+            if not path.is_file():
+                continue
+            try:
+                mtime = path.stat().st_mtime
+            except OSError:
+                continue
+            key = str(path)
+            if seen_mtime.get(key) == mtime:
+                continue
+            seen_mtime[key] = mtime
+            files_changed += 1
+            cycle = scan_file(str(path), definitions, channel=channel)
+            cycle_threats.extend(cycle.get("threats", []))
+
+        payload = {
+            "scan": scans,
+            "files_changed": files_changed,
+            "threats": cycle_threats,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+        collected.append(payload)
+        print(json.dumps(payload))
+
+        if once:
+            return {"path": str(root), "scans": scans, "threats": [t for c in collected for t in c["threats"]]}
+
+        time.sleep(max(1, int(interval)))
 
 
 def scan_sessions(
@@ -300,10 +442,14 @@ def audit_config(config_path: str, definitions: Dict[str, List[Dict[str, Any]]])
     }
 
 
-def main() -> None:
+def main() -> int:
     """CLI entrypoint for Guardian scan, audit, and report commands."""
     parser = argparse.ArgumentParser(description="Guardian Security Scanner")
     parser.add_argument("--scan", type=str, help="Text to scan for threats")
+    parser.add_argument("--file", type=str, help="Scan any single file")
+    parser.add_argument("--dir", dest="directory", type=str, help="Scan all files recursively in directory")
+    parser.add_argument("--watch", type=str, help="Watch a directory for changed files")
+    parser.add_argument("--interval", type=int, default=30, help="Watch poll interval in seconds")
     parser.add_argument("--channel", type=str, default="unknown", help="Channel context")
     parser.add_argument("--audit", type=str, help="Path to OpenClaw config JSON to audit")
     parser.add_argument("--report", type=str, help="Path to sessions directory to scan")
@@ -312,9 +458,9 @@ def main() -> None:
     parser.add_argument("--pretty", action="store_true", help="Pretty-print JSON output")
     args = parser.parse_args()
 
-    if not any([args.scan, args.audit, args.report]):
+    if not any([args.scan, args.file, args.directory, args.watch, args.audit, args.report]):
         parser.print_help()
-        raise SystemExit(1)
+        return 1
 
     definitions = load_definitions(config_path=args.config)
     indent = 2 if args.pretty else None
@@ -326,12 +472,29 @@ def main() -> None:
         if result.get("score", 0) < min_score:
             result["action"] = "allow"
         print(json.dumps(result, indent=indent))
-        return
+        return 0
+
+    if args.file:
+        result = scan_file(args.file, definitions, channel=args.channel or "file")
+        print(json.dumps(result, indent=indent))
+        return 0
+
+    if args.directory:
+        result = scan_directory(args.directory, definitions, channel=args.channel or "file")
+        print(json.dumps(result, indent=indent))
+        return 0
+
+    if args.watch:
+        try:
+            watch_directory(args.watch, definitions, interval=args.interval, channel=args.channel or "file")
+            return 0
+        except KeyboardInterrupt:
+            return 0
 
     if args.audit:
         result = audit_config(args.audit, definitions)
         print(json.dumps(result, indent=indent))
-        return
+        return 0
 
     config = load_config(args.config)
     if args.report:
@@ -345,7 +508,8 @@ def main() -> None:
     result["threats"] = filtered
     result["unique_detections"] = len(filtered)
     print(json.dumps(result, indent=indent))
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

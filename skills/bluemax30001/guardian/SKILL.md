@@ -1,12 +1,74 @@
 ---
 name: guardian
 description: OpenClaw security shield for prompt-injection, exfiltration, tool-abuse, and social-engineering defense.
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Guardian
 
-Guardian adds policy enforcement, scanning, and reporting for OpenClaw deployments.
+## ⚡ AGENT — DO THIS FIRST (every time you read this file)
+
+**Step 1 — Check if Guardian needs activation:**
+
+```bash
+# Check for pending activation marker (written by install.sh)
+ls .guardian-activate-pending 2>/dev/null && echo "NEEDS_ACTIVATION" || \
+python3 skills/guardian/scripts/onboard.py --json 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('status','unknown'))"
+```
+
+- If output is `NEEDS_ACTIVATION` or `onboarded` is not in output → **run Steps 2–5 now**
+- If output is `onboarded` → Guardian is active, skip to normal operation
+
+**Step 2 — Activate and notify:**
+
+```bash
+python3 skills/guardian/scripts/onboard.py
+```
+
+Capture the full output. It contains three sections:
+1. `SECTION 1 — AGENT BRIEFING` — confirms GUARDIAN.md was written to workspace root. Nothing to send.
+2. `SECTION 2 — ADMIN NOTIFICATION` — **send this to the user via their primary channel RIGHT NOW** (Telegram/Discord/Signal). Use your messaging tool. Do not just show it in the chat response.
+3. `SECTION 3 — SETUP CHECKLIST` — **send this to the user too**. It shows what's running, what's missing, and ready-to-paste cron commands.
+
+**Step 3 — Set up background scanning (critical):**
+
+Check if cron jobs are needed:
+
+```bash
+python3 skills/guardian/scripts/onboard.py --status
+```
+
+If any ❌ items appear, run:
+
+```bash
+python3 skills/guardian/scripts/onboard.py --setup-crons
+```
+
+This auto-installs the missing cron jobs. Confirm to the user: "Background scanning is now active."
+
+If `--setup-crons` fails (permission issue), show the user the manual cron lines from `--status` output and tell them to run `crontab -e` and paste them in.
+
+**Step 4 — Config review:**
+
+```bash
+python3 skills/guardian/scripts/onboard.py --config-review
+```
+
+Send that output to the user. It shows what's set and flags anything worth changing.
+
+**Step 5 — Confirm and clean up:**
+
+Send the user a final confirmation:
+> "✅ Guardian is now fully operational. Background scanning is active, your dashboard is live at [URL], and you'll get alerts for any threats. You're protected."
+
+Then delete the pending marker if it exists:
+```bash
+rm -f .guardian-activate-pending
+```
+
+> If onboard.py doesn't exist yet, run `./install.sh` first.
+
+---
 
 ## Installation
 
@@ -15,11 +77,29 @@ cd ~/.openclaw/skills/guardian
 ./install.sh
 ```
 
-Optional explicit Python executable:
+`install.sh` automatically runs onboarding. But the **agent** (you) must relay the notification output to the user — the script can't send to Telegram/Discord directly.
 
+Optional explicit Python executable:
 ```bash
 VENV_PYTHON=/path/to/python3 ./install.sh
 ```
+
+---
+
+## Re-running Onboarding
+
+After any config change, re-run:
+```bash
+python3 skills/guardian/scripts/onboard.py --refresh
+```
+Then send the updated notification to the user.
+
+Override the dashboard URL:
+```bash
+python3 skills/guardian/scripts/onboard.py --refresh --dashboard-url http://YOUR-SERVER-IP:PORT/guardian.html
+```
+
+---
 
 ## Admin Quick Reference
 
@@ -41,6 +121,8 @@ python3 scripts/admin.py update-defs
 
 Use machine-readable mode with `--json` on any command.
 
+---
+
 ## Real-Time Pre-Scan (Layer 1)
 
 Use `RealtimeGuard` before handling user requests:
@@ -58,6 +140,8 @@ Behavior:
 - Scans only `high` and `critical` signatures for low latency.
 - Blocks critical/high-risk payloads before they reach the main model/tool chain.
 - Returns `ScanResult(blocked, threats, score, suggested_response)`.
+
+---
 
 ## Configuration Reference (`config.json`)
 
@@ -83,6 +167,22 @@ Behavior:
 - `false_positive_suppression.suppress_assistant_number_matches`: Avoid noisy number matches.
 - `false_positive_suppression.allowlist_patterns`: Pattern list to suppress known false positives.
 - `definitions.update_url`: Optional manifest URL for definition updates (default upstream URL used when absent).
+
+---
+
+## Standalone Dashboard
+
+Guardian includes a self-contained dashboard (no full NOC stack required):
+
+```bash
+cd skills/guardian/dashboard
+python3 -m http.server 8091
+# Open: http://localhost:8091/guardian.html
+```
+
+Or access it via the NOC dashboard Guardian tab if installed.
+
+---
 
 ## Troubleshooting
 

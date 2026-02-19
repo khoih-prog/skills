@@ -11,20 +11,34 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 try:
-    from .settings import default_db_path
+    from .settings import default_db_path, skill_root
 except ImportError:
-    from settings import default_db_path
+    from settings import default_db_path, skill_root
 
 
 class GuardianDB:
     """SQLite-backed data access object for Guardian runtime state."""
 
     def __init__(self, db_path: Optional[str] = None) -> None:
-        self.db_path = Path(db_path).expanduser().resolve() if db_path else default_db_path()
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
-        self.conn = sqlite3.connect(self.db_path)
-        self.conn.row_factory = sqlite3.Row
-        self.conn.execute("PRAGMA journal_mode=WAL")
+        preferred = Path(db_path).expanduser().resolve() if db_path else default_db_path()
+        candidates = [preferred, (skill_root() / "guardian.db").resolve(), Path("/tmp/guardian.db").resolve()]
+
+        last_error: Optional[Exception] = None
+        self.db_path = preferred
+        for candidate in candidates:
+            try:
+                candidate.parent.mkdir(parents=True, exist_ok=True)
+                conn = sqlite3.connect(candidate)
+                conn.row_factory = sqlite3.Row
+                conn.execute("PRAGMA journal_mode=WAL")
+                self.db_path = candidate
+                self.conn = conn
+                break
+            except (OSError, sqlite3.OperationalError) as exc:
+                last_error = exc
+        else:
+            raise sqlite3.OperationalError(f"Unable to initialize Guardian DB: {last_error}")
+
         self._migrate()
 
     def _migrate(self) -> None:
