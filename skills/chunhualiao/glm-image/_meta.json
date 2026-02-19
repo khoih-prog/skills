@@ -1,11 +1,17 @@
 {
   "owner": "chunhualiao",
   "slug": "glm-image",
-  "displayName": "Generate Images via GLM",
+  "displayName": "GLM Image Generator",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1771397700097,
-    "commit": "https://github.com/openclaw/skills/commit/8bbe8eeafe61d8a8c8862f48cb96677b09245119"
+    "version": "1.9.0",
+    "publishedAt": 1771487613137,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1771397700097,
+      "commit": "https://github.com/openclaw/skills/commit/8bbe8eeafe61d8a8c8862f48cb96677b09245119"
+    }
+  ]
 }
