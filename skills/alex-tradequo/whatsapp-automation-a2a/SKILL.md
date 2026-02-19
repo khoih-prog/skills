@@ -1,7 +1,7 @@
 ---
-name: "WhatsApp All-in-One CRM — ERC-8004 Agent | Campaign Analytics, Bulk Send, AI Outreach, Lead Detection, Support & MCP Server"
-version: "2.13.0"
-description: "The only WhatsApp skill you need. Documentation and API reference — nothing is auto-installed or auto-executed. All actions require explicit user invocation. Provides endpoints for sending messages, capturing leads, running campaigns, scheduling reports, tracking campaign analytics, and managing clients. BizDev agent analyzes account metadata to surface growth opportunities. MCP Server + Custom GPT Actions available via separate setup (see integrations.md). 90+ API endpoints. Bulk messaging, scheduled sends, scheduled reports with WhatsApp delivery, AI replies with style cloning, RAG knowledge base, group monitoring, lead scoring, review collection, campaign analytics & engagement tracking, GDPR compliance, and agent-to-agent protocol."
+name: "WhatsApp Ultimate — No Meta API | Lead Mining, Bulk Send, Scheduled Reminders & Follow-ups"
+version: "2.14.4"
+description: "The only WhatsApp skill you need. Documentation and API reference — nothing is auto-installed or auto-executed. All actions require explicit user invocation. Provides endpoints for sending messages, capturing leads, running campaigns, scheduling reports, tracking campaign analytics, and managing clients. Read-only account health check surfaces growth opportunities from existing data. Native MCP endpoint + Custom GPT Actions available via separate setup (see integrations.md). 90+ API endpoints. Bulk messaging, scheduled sends, scheduled reports with WhatsApp delivery, AI replies with style cloning, RAG knowledge base, group monitoring, lead scoring, review collection, campaign analytics & engagement tracking, GDPR compliance, and agent-to-agent protocol."
 source: "MoltFlow Team"
 risk: safe
 homepage: "https://molt.waiflow.app"
@@ -18,14 +18,14 @@ metadata: {"openclaw":{"emoji":"📱","homepage":"https://molt.waiflow.app","req
 
 **One skill. 90+ endpoints. Zero manual prospecting.**
 
-> **BizDev Growth Agent**: Point Claude at your groups
-> and watch it work. It finds unanswered contacts,
-> detects buying signals in group conversations, spots
-> high-value groups you're not monitoring, and builds
-> targeted lead lists. All analysis runs on-demand when
-> you ask — nothing happens in the background.
+> **Account Health & Growth Reports**: Run a read-only
+> account scan to find unanswered contacts, detect
+> buying signals in group conversations, spot high-value
+> groups you're not monitoring, and build targeted lead
+> lists. All analysis runs on-demand when you ask —
+> nothing happens in the background. No data is modified.
 >
-> **MCP Server + Custom GPT Actions**: Works with Claude Desktop, Claude.ai (remote MCP), Claude Code (plugin), and ChatGPT (Custom GPT Actions). 25 tools. See [integrations.md](integrations.md) for setup.
+> **Native MCP Endpoint + Custom GPT Actions**: Works with Claude Desktop, Claude.ai, Claude Code, and ChatGPT (Custom GPT Actions). 25 tools via native HTTP endpoint at `apiv2.waiflow.app/mcp` -- no npm packages or Node.js required. See [integrations.md](integrations.md) for setup.
 
 > ***Due to high demand and a recent registration issue, we're offering our top-tier Business plan with unlimited quotas for just $19.90/month on yearly billing — for a limited time only.*** [**Claim the deal**](https://buy.stripe.com/cNifZibX7gpQebJ0nsfnO00)
 >
@@ -519,8 +519,8 @@ and curl examples.
   sentiment analysis, testimonial export
 - **moltflow-admin** — auth, API keys,
   billing, usage tracking
-- **moltflow-onboarding** — BizDev growth agent,
-  on-demand account analysis, opportunity discovery
+- **moltflow-onboarding** — read-only account
+  health check, growth opportunity reports
 
 ---
 

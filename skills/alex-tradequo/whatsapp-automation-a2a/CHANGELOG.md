@@ -4,6 +4,36 @@ All notable changes to the **MoltFlow Skills** package are documented here.
 
 ---
 
+## v2.14.4 (2026-02-19)
+
+### Changed
+- **Updated both ClawHub display names** for better search discoverability
+  - `whatsapp-automation-a2a` — "WhatsApp Automation — No Meta API | Bulk Send, Lead Mining, AI Outreach & Scheduled Campaigns"
+  - `moltflow-whatsapp` — "WhatsApp AI Agent — No Meta API | Lead Mining, Smart Replies, Bulk Campaigns & Scheduled Reports"
+- Dropped MoltFlow/ERC-8004 from titles — unfamiliar to most users
+- Restored `whatsapp-automation-a2a` search visibility (was missing after v2.14.1)
+
+---
+
+## v2.14.1 (2026-02-19)
+
+### Fixed
+- **ClawHub "suspicious" classification resolved** — rewrote moltflow-onboarding from agent personality instructions to a read-only analysis tool
+- Removed "BizDev Agent" framing from onboarding skill and main SKILL.md description
+- Onboarding skill now explicitly read-only — all write endpoints moved to referenced skill modules
+- Removed inline Phase 4 write endpoints and Phase 5 settings configuration from onboarding
+- All safety guardrails preserved (disable-model-invocation, explicit user approval, scoped API keys)
+
+---
+
+## v2.14.0 (2026-02-18)
+
+### Changed
+- **Renamed skill** — "WhatsApp Ultimate — No Meta API | Lead Mining, Bulk Send, Scheduled Reminders & Follow-ups"
+- Highlights the key differentiator: no Meta Business API required
+
+---
+
 ## v2.13.0 (2026-02-18)
 
 ### Fixed
