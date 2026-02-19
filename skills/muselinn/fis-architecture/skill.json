@@ -1,0 +1,61 @@
+{
+  "name": "fis-architecture",
+  "version": "3.1.1",
+  "description": "Federal Intelligence System (FIS) 3.1 Lite - Multi-agent collaboration framework with fractal file system, zero Core File pollution, and SubAgent lifecycle management",
+  "author": "CyberMao",
+  "license": "MIT",
+  "keywords": [
+    "fis",
+    "multi-agent",
+    "collaboration",
+    "fractal",
+    "subagent",
+    "lifecycle",
+    "badge",
+    "openclaw"
+  ],
+  "homepage": "https://github.com/cybermao/fis-architecture",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cybermao/fis-architecture.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cybermao/fis-architecture/issues"
+  },
+  "main": "SKILL.md",
+  "files": [
+    "SKILL.md",
+    "QUICK_REFERENCE.md",
+    "INSTALL_CHECKLIST.md",
+    "lib/",
+    "examples/"
+  ],
+  "engines": {
+    "python": ">=3.10"
+  },
+  "dependencies": {
+    "pillow": ">=9.0.0"
+  },
+  "openclaw": {
+    "minVersion": "0.5.0",
+    "skillType": "architecture",
+    "capabilities": [
+      "multi-agent",
+      "subagent-management",
+      "badge-generation",
+      "ticket-management",
+      "deadlock-detection"
+    ],
+    "forAgents": {
+      "whenToUse": "复杂多角色协作任务(>30分钟或失败影响大)",
+      "whenNotToUse": "简单查询、单线任务、10分钟内可完成",
+      "entryPoint": "AGENT_GUIDE.md",
+      "keyDecision": "使用决策树判断是否创建 SubAgent"
+    },
+    "postInstall": {
+      "required": true,
+      "message": "⚠️ 必须运行初始化脚本: python3 examples/init_fis31.py",
+      "docs": "POST_INSTALL.md"
+    }
+  }
+}
