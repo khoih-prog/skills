@@ -1,12 +1,6 @@
 ---
 name: explainer-video-guide
-description: |
-  Explainer video production guide: scripting, voiceover, visuals, and assembly.
-  Covers script formulas, pacing rules, scene planning, and multi-tool pipelines.
-  Use for: product demos, how-it-works videos, onboarding videos, social explainers.
-  Triggers: explainer video, how to make explainer, product video, demo video,
-  video production, video script, animated explainer, product demo video,
-  tutorial video, onboarding video, walkthrough video, video pipeline
+description: "Explainer video production guide: scripting, voiceover, visuals, and assembly. Covers script formulas, pacing rules, scene planning, and multi-tool pipelines. Use for: product demos, how-it-works videos, onboarding videos, social explainers. Triggers: explainer video, how to make explainer, product video, demo video, video production, video script, animated explainer, product demo video, tutorial video, onboarding video, walkthrough video, video pipeline"
 allowed-tools: Bash(infsh *)
 ---
 
@@ -24,6 +18,8 @@ infsh app run google/veo-3-1-fast --input '{
   "prompt": "Clean motion graphics style animation, abstract data flowing between connected nodes, blue and white color scheme, professional corporate aesthetic, smooth transitions"
 }'
 ```
+
+> **Install note:** The [install script](https://cli.inference.sh) only detects your OS/architecture, downloads the matching binary from `dist.inference.sh`, and verifies its SHA-256 checksum. No elevated permissions or background processes. [Manual install & verification](https://dist.inference.sh/cli/checksums.txt) available.
 
 ## Script Formulas
 
@@ -227,10 +223,10 @@ infsh app run infsh/caption-videos --input '{
 ## Related Skills
 
 ```bash
-npx skills add inferencesh/skills@ai-video-generation
-npx skills add inferencesh/skills@video-prompting-guide
-npx skills add inferencesh/skills@text-to-speech
-npx skills add inferencesh/skills@prompt-engineering
+npx skills add inference-sh/skills@ai-video-generation
+npx skills add inference-sh/skills@video-prompting-guide
+npx skills add inference-sh/skills@text-to-speech
+npx skills add inference-sh/skills@prompt-engineering
 ```
 
 Browse all apps: `infsh app list`
