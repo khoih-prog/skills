@@ -1,0 +1,11 @@
+{
+  "owner": "plgonzalezrx8",
+  "slug": "openclaw-healthcheck-cron",
+  "displayName": "OpenClaw Healthcheck Cron",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1771457831204,
+    "commit": null
+  },
+  "history": []
+}
