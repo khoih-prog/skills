@@ -1,102 +1,116 @@
 ---
 name: Image Generation
-description: Create AI images with optimized prompts, style control, and production-ready output.
-metadata: {"clawdbot":{"emoji":"🎨","os":["linux","darwin","win32"]}}
+slug: image-generation
+version: 1.0.2
+homepage: https://clawic.com/skills/image-generation
+description: Create AI images with prompt engineering, style control, and provider guides for Midjourney, DALL-E, Stable Diffusion, Flux, and Leonardo.
+changelog: Added detailed provider endpoints documentation and feedback section
+metadata: {"clawdbot":{"emoji":"🎨","requires":{"bins":[]},"os":["linux","darwin","win32"]}}
 ---
 
-# AI Image Generation
+## When to Use
 
-Help users create and refine AI-generated images.
+User needs AI-generated images. Agent handles text-to-image, image editing, style transfer, upscaling, and provider selection.
 
-**Rules:**
-- Ask what they want: text-to-image, image editing, style transfer, or upscaling
-- Check provider files for setup: `openai.md`, `midjourney.md`, `stable-diffusion.md`, `flux.md`, `leonardo.md`, `ideogram.md`, `replicate.md`
-- Check `api-patterns.md` for async handling and best practices
-- Check `prompting.md` for prompt engineering techniques
-- Start with draft resolution to validate prompt before upscaling
+## Architecture
 
----
+User preferences persist in `~/image-generation/`. See `memory-template.md` for setup.
 
-## Provider Selection
+```
+~/image-generation/
+├── memory.md      # Current provider, style, projects
+└── history.md     # Past generations (optional)
+```
 
-| Use Case | Recommended |
-|----------|-------------|
-| Photorealism, product shots | Midjourney, Flux Pro |
-| Text rendering in images | Ideogram, DALL-E 3 |
-| Fast iteration, API access | Flux Schnell, Leonardo |
-| Maximum control, local | Stable Diffusion |
-| Editing, inpainting | DALL-E 3, Stable Diffusion |
-| Cost-effective API | Replicate, Leonardo |
+## Quick Reference
 
----
+| Topic | File |
+|-------|------|
+| Memory setup | `memory-template.md` |
+| Prompt techniques | `prompting.md` |
+| API handling | `api-patterns.md` |
+| OpenAI/DALL-E | `openai.md` |
+| Midjourney | `midjourney.md` |
+| Stable Diffusion | `stable-diffusion.md` |
+| Flux | `flux.md` |
+| Leonardo | `leonardo.md` |
+| Ideogram | `ideogram.md` |
+| Replicate | `replicate.md` |
 
-## Prompting Fundamentals
+## Core Rules
 
-- **Subject first** — "A red fox" not "In the forest there is a red fox"
-- **Style keywords** — "cinematic lighting", "studio photography", "oil painting"
-- **Negative prompts** — exclude unwanted elements (supported by SD, Midjourney)
-- **Aspect ratio matters** — 1:1 portraits, 16:9 landscapes, 9:16 mobile
-- **Be specific** — "golden hour sunlight" not just "good lighting"
+### 1. Check Memory First
+Read `~/image-generation/memory.md` for user's provider, preferred styles, and project context.
 
----
+### 2. Draft Before Final
+- Start at 512x512 or 1024x1024 to validate prompt
+- Generate 4+ variations
+- Only upscale the winner
 
-## Resolution & Formats
+### 3. Provider Selection by Task
 
-- **Draft:** 512x512 or 1024x1024 for iteration
-- **Production:** 2048x2048 or higher
-- **Upscaling:** Use dedicated upscalers (Real-ESRGAN, Topaz) for final output
-- **Formats:** PNG for transparency, JPEG for photos, WebP for web
+| Task | Best Provider |
+|------|---------------|
+| Photorealism | Midjourney, Flux Pro |
+| Text in images | Ideogram, DALL-E 3 |
+| Fast iteration | Flux Schnell, Leonardo |
+| Maximum control | Stable Diffusion |
+| Inpainting/editing | DALL-E 3, Stable Diffusion |
+| Budget API | Replicate, Leonardo |
 
----
+### 4. Prompt Structure
+- Subject first: "A red fox" not "In the forest there is a red fox"
+- Style keywords: "cinematic lighting", "oil painting", "studio photography"
+- Be specific: "golden hour sunlight" not "good lighting"
+- Match aspect ratio to content: 1:1 portraits, 16:9 landscapes
 
-## Common Workflows
+### 5. Update Memory
+| Event | Action |
+|-------|--------|
+| User chooses provider | Save to memory.md |
+| Style works well | Note in memory.md |
+| New project started | Add to memory.md |
 
-### Text-to-Image
-1. Write detailed prompt with style keywords
-2. Generate 4+ variations at draft resolution
-3. Select best, regenerate with variations
-4. Upscale winner to production resolution
+## Common Traps
 
-### Image Editing
-1. Provide source image + mask (if inpainting)
-2. Describe desired changes
-3. Use img2img strength 0.3-0.7 (lower = closer to original)
+- **Hands/fingers wrong** → regenerate or use inpainting
+- **Text garbled** → use Ideogram or add text in post-production
+- **Faces distorted** → add "detailed face" to prompt, use face-fix models
+- **Style inconsistent** → lock seed, use reference images
+- **Watermarks appearing** → check model training, use clean models
 
-### Style Transfer
-1. Provide reference image for style
-2. Describe subject/content separately
-3. Adjust style strength per provider
+## Security & Privacy
 
----
+**Data that leaves your machine:**
+- Prompts sent to chosen AI provider for generation
 
-## Cost Optimization
+**Data that stays local:**
+- Provider preferences in `~/image-generation/`
+- No telemetry or analytics
 
-- Draft at lowest resolution first
-- Batch similar prompts
-- Use fast models for iteration (Flux Schnell, SDXL Turbo)
-- Switch to quality models only for finals
-- Cache and reuse seeds for consistent characters
+**This skill does NOT:**
+- Store generated images (provider handles storage)
+- Access files outside `~/image-generation/`
 
----
+## External Endpoints
 
-## Failure Modes
+| Provider | Endpoint | Data Sent | Purpose |
+|----------|----------|-----------|---------|
+| OpenAI | api.openai.com | Prompt text | DALL-E generation |
+| Midjourney | discord.com | Prompt text | Image generation |
+| Stability AI | api.stability.ai | Prompt text | Stable Diffusion |
+| Replicate | api.replicate.com | Prompt text | Flux, SD models |
+| Leonardo | cloud.leonardo.ai | Prompt text | Leonardo generation |
+| Ideogram | api.ideogram.ai | Prompt text | Text-in-image |
 
-- **Hands/fingers wrong** — regenerate or use inpainting to fix
-- **Text garbled** — use Ideogram or add text in post-production
-- **Faces distorted** — add "detailed face" to prompt, use face-fix models
-- **Style inconsistent** — lock seed, use reference images
-- **Watermarks appearing** — check model training, use clean models
+Endpoints depend on chosen provider. No other data is sent externally.
 
----
+## Trust
 
-### Current Setup
-<!-- Provider: status -->
+By using this skill, prompts are sent to third-party AI providers (OpenAI, Midjourney, Stability AI, etc.).
+Only install if you trust these services with your prompts.
 
-### Projects
-<!-- What they're creating -->
+## Feedback
 
-### Preferences
-<!-- Settings that work: model, style, resolution -->
-
----
-*Empty sections = not configured yet. Check provider files for setup.*
+- If useful: `clawhub star image-generation`
+- Stay updated: `clawhub sync`
