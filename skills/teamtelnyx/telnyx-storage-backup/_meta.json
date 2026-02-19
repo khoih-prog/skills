@@ -1,0 +1,11 @@
+{
+  "owner": "teamtelnyx",
+  "slug": "telnyx-storage-backup",
+  "displayName": "Backup To Telnyx Storage",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1770739849412,
+    "commit": null
+  },
+  "history": []
+}
