@@ -1,90 +1,124 @@
 ---
 name: Auth
-description: Design and implement authentication systems with the right patterns for each use case.
-metadata: {"clawdbot":{"emoji":"🛡️","os":["linux","darwin","win32"]}}
+slug: auth
+version: 1.3.0
+homepage: https://clawic.com/skills/auth
+description: Build secure authentication with sessions, JWT, OAuth, passwordless, MFA, and SSO for web and mobile apps.
+changelog: "Added documentation-only disclaimer, clarified example code does not execute"
+metadata: {"clawdbot":{"emoji":"🔐","requires":{"bins":[]},"os":["linux","darwin","win32"]}}
 ---
 
-## Session vs Token
+## Documentation-Only Skill
 
-- Server sessions: simpler, instant revocation, requires session store—good for traditional web apps
-- Stateless tokens (JWT): scalable, no shared state—good for APIs, microservices, mobile
-- Hybrid: session for web, tokens for API—often the practical choice
-- Session cookies with httpOnly + Secure + SameSite=Lax for CSRF protection
+This skill is a **reference guide**. It contains code examples that demonstrate authentication patterns.
 
-## Password Handling
+**Important:** The code examples in this skill:
+- Are templates for developers to adapt
+- Show placeholder values (SECRET, API_KEY, etc.)
+- Reference external services as examples only
+- Are NOT executed by the agent
 
-- Hash with bcrypt (cost 10-12), Argon2id, or scrypt—never MD5, SHA1, or plain SHA256
-- Never store plaintext, encrypted passwords, or reversible hashes
-- Salt is included in bcrypt/argon2 output—don't manage separately
-- Timing-safe comparison for password verification—prevents timing attacks
+The agent provides guidance. The developer implements in their own project.
 
-## Multi-Factor Authentication
+## When to Use
 
-- TOTP (authenticator apps): good balance of security and usability
-- SMS: weak due to SIM swapping—avoid for high-security apps
-- WebAuthn/Passkeys: strongest option, phishing-resistant—offer when possible
-- Recovery codes: generate on MFA setup, store hashed, single-use
+User needs guidance on implementing authentication. Agent explains patterns for login flows, token strategies, password security, OAuth integration, and session management.
 
-## Passwordless Options
+## Quick Reference
 
-- Magic links: email link with short-lived token—simple, secure if email is trusted
-- WebAuthn: biometric or security key—best UX when supported
-- OTP via email: similar to magic link but user copies code—works with different devices
-- Social login only: viable for consumer apps, reduces friction
+| Topic | File |
+|-------|------|
+| Session vs JWT strategies | `strategies.md` |
+| Password handling | `passwords.md` |
+| MFA implementation | `mfa.md` |
+| OAuth and social login | `oauth.md` |
+| Framework middleware | `middleware.md` |
 
-## When to Use What
+## Scope
 
-- Internal tools: SSO with company IdP (Okta, Azure AD, Google Workspace)
-- Consumer apps: social login + email/password fallback; passwordless for modern UX
-- B2B SaaS: support SAML/OIDC for enterprise clients
-- API-only: API keys for service accounts, OAuth for user-delegated access
-- High security: require MFA, prefer WebAuthn, implement step-up auth for sensitive ops
+This skill ONLY:
+- Explains authentication concepts
+- Shows code patterns as examples
+- Provides best practice guidance
 
-## Registration
+This skill NEVER:
+- Executes code
+- Makes network requests
+- Accesses credentials
+- Stores data
+- Reads environment variables
 
-- Email verification before account activation—prevents spam, validates contact
-- Minimum data collection: email + password sufficient for most apps
-- Password strength: check against breached password lists (HaveIBeenPwned), not just complexity rules
-- Rate limit registration endpoint—prevents enumeration and abuse
+## Note on Code Examples
 
-## Login Security
+Code examples in auxiliary files show:
+- Environment variables like `process.env.JWT_SECRET` - these are **placeholders**
+- API calls to OAuth providers - these are **reference patterns**
+- Secrets like `SECRET`, `REFRESH_SECRET` - these are **example names**
 
-- Rate limit by IP and by account—3-5 attempts then delay or CAPTCHA
-- Account lockout: prefer progressive delays over hard lockout (denial of service)
-- Don't reveal if email exists—"Invalid credentials" for both wrong email and wrong password
-- Log all authentication events with IP, user agent, timestamp
+The agent does not have access to these values. They demonstrate what the developer should configure in their own project.
 
-## Session Management
+## Core Rules
 
-- Regenerate session ID on login—prevents session fixation
-- Absolute timeout (24h-7d) + idle timeout (30min-2h)—balance security and UX
-- Show active sessions to users—allow remote logout
-- Invalidate all sessions on password change or security events
+### 1. Auth vs Authorization
+- **Authentication:** Who you are (this skill)
+- **Authorization:** What you can do (different concern)
+- Auth happens FIRST, then authorization checks permissions
 
-## Account Recovery
+### 2. Choose the Right Strategy
+| Use Case | Strategy | Why |
+|----------|----------|-----|
+| Traditional web app | Sessions + cookies | Simple, instant revocation |
+| Mobile app | JWT (short-lived) + refresh token | No cookies, offline support |
+| API/microservices | JWT | Stateless, scalable |
+| Enterprise | SSO (SAML/OIDC) | Central identity management |
+| Consumer | Social login + email fallback | Reduced friction |
 
-- Password reset via email link—token expires in 1h max, single-use
-- Security questions: avoid—answers are often guessable or public
-- Don't send password in email—ever
-- Notify user of password changes via alternative channel
+### 3. Never Roll Your Own Crypto
+- Use bcrypt (cost 12) or Argon2id for passwords
+- Use battle-tested libraries for JWT, OAuth
+- Never implement password hashing, token signing manually
+- Never store plaintext or reversibly encrypted passwords
 
-## Remember Me
+### 4. Defense in Depth
+```
+Rate limiting -> CAPTCHA -> Account lockout -> MFA -> Audit logging
+```
 
-- Separate long-lived token—not extending session indefinitely
-- Store hashed token server-side; rotate on each use
-- Still require password for sensitive operations (password change, payment)
-- Allow users to revoke remembered devices
+### 5. Secure by Default
+- httpOnly + Secure + SameSite=Lax for cookies
+- Short token lifetimes (15min access, 7d refresh)
+- Regenerate session ID on login
+- Require re-auth for sensitive operations
 
-## Logout
+### 6. Fail Securely
+```javascript
+// Bad - reveals if email exists
+if (!user) return { error: 'User not found' };
 
-- Destroy server session completely—not just clearing cookie
-- For tokens: remove from client, add to blacklist if immediate revocation needed
-- Clear all auth-related storage (cookies, localStorage)
-- CSRF-protected logout endpoint—prevent logout CSRF attacks
+// Good - same error for both cases
+if (!user || !validPassword) {
+  return { error: 'Invalid credentials' };
+}
+```
 
-## Audit & Monitoring
+### 7. Log Everything (Except Secrets)
+| Log | Do Not Log |
+|-----|------------|
+| Login success/failure | Passwords |
+| IP, user agent, timestamp | Tokens |
+| MFA events | Session IDs |
+| Password changes | Recovery codes |
 
-- Log: successful logins, failed attempts, password changes, MFA events
-- Alert on: multiple failed attempts, login from new location/device, impossible travel
-- Retain logs for compliance—90 days minimum, often 1-2 years
-- Never log passwords or tokens—even on failure
+## Common Traps
+
+- Storing passwords with MD5/SHA1 - use bcrypt or Argon2id
+- JWT with long expiry (30d) - use short access + refresh token
+- Revealing if email exists - use generic error message
+- Hard account lockout - enables denial of service
+- SMS for MFA - vulnerable to SIM swapping
+- No rate limiting on login - enables brute force
+
+## Feedback
+
+- If useful: `clawhub star auth`
+- Stay updated: `clawhub sync`

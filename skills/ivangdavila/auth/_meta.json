@@ -3,9 +3,15 @@
   "slug": "auth",
   "displayName": "Auth",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1770688289426,
-    "commit": "https://github.com/openclaw/skills/commit/dab2ac25e631bb50a7af47b53067099a246035c8"
+    "version": "1.3.0",
+    "publishedAt": 1771466235996,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1770688289426,
+      "commit": "https://github.com/openclaw/skills/commit/dab2ac25e631bb50a7af47b53067099a246035c8"
+    }
+  ]
 }
