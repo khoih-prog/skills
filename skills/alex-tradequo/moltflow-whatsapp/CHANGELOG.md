@@ -4,11 +4,14 @@ All notable changes to the **MoltFlow Skills** package are documented here.
 
 ---
 
-## v2.14.3 (2026-02-19)
+## v2.14.4 (2026-02-19)
 
 ### Changed
-- **Updated `whatsapp-automation-a2a` display name** — "WhatsApp Automation — No Meta API | Bulk Send, Lead Mining, AI Outreach & Scheduled Campaigns"
-- Republished both slugs to restore `whatsapp-automation-a2a` search visibility
+- **Updated both ClawHub display names** for better search discoverability
+  - `whatsapp-automation-a2a` — "WhatsApp Automation — No Meta API | Bulk Send, Lead Mining, AI Outreach & Scheduled Campaigns"
+  - `moltflow-whatsapp` — "WhatsApp AI Agent — No Meta API | Lead Mining, Smart Replies, Bulk Campaigns & Scheduled Reports"
+- Dropped MoltFlow/ERC-8004 from titles — unfamiliar to most users
+- Restored `whatsapp-automation-a2a` search visibility (was missing after v2.14.1)
 
 ---
 

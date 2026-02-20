@@ -1,6 +1,6 @@
 {
   "name": "@moltflow/skills",
-  "version": "2.14.3",
+  "version": "2.14.4",
   "description": "MoltFlow — complete WhatsApp automation platform: bulk messaging, scheduled messages, scheduled reports, custom groups, lead detection & CRM, AI replies with style cloning, knowledge base (RAG), voice transcription, group monitoring, labels, anti-spam, content safeguards, review collection, webhooks, GDPR compliance, and agent-to-agent protocol. 90+ API endpoints.",
   "license": "MIT",
   "private": false,

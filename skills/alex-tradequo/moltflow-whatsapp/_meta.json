@@ -3,11 +3,16 @@
   "slug": "moltflow-whatsapp",
   "displayName": "WhatsApp AI Agent — No Meta API | Lead Mining, Smart Replies, Bulk Campaigns & Scheduled Reports",
   "latest": {
-    "version": "2.14.4",
-    "publishedAt": 1771487944482,
-    "commit": "https://github.com/openclaw/skills/commit/afef74cfbb32397346c84674be9f729a9faeb22c"
+    "version": "2.14.6",
+    "publishedAt": 1771490036437,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.14.4",
+      "publishedAt": 1771487944482,
+      "commit": "https://github.com/openclaw/skills/commit/afef74cfbb32397346c84674be9f729a9faeb22c"
+    },
     {
       "version": "2.12.2",
       "publishedAt": 1771318536036,
