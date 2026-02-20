@@ -1,0 +1,11 @@
+{
+  "owner": "jithinm",
+  "slug": "qwen3-tts-local-inference",
+  "displayName": "qwen3-tts-local-inference",
+  "latest": {
+    "version": "0.0.1",
+    "publishedAt": 1771450630984,
+    "commit": null
+  },
+  "history": []
+}
