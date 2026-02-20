@@ -1,19 +1,18 @@
 ---
 name: eve-esi
 description: "Query and manage EVE Online characters via the ESI (EVE Swagger Interface) REST API. Use when the user asks about EVE Online character data, wallet balance, ISK transactions, assets, skill queue, skill points, clone locations, implants, fittings, contracts, market orders, mail, industry jobs, killmails, planetary interaction, loyalty points, or any other EVE account management task."
-primary_credential: EVE_REFRESH_MAIN
 env:
   - name: EVE_CLIENT_ID
-    description: "EVE Developer Application Client ID (from https://developers.eveonline.com/applications)"
-    required: true
+    description: "EVE Developer Application Client ID (from https://developers.eveonline.com/applications). Optional: only needed if using $ENV: references in your dashboard config instead of passing --client-id to auth_flow.py directly."
+    required: false
     sensitive: false
   - name: EVE_TOKEN_MAIN
-    description: "ESI OAuth2 access token for the main character. Expires after ~20 minutes."
-    required: true
+    description: "ESI OAuth2 access token for the main character. Optional: scripts auto-manage tokens via ~/.openclaw/eve-tokens.json (written by auth_flow.py). Only set this if using $ENV: references in your dashboard config."
+    required: false
     sensitive: true
   - name: EVE_REFRESH_MAIN
-    description: "ESI OAuth2 refresh token for automatic access token renewal."
-    required: true
+    description: "ESI OAuth2 refresh token for automatic access token renewal. Optional: scripts auto-manage tokens via ~/.openclaw/eve-tokens.json. Only set this if using $ENV: references in your dashboard config."
+    required: false
     sensitive: true
   - name: TELEGRAM_BOT_TOKEN
     description: "Telegram Bot API token for sending alerts and reports."
@@ -43,17 +42,40 @@ The ESI (EVE Swagger Interface) is the official REST API for EVE Online third-pa
 - Spec: `https://esi.evetech.net/latest/swagger.json`
 - API Explorer: <https://developers.eveonline.com/api-explorer>
 
+## Skill Location
+
+All scripts live at: `~/.openclaw/workspace/skills/eve-esi/scripts/`
+
+Always use full paths when calling scripts:
+```bash
+SKILL=~/.openclaw/workspace/skills/eve-esi
+```
+
 ## Authentication
 
-ESI uses OAuth 2.0 via EVE SSO. Most character endpoints require an access token with the correct scope.
+Tokens are stored in `~/.openclaw/eve-tokens.json` (created by auth_flow.py, chmod 600).
+All scripts (`get_token.py`, `esi_query.py`) read from this file directly — **no env vars are required for normal operation.**
 
-Quick flow:
-1. Register an app at <https://developers.eveonline.com/applications>
-2. Redirect user to SSO authorize URL with required scopes
-3. Exchange the auth code for access + refresh tokens
-4. Pass `Authorization: Bearer <TOKEN>` on every ESI request
+**First-time setup** (once per character):
+```bash
+# 1. Set up SSH tunnel on your local PC:
+#    ssh -L 8080:127.0.0.1:8080 user@your-server -N
+# 2. Run auth flow on server (pass Client ID directly):
+python3 ~/.openclaw/workspace/skills/eve-esi/scripts/auth_flow.py --client-id <YOUR_CLIENT_ID> --char-name main
+# 3. Open the shown URL in browser, log in with EVE account
+```
 
-For full details (PKCE, token refresh, scope list): see [references/authentication.md](references/authentication.md).
+**Get a fresh access token** (tokens expire after ~20min, refresh is automatic):
+```bash
+TOKEN=$(python3 ~/.openclaw/workspace/skills/eve-esi/scripts/get_token.py --char main)
+```
+
+**List authenticated characters:**
+```bash
+python3 ~/.openclaw/workspace/skills/eve-esi/scripts/get_token.py --list
+```
+
+For full OAuth2/PKCE details: see `references/authentication.md`.
 
 ## Public endpoints (no auth)
 
@@ -206,17 +228,19 @@ python scripts/validate_config.py --schema
 
 ## Using the query script
 
-A reusable Python script is bundled at `scripts/esi_query.py`. It handles pagination, error limits, and caching headers.
-
 ```bash
+SKILL=~/.openclaw/workspace/skills/eve-esi
+TOKEN=$(python3 $SKILL/scripts/get_token.py --char main)
+CHAR_ID=$(python3 $SKILL/scripts/get_token.py --char main --json | python3 -c "import sys,json; print(json.load(sys.stdin))" 2>/dev/null)
+
 # Simple query
-python scripts/esi_query.py --token "$TOKEN" --endpoint "/characters/$CHAR_ID/wallet/" --pretty
+python3 $SKILL/scripts/esi_query.py --token "$TOKEN" --endpoint "/characters/$CHAR_ID/wallet/" --pretty
 
 # Fetch all pages of assets
-python scripts/esi_query.py --token "$TOKEN" --endpoint "/characters/$CHAR_ID/assets/" --pages --pretty
+python3 $SKILL/scripts/esi_query.py --token "$TOKEN" --endpoint "/characters/$CHAR_ID/assets/" --pages --pretty
 
 # POST request (e.g. asset names)
-python scripts/esi_query.py --token "$TOKEN" --endpoint "/characters/$CHAR_ID/assets/names/" \
+python3 $SKILL/scripts/esi_query.py --token "$TOKEN" --endpoint "/characters/$CHAR_ID/assets/names/" \
   --method POST --body '[1234567890]' --pretty
 ```
 
