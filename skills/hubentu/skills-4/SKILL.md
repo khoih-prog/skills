@@ -1,6 +1,8 @@
 ---
 name: coala-client
 description: How to use the coala-client CLI for chat with LLMs, MCP servers, and skills. Use when the user asks how to use coala, run coala chat, add MCP servers, import CWL toolsets, list or call MCP tools, import or load skills, or use the sandbox run_command tool.
+homepage: https://github.com/coala-info/coala_client
+metadata: {"clawdbot":{"emoji":"🧬","requires":{"bins":["coala-client"]},"install":[{"id":"uv","kind":"uv","package":"coala-client","bins":["coala-client"],"label":"Install coala-client (uv)"}]}}
 ---
 
 # Coala Client
@@ -57,9 +59,6 @@ No API key needed for MCP import, list, or call — only for chat/ask with an LL
   `/skill` — list installed skills.  
   `/skill <name>` — load skill from `~/.config/coala/skills/<name>/` (e.g. SKILL.md) into context.
 
-## Sandbox
-
-`coala --sandbox` or `coala ask "..." --sandbox` — adds a `run_command` tool so the LLM can run basic shell commands (timeout 30s). Optional `timeout` and `cwd` in args.
 
 ## Chat commands
 
