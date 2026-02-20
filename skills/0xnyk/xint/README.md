@@ -31,8 +31,35 @@ Spiritual successor to [twint](https://github.com/twintproject/twint) (archived 
 ## Install
 
 ```bash
+curl -fsSL https://raw.githubusercontent.com/0xNyk/xint/main/install.sh | bash
+```
+
+Optional pinned version:
+
+```bash
+XINT_INSTALL_VERSION=<version-tag> \
+curl -fsSL https://raw.githubusercontent.com/0xNyk/xint/main/install.sh | bash
+```
+
+Homebrew (lightweight prebuilt binary on Apple Silicon):
+
+```bash
+brew tap 0xNyk/xint
+brew install xint
+```
+
+Rust variant explicitly:
+
+```bash
+brew install xint-rs
+```
+
+Manual source install:
+
+```bash
 git clone https://github.com/0xNyk/xint.git
 cd xint
+bun install
 ```
 
 > **Requires:** [Bun](https://bun.sh) · [X API access](https://developer.x.com) (prepaid credits)
@@ -58,6 +85,7 @@ cd xint
 | Report | `xint report "crypto"` |
 | Article | `xint article <url> --ai "summarize"` |
 | Capabilities | `xint capabilities --json` |
+| TUI | `xint tui` |
 
 ### Shorthands
 
@@ -67,6 +95,44 @@ xint w "query"    # watch
 xint p @user     # profile
 xint tr           # trends
 xint bm           # bookmarks
+```
+
+### TUI Customization
+
+```bash
+# Built-in themes: classic | neon | minimal | ocean | amber
+XINT_TUI_THEME=ocean xint tui
+
+# Disable animated hero line
+XINT_TUI_HERO=0 xint tui
+
+# Disable icons in menu rows
+XINT_TUI_ICONS=0 xint tui
+
+# Force ASCII borders
+XINT_TUI_ASCII=1 xint tui
+
+# Optional theme token file
+XINT_TUI_THEME_FILE=./tui-theme.tokens.example.json xint tui
+```
+
+### TUI Customization
+
+```bash
+# Built-in themes: classic | neon | minimal | ocean | amber
+XINT_TUI_THEME=ocean xint tui
+
+# Disable animated hero line
+XINT_TUI_HERO=0 xint tui
+
+# Disable icons in menu rows
+XINT_TUI_ICONS=0 xint tui
+
+# Force ASCII borders
+XINT_TUI_ASCII=1 xint tui
+
+# Optional theme token file
+XINT_TUI_THEME_FILE=./tui-theme.tokens.example.json xint tui
 ```
 
 ## Setup
@@ -91,6 +157,27 @@ For bookmarks, likes, lists, blocks/mutes, and follower tracking:
 - `X_CLIENT_ID`
 
 Run `xint auth setup` to complete OAuth flow.
+
+## Deployment Modes
+
+### Self-hosted (OSS default)
+
+- Run everything locally from this repo.
+- Package API calls are local unless you set cloud endpoints.
+- Good for development and private workflows.
+
+### Hosted cloud control plane (`xint-cloud`)
+
+- Point package API features at your hosted control plane:
+  - `XINT_PACKAGE_API_BASE_URL=http://localhost:8787/v1` (or your deployed URL)
+  - `XINT_PACKAGE_API_KEY=<workspace_api_key>`
+  - `XINT_WORKSPACE_ID=<workspace_id>`
+- Optional billing upgrade link shown on quota/plan errors:
+  - `XINT_BILLING_UPGRADE_URL=https://your-app/pricing`
+
+Notes:
+- If `XINT_PACKAGE_API_BASE_URL` is unset, package API MCP tools return a setup error.
+- `xint-cloud` should remain private; `xint` and `xint-rs` stay public OSS clients.
 
 ## Agent-Native Capabilities Manifest
 
@@ -300,7 +387,7 @@ Runs an MCP server AI agents can connect to.
 xint mcp --sse --port=3000
 
 # Optional: require bearer auth (recommended if binding beyond loopback)
-XINT_MCP_AUTH_TOKEN=change-me xint mcp --sse --host=127.0.0.1
+XINT_MCP_AUTH_TOKEN=replace-with-long-random-token xint mcp --sse --host=127.0.0.1
 ```
 
 Security defaults:
@@ -343,6 +430,7 @@ For hosted billing sync, package API also supports:
 |----------|----------|-------------|
 | `X_BEARER_TOKEN` | Yes | X API v2 bearer token |
 | `XAI_API_KEY` | No | xAI key for analyze/report |
+| `XINT_ARTICLE_TIMEOUT_SEC` | No | Article fetch timeout seconds (default 30, range 5-120) |
 | `X_CLIENT_ID` | No | OAuth for bookmarks/likes/lists/blocks/mutes |
 | `XINT_PACKAGE_API_BASE_URL` | No | Package API base URL for MCP package tools/billing |
 | `XINT_PACKAGE_API_KEY` | No | Legacy single bearer key for package API auth |

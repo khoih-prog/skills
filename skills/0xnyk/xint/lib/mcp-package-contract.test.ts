@@ -80,8 +80,13 @@ describe("mcp package api contract", () => {
     const parsed = JSON.parse(String(response || "{}")) as {
       result: { content: Array<{ text: string }> };
     };
-    const payload = JSON.parse(parsed.result.content[0].text) as { package_id: string };
-    expect(payload.package_id).toBe("pkg_123");
+    const payload = JSON.parse(parsed.result.content[0].text) as {
+      type: string;
+      message: string;
+      data: { package_id: string };
+    };
+    expect(payload.type).toBe("success");
+    expect(payload.data.package_id).toBe("pkg_123");
 
     restoreEnv("XINT_PACKAGE_API_BASE_URL", previousBase);
     restoreEnv("XINT_PACKAGE_API_KEY", previousKey);
@@ -128,5 +133,45 @@ describe("mcp package api contract", () => {
     const parsed = JSON.parse(String(response || "{}")) as { error: { message: string } };
     expect(parsed.error.message).toContain("QUOTA_EXCEEDED");
     expect(parsed.error.message).toContain("Upgrade: https://xint.dev/pricing?src=contract-test");
+  });
+
+  test("enforces citations for package query when required", async () => {
+    const server = Bun.serve({
+      port: 0,
+      fetch: () =>
+        new Response(
+          JSON.stringify({
+            answer: "No citations",
+            claims: [{ claim_id: "claim_1", text: "example" }],
+            citations: [],
+          }),
+          {
+            status: 200,
+            headers: { "content-type": "application/json" },
+          },
+        ),
+    });
+
+    process.env.XINT_PACKAGE_API_BASE_URL = `http://127.0.0.1:${server.port}/v1`;
+    const mcp = new MCPServer({ policyMode: "read_only", enforceBudget: false });
+    const response = await mcp.handleMessage(
+      JSON.stringify({
+        jsonrpc: "2.0",
+        id: 3,
+        method: "tools/call",
+        params: {
+          name: "xint_package_query",
+          arguments: {
+            query: "what changed?",
+            packageIds: ["pkg_123"],
+            requireCitations: true,
+          },
+        },
+      }),
+    );
+    server.stop(true);
+
+    const parsed = JSON.parse(String(response || "{}")) as { error: { message: string } };
+    expect(parsed.error.message).toContain("missing citations");
   });
 });

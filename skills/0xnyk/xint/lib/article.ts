@@ -10,6 +10,7 @@
 
 import { readFileSync } from "fs";
 import { join } from "path";
+import { extractTweetId } from "./media";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -65,6 +66,7 @@ function getXaiKey(): string {
 
 const XAI_RESPONSES_ENDPOINT = "https://api.x.ai/v1/responses";
 const DEFAULT_MODEL = "grok-4";
+const DEFAULT_TIMEOUT_SEC = 30;
 
 const ARTICLE_EXTRACT_PROMPT = `Read the article at this URL and extract its content. Return a JSON object with these fields:
 - title: article title
@@ -95,29 +97,47 @@ export async function fetchArticle(
 
   const apiKey = getXaiKey();
   const model = opts.model || DEFAULT_MODEL;
+  const timeoutMs = resolveArticleTimeoutMs();
+  const timeoutSec = Math.floor(timeoutMs / 1000);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort("article_timeout"), timeoutMs);
 
-  const res = await fetch(XAI_RESPONSES_ENDPOINT, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      tools: [
-        {
-          type: "web_search",
-          allowed_domains: [parsed.hostname],
-        },
-      ],
-      input: [
-        {
-          role: "user",
-          content: `${ARTICLE_EXTRACT_PROMPT}\n\nURL: ${url}`,
-        },
-      ],
-    }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(XAI_RESPONSES_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model,
+        tools: [
+          {
+            type: "web_search",
+            allowed_domains: [parsed.hostname],
+          },
+        ],
+        input: [
+          {
+            role: "user",
+            content: `${ARTICLE_EXTRACT_PROMPT}\n\nURL: ${url}`,
+          },
+        ],
+      }),
+    });
+  } catch (error: unknown) {
+    if (controller.signal.aborted) {
+      throw new Error(
+        `Article fetch timed out after ${timeoutSec}s for ${url}. ` +
+        `Set XINT_ARTICLE_TIMEOUT_SEC (5-120) to tune this.`
+      );
+    }
+    throw new Error(`Article fetch request failed for ${url}: ${(error as Error).message}`);
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!res.ok) {
     const body = await res.text();
@@ -129,7 +149,10 @@ export async function fetchArticle(
   // Extract text from response output
   const text = extractResponseText(data);
   if (!text) {
-    throw new Error(`No content returned for ${url}`);
+    throw new Error(
+      `No article content returned for ${url}. ` +
+      `The source may be blocked/unavailable from this environment.`
+    );
   }
 
   // Parse the JSON response from Grok
@@ -146,6 +169,13 @@ export async function fetchArticle(
   article.ttr = Math.ceil(words / 238);
 
   return article;
+}
+
+export function resolveArticleTimeoutMs(): number {
+  const raw = Number.parseInt(String(process.env.XINT_ARTICLE_TIMEOUT_SEC || DEFAULT_TIMEOUT_SEC), 10);
+  if (!Number.isFinite(raw)) return DEFAULT_TIMEOUT_SEC * 1000;
+  const clamped = Math.min(Math.max(raw, 5), 120);
+  return clamped * 1000;
 }
 
 // ---------------------------------------------------------------------------
@@ -211,31 +241,93 @@ function parseArticleJson(raw: string, url: string, domain: string): Article {
  * Extract tweet ID from X URL and fetch the tweet to get linked articles.
  */
 export async function fetchTweetForArticle(tweetUrl: string): Promise<{ tweet: any; articleUrl: string | null }> {
-  // Extract tweet ID from URL
-  const match = tweetUrl.match(/x\.com\/\w+\/status\/(\d+)/);
-  if (!match) {
+  const tweetId = extractTweetId(tweetUrl);
+  if (!tweetId) {
     throw new Error(`Invalid X tweet URL: ${tweetUrl}`);
   }
-  
-  const tweetId = match[1];
-  
+
   // Import dynamically to avoid circular dependencies
   const { getTweet } = await import("./api");
   const tweet = await getTweet(tweetId);
-  
+
   if (!tweet) {
     throw new Error(`Tweet not found: ${tweetId}`);
   }
-  
-  // Extract article URL from tweet entities
-  let articleUrl: string | null = null;
-  if (tweet.entities?.urls?.[0]) {
-    const urlData = tweet.entities.urls[0];
-    // Prefer expanded_url, fallback to unwound_url
-    articleUrl = urlData.expanded_url || urlData.unwound_url || null;
+
+  return { tweet, articleUrl: pickArticleUrlFromTweet(tweet) };
+}
+
+function normalizeCandidateUrl(value: string | undefined): string | null {
+  if (!value || typeof value !== "string") return null;
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+    return parsed.toString();
+  } catch {
+    return null;
   }
-  
-  return { tweet, articleUrl };
+}
+
+function isXArticleUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return /(^|\.)x\.com$/i.test(parsed.hostname) && parsed.pathname.startsWith("/i/article/");
+  } catch {
+    return false;
+  }
+}
+
+function isExternalNonXUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return !/(^|\.)x\.com$/i.test(parsed.hostname) && !/(^|\.)twitter\.com$/i.test(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Pick the best article URL candidate from parsed tweet payload.
+ * Priority:
+ * 1) external non-X URLs
+ * 2) X Article URLs (x.com/i/article/*)
+ * 3) any remaining valid URL candidate
+ */
+export function pickArticleUrlFromTweet(tweet: any): string | null {
+  const candidates: string[] = [];
+
+  const parsedUrls = Array.isArray(tweet?.urls) ? tweet.urls : [];
+  for (const urlData of parsedUrls) {
+    const fromUnwound = normalizeCandidateUrl(urlData?.unwound_url);
+    const fromUrl = normalizeCandidateUrl(urlData?.url);
+    if (fromUnwound) candidates.push(fromUnwound);
+    if (fromUrl) candidates.push(fromUrl);
+  }
+
+  const entityUrls = Array.isArray(tweet?.entities?.urls) ? tweet.entities.urls : [];
+  for (const urlData of entityUrls) {
+    const fromUnwound = normalizeCandidateUrl(urlData?.unwound_url);
+    const fromExpanded = normalizeCandidateUrl(urlData?.expanded_url);
+    const fromUrl = normalizeCandidateUrl(urlData?.url);
+    if (fromUnwound) candidates.push(fromUnwound);
+    if (fromExpanded) candidates.push(fromExpanded);
+    if (fromUrl) candidates.push(fromUrl);
+  }
+
+  const seen = new Set<string>();
+  const unique = candidates.filter((candidate) => {
+    if (seen.has(candidate)) return false;
+    seen.add(candidate);
+    return true;
+  });
+
+  const external = unique.find(isExternalNonXUrl);
+  if (external) return external;
+
+  const xArticle = unique.find(isXArticleUrl);
+  if (xArticle) return xArticle;
+
+  return unique[0] || null;
 }
 
 // ---------------------------------------------------------------------------
