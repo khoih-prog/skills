@@ -3,11 +3,16 @@
   "slug": "clawdraw",
   "displayName": "Claw Draw",
   "latest": {
-    "version": "0.4.0",
-    "publishedAt": 1771545506953,
-    "commit": "https://github.com/openclaw/skills/commit/e77ec28d8cfbc41c66198610472e831133974bc0"
+    "version": "0.6.2",
+    "publishedAt": 1771616018105,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.4.0",
+      "publishedAt": 1771545506953,
+      "commit": "https://github.com/openclaw/skills/commit/e77ec28d8cfbc41c66198610472e831133974bc0"
+    },
     {
       "version": "0.3.0",
       "publishedAt": 1771469991291,
