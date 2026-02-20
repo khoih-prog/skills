@@ -3,11 +3,16 @@
   "slug": "student-timetable",
   "displayName": "Student Timetable",
   "latest": {
-    "version": "0.1.0-alpha.3",
-    "publishedAt": 1771467366775,
-    "commit": "https://github.com/openclaw/skills/commit/18e5babf43524884a94011e01a78c6825497f0c7"
+    "version": "0.1.0-alpha.4",
+    "publishedAt": 1771496784170,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.0-alpha.3",
+      "publishedAt": 1771467366775,
+      "commit": "https://github.com/openclaw/skills/commit/18e5babf43524884a94011e01a78c6825497f0c7"
+    },
     {
       "version": "0.1.0-alpha.2",
       "publishedAt": 1771342552498,

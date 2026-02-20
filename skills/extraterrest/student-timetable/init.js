@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
+const { inferTimezone, isValidTimeZone, normalizeCountry } = require('./timezone_infer.js');
 
 function normalizeToken(s) {
   return String(s || '')
@@ -67,9 +68,23 @@ async function interactiveInit(workspaceRoot) {
 
     console.log('');
     console.log('Base profile info (stored as metadata):');
+    const countryRaw = normalizeToken(await ask(rl, 'Country (e.g. SG, CN): '));
+    const country = normalizeCountry(countryRaw);
+    const city = normalizeToken(await ask(rl, 'City (optional): '));
     const school = normalizeToken(await ask(rl, 'School (optional): '));
     const grade = normalizeToken(await ask(rl, 'Grade (optional): '));
     const klass = normalizeToken(await ask(rl, 'Class (optional): '));
+
+    const tzGuess = inferTimezone(country, city, '');
+    console.log(`Timezone inferred: ${tzGuess.timezone} (${tzGuess.source})`);
+    const tzOverride = normalizeToken(await ask(rl, 'Timezone override (IANA, optional, enter to accept inferred): '));
+    let timezone = tzGuess.timezone;
+    if (tzOverride) {
+      if (!isValidTimeZone(tzOverride)) {
+        throw new Error(`Invalid timezone override: ${tzOverride}`);
+      }
+      timezone = tzOverride;
+    }
 
     console.log('');
     console.log('Global wake keywords (optional):');
@@ -130,8 +145,11 @@ async function interactiveInit(workspaceRoot) {
         display_name: p.display_name,
         aliases: p.aliases,
         base_info: {
+          country: country || '',
+          city: city || '',
           school: school || '',
           grade: grade || '',
+          timezone: timezone || '',
           class: klass || ''
         },
         created_at: createdAt,
@@ -152,7 +170,7 @@ async function interactiveInit(workspaceRoot) {
           version: 1,
           profile_id: p.profile_id,
           recurrence,
-          timezone: 'Asia/Singapore',
+          timezone,
           weeks
         });
       }
@@ -162,7 +180,7 @@ async function interactiveInit(workspaceRoot) {
       }
 
       if (!exists(termPath)) {
-        writeJsonAtomic(termPath, { version: 1, profile_id: p.profile_id, timezone: 'Asia/Singapore', terms: [], no_school_days: [] });
+        writeJsonAtomic(termPath, { version: 1, profile_id: p.profile_id, timezone, terms: [], no_school_days: [] });
       }
 
       console.log(`Created/verified: schedules/profiles/${p.profile_id}/weekly.json`);
