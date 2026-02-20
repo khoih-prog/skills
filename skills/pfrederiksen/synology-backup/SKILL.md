@@ -14,7 +14,7 @@ Backup OpenClaw data to a Synology NAS over SMB. Designed for secure, automated 
 For VPS-to-NAS backups, use [Tailscale](https://tailscale.com) for secure connectivity without exposing SMB to the internet:
 
 1. Install Tailscale on the Synology (Package Center → search "Tailscale")
-2. Install Tailscale on the VPS (`curl -fsSL https://tailscale.com/install.sh | sh`)
+2. Install Tailscale on the VPS — see [Tailscale's official install guide](https://tailscale.com/download) for your platform
 3. Join both to the same tailnet
 4. Use the Synology's Tailscale IP in config
 
@@ -22,20 +22,22 @@ For local network setups, use the NAS local IP directly.
 
 ### 2. Synology Preparation
 
-1. Create a dedicated user on the Synology (e.g., `openclaw-backup`)
+1. Create a dedicated user on the Synology (e.g., `openclaw-backup`) with minimal permissions
 2. Create or choose a shared folder (e.g., `backups`)
-3. Grant the user read/write access to that folder
+3. Grant the user read/write access to **only** that folder
 
 ### 3. Credentials File
 
-Create a credentials file (chmod 600) — **never store credentials in config or scripts**:
+Create an SMB credentials file with restricted permissions — **never store credentials in config or scripts**:
 
 ```bash
-cat > ~/.openclaw/.smb-credentials << 'EOF'
-username=your-synology-user
-password=your-synology-password
-EOF
+# Create the file and set permissions (replace placeholders with your values)
+touch ~/.openclaw/.smb-credentials
 chmod 600 ~/.openclaw/.smb-credentials
+# Edit the file and add two lines:
+#   username=<your-synology-user>
+#   password=<your-synology-password>
+nano ~/.openclaw/.smb-credentials
 ```
 
 ### 4. Configuration
@@ -53,14 +55,15 @@ Create `~/.openclaw/synology-backup.json`:
     "~/.openclaw/workspace",
     "~/.openclaw/openclaw.json",
     "~/.openclaw/cron",
-    "~/.openclaw/agents",
-    "~/.openclaw/.env"
+    "~/.openclaw/agents"
   ],
   "includeSubAgentWorkspaces": true,
   "retention": 7,
   "schedule": "0 3 * * *"
 }
 ```
+
+**Note on sensitive files:** The `.env` file (containing API keys) is **not** included in the default backup paths. If you want to back it up, add `"~/.openclaw/.env"` to `backupPaths` — but ensure your Synology share has restricted access and the dedicated user has minimal permissions.
 
 | Field | Description | Default |
 |-------|-------------|---------|
@@ -121,7 +124,7 @@ Shows last backup time, snapshot count, total size, and mount health.
 - `~/.openclaw/openclaw.json` — main config
 - `~/.openclaw/cron/` — cron job definitions
 - `~/.openclaw/agents/` — agent configurations
-- `~/.openclaw/.env` — environment variables and API keys
+- `~/.openclaw/.env` — **opt-in only** (contains API keys — add to backupPaths manually if desired)
 
 ## Snapshot Structure
 
@@ -134,15 +137,15 @@ backups/
 │   ├── workspace-news/
 │   ├── agents/
 │   ├── cron/
-│   ├── openclaw.json
-│   └── .env
+│   └── openclaw.json
 ├── 2026-02-19/
 └── ...
 ```
 
 ## Security Notes
 
-- **Credentials**: Always use a credentials file with `chmod 600`. Never put passwords in config, scripts, or fstab directly.
-- **Network**: Use Tailscale or VPN for remote backups. Never expose SMB (port 445) to the public internet.
-- **API keys**: The `.env` file contains sensitive keys. Ensure your Synology share has restricted access.
-- **Retention**: Old snapshots are automatically pruned. Increase retention for critical environments.
+- **Credentials**: Always use a dedicated credentials file with restricted permissions (`chmod 600`). Never inline secrets in config files, scripts, or fstab.
+- **Network**: Use Tailscale or a VPN for remote backups. Never expose SMB (port 445) to the public internet.
+- **Sensitive data**: The `.env` file contains API keys and is excluded from default backup paths. Only include it if your NAS share is properly secured with restricted user permissions.
+- **NAS user**: Create a dedicated Synology user with access to only the backup share — not an admin account.
+- **Retention**: Old snapshots are pruned by moving them to the Synology trash (if supported) or deleting them. Increase retention for critical environments.

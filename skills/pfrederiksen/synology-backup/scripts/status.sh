@@ -9,12 +9,24 @@ if [[ ! -f "$CONFIG" ]]; then
     exit 1
 fi
 
-HOST=$(jq -r '.host' "$CONFIG")
-SHARE=$(jq -r '.share' "$CONFIG")
-MOUNT=$(jq -r '.mountPoint // "/mnt/synology"' "$CONFIG")
-CREDS=$(jq -r '.credentialsFile' "$CONFIG" | sed "s|^~|$HOME|")
-SMB_VER=$(jq -r '.smbVersion // "3.0"' "$CONFIG")
-RETENTION=$(jq -r '.retention // 7' "$CONFIG")
+HOST="$(jq -r '.host' "$CONFIG")"
+SHARE="$(jq -r '.share' "$CONFIG")"
+MOUNT="$(jq -r '.mountPoint // "/mnt/synology"' "$CONFIG")"
+CREDS="$(jq -r '.credentialsFile' "$CONFIG" | sed "s|^~|$HOME|")"
+SMB_VER="$(jq -r '.smbVersion // "3.0"' "$CONFIG")"
+RETENTION="$(jq -r '.retention // 7' "$CONFIG")"
+
+# --- Input validation ---
+if [[ -z "$HOST" || "$HOST" == "null" ]]; then echo "Error: host is required"; exit 1; fi
+if ! [[ "$HOST" =~ ^[a-zA-Z0-9._-]+$ ]]; then echo "Error: host contains invalid characters"; exit 1; fi
+if [[ -z "$SHARE" || "$SHARE" == "null" ]]; then echo "Error: share is required"; exit 1; fi
+if ! [[ "$SHARE" =~ ^[a-zA-Z0-9/_.-]+$ ]]; then echo "Error: share contains invalid characters"; exit 1; fi
+if [[ "$SHARE" == *".."* ]]; then echo "Error: share must not contain path traversal (..)"; exit 1; fi
+if [[ -z "$MOUNT" || "$MOUNT" == "null" ]]; then echo "Error: mountPoint is required"; exit 1; fi
+if ! [[ "$MOUNT" =~ ^/[a-zA-Z0-9/_.-]+$ ]]; then echo "Error: mountPoint must be an absolute path with safe characters"; exit 1; fi
+if [[ "$MOUNT" == *".."* ]]; then echo "Error: mountPoint must not contain path traversal (..)"; exit 1; fi
+if ! [[ "$SMB_VER" =~ ^[0-9.]+$ ]]; then echo "Error: smbVersion contains invalid characters"; exit 1; fi
+if ! [[ "$RETENTION" =~ ^[0-9]+$ ]]; then echo "Error: retention must be a number"; exit 1; fi
 
 BACKUP_DIR="$MOUNT/backups"
 
@@ -23,12 +35,12 @@ echo ""
 
 # Check mount
 if mountpoint -q "$MOUNT" 2>/dev/null; then
-    echo "Mount:     ✅ $MOUNT → //$HOST/$SHARE"
+    echo "Mount:     ✅ $MOUNT → //${HOST}/${SHARE}"
 else
     echo "Mount:     ❌ Not mounted"
     echo "           Attempting mount..."
     mkdir -p "$MOUNT"
-    if mount -t cifs "//$HOST/$SHARE" "$MOUNT" -o credentials="$CREDS",vers="$SMB_VER" 2>/dev/null; then
+    if [[ -f "$CREDS" ]] && mount -t cifs "//${HOST}/${SHARE}" "$MOUNT" -o "credentials=${CREDS},vers=${SMB_VER}" 2>/dev/null; then
         echo "           ✅ Mounted successfully"
     else
         echo "           ❌ Mount failed — check host, share, and credentials"
@@ -37,53 +49,51 @@ else
 fi
 
 # Check disk space
-DISK_INFO=$(df -h "$MOUNT" | tail -1)
-DISK_SIZE=$(echo "$DISK_INFO" | awk '{print $2}')
-DISK_USED=$(echo "$DISK_INFO" | awk '{print $3}')
-DISK_AVAIL=$(echo "$DISK_INFO" | awk '{print $4}')
-DISK_PCT=$(echo "$DISK_INFO" | awk '{print $5}')
+DISK_INFO="$(df -h "$MOUNT" | tail -1)"
+DISK_SIZE="$(echo "$DISK_INFO" | awk '{print $2}')"
+DISK_AVAIL="$(echo "$DISK_INFO" | awk '{print $4}')"
+DISK_PCT="$(echo "$DISK_INFO" | awk '{print $5}')"
 echo "Disk:      $DISK_AVAIL available of $DISK_SIZE ($DISK_PCT used)"
 
 # Snapshot info
 if [[ -d "$BACKUP_DIR" ]]; then
-    SNAP_COUNT=$(ls -1d "$BACKUP_DIR"/20* 2>/dev/null | wc -l)
-    TOTAL_SIZE=$(du -sh "$BACKUP_DIR" 2>/dev/null | cut -f1)
-    
+    SNAP_COUNT="$(ls -1 "$BACKUP_DIR" | grep -cE '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' 2>/dev/null || echo 0)"
+    TOTAL_SIZE="$(du -sh "$BACKUP_DIR" 2>/dev/null | cut -f1)"
+
     echo "Snapshots: $SNAP_COUNT (retention: $RETENTION days)"
     echo "Total:     $TOTAL_SIZE"
     echo ""
-    
+
     # Latest snapshot
-    LATEST=$(ls -1d "$BACKUP_DIR"/20* 2>/dev/null | sort -r | head -1)
-    if [[ -n "$LATEST" ]]; then
-        LATEST_DATE=$(basename "$LATEST")
-        LATEST_SIZE=$(du -sh "$LATEST" 2>/dev/null | cut -f1)
-        
-        if [[ -f "$LATEST/manifest.json" ]]; then
-            LATEST_TS=$(jq -r '.timestamp' "$LATEST/manifest.json")
-            echo "Latest:    $LATEST_DATE ($LATEST_SIZE) at $LATEST_TS"
+    LATEST_NAME="$(ls -1 "$BACKUP_DIR" | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' | sort -r | head -1)"
+    if [[ -n "$LATEST_NAME" ]]; then
+        LATEST="${BACKUP_DIR}/${LATEST_NAME}"
+        LATEST_SIZE="$(du -sh "$LATEST" 2>/dev/null | cut -f1)"
+
+        if [[ -f "${LATEST}/manifest.json" ]]; then
+            LATEST_TS="$(jq -r '.timestamp' "${LATEST}/manifest.json")"
+            echo "Latest:    $LATEST_NAME ($LATEST_SIZE) at $LATEST_TS"
         else
-            echo "Latest:    $LATEST_DATE ($LATEST_SIZE)"
+            echo "Latest:    $LATEST_NAME ($LATEST_SIZE)"
         fi
-        
+
         # Age check
-        LATEST_EPOCH=$(date -d "$LATEST_DATE" +%s 2>/dev/null || echo 0)
-        NOW_EPOCH=$(date +%s)
-        AGE_HOURS=$(( (NOW_EPOCH - LATEST_EPOCH) / 3600 ))
-        
-        if [[ $AGE_HOURS -gt 48 ]]; then
+        LATEST_EPOCH="$(date -d "$LATEST_NAME" +%s 2>/dev/null || echo 0)"
+        NOW_EPOCH="$(date +%s)"
+        AGE_HOURS="$(( (NOW_EPOCH - LATEST_EPOCH) / 3600 ))"
+
+        if [[ "$AGE_HOURS" -gt 48 ]]; then
             echo "⚠️  WARNING: Last backup is ${AGE_HOURS}h old!"
         fi
     fi
-    
+
     echo ""
     echo "All snapshots:"
-    for snap in "$BACKUP_DIR"/20*/; do
-        [[ -d "$snap" ]] || continue
-        date=$(basename "$snap")
-        size=$(du -sh "$snap" 2>/dev/null | cut -f1)
-        echo "  $date  $size"
-    done
+    while IFS= read -r snap_name; do
+        [[ -z "$snap_name" ]] && continue
+        size="$(du -sh "${BACKUP_DIR}/${snap_name}" 2>/dev/null | cut -f1)"
+        echo "  $snap_name  $size"
+    done < <(ls -1 "$BACKUP_DIR" | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' | sort -r)
 else
     echo "Snapshots: None (no backups directory)"
 fi
