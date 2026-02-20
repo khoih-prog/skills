@@ -1,6 +1,11 @@
 ---
 name: email-triage
+version: 1.0.1
 description: IMAP email scanning and triage with AI classification via a local Ollama LLM. Scans unread emails, categorizes them as urgent, needs-response, informational, or spam, and surfaces important messages for agent consumption. Works standalone with heuristic fallback — Ollama optional but recommended.
+metadata:
+  openclaw:
+    requires:
+      bins: ["python3"]
 ---
 
 # Email Triage
@@ -36,29 +41,33 @@ All configuration is via environment variables:
 | `OLLAMA_URL` | — | `http://127.0.0.1:11434` | Ollama API endpoint |
 | `OLLAMA_MODEL` | — | `qwen2.5:7b` | Ollama model for classification |
 
+## Directories Written
+
+- **`EMAIL_TRIAGE_STATE`** (default: `./data/email-triage.json`) — Persistent state file tracking classified emails and surfacing status
+
 ## Commands
 
 ```bash
 # Scan inbox and classify new unread emails
-python3 scripts/email-triage.py scan
+python3 scripts/email/email-triage.py scan
 
 # Scan with verbose output (shows each classification)
-python3 scripts/email-triage.py scan --verbose
+python3 scripts/email/email-triage.py scan --verbose
 
 # Dry run — scan and classify but don't save state
-python3 scripts/email-triage.py scan --dry-run
+python3 scripts/email/email-triage.py scan --dry-run
 
 # Show unsurfaced important emails (urgent + needs-response)
-python3 scripts/email-triage.py report
+python3 scripts/email/email-triage.py report
 
 # Same as report but JSON output (for programmatic use)
-python3 scripts/email-triage.py report --json
+python3 scripts/email/email-triage.py report --json
 
 # Mark reported emails as surfaced (so they don't appear again)
-python3 scripts/email-triage.py mark-surfaced
+python3 scripts/email/email-triage.py mark-surfaced
 
 # Show triage statistics
-python3 scripts/email-triage.py stats
+python3 scripts/email/email-triage.py stats
 ```
 
 ## How It Works
