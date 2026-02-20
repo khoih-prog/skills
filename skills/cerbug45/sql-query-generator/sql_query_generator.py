@@ -86,6 +86,15 @@ class GeneratedQuery:
     implementation_examples: Dict[str, str]
 
 
+@dataclass
+class QueryAnalysis:
+    """Structured query quality + risk analysis"""
+    complexity_score: int
+    risk_score: int
+    recommendations: List[str]
+    tags: List[str]
+
+
 class SecurityException(Exception):
     """Raised when security validation fails"""
     pass
@@ -384,7 +393,8 @@ class SQLQueryGenerator:
     def __init__(self, database_type: DatabaseType = DatabaseType.POSTGRESQL,
                  security_level: SecurityLevel = SecurityLevel.STRICT,
                  enable_audit_log: bool = True,
-                 enable_rate_limit: bool = True):
+                 enable_rate_limit: bool = True,
+                 allowed_tables: Optional[Set[str]] = None):
         self.database_type = database_type
         self.security_level = security_level
         self.param_style = self._get_param_style()
@@ -393,6 +403,7 @@ class SQLQueryGenerator:
         self.rate_limiter = RateLimiter() if enable_rate_limit else None
         self.query_count = 0
         self.last_query_time = None
+        self.allowed_tables = {t.lower() for t in allowed_tables} if allowed_tables else None
     
     def _get_param_style(self) -> str:
         """Get parameter placeholder style"""
@@ -429,6 +440,7 @@ class SQLQueryGenerator:
         having: Optional[str] = None,
         order_by: Optional[List[str]] = None,
         limit: Optional[int] = None,
+        offset: Optional[int] = None,
         user_id: Optional[str] = None
     ) -> str:
         """Generate a SELECT query with security validation"""
@@ -440,6 +452,11 @@ class SQLQueryGenerator:
             self.validator.validate_identifier(table, security_level=self.security_level)
             for table in tables
         ]
+
+        if self.allowed_tables is not None:
+            for table in validated_tables:
+                if table.lower() not in self.allowed_tables:
+                    raise SecurityException(f"Table not allowed by policy: {table}")
         
         validated_columns = []
         for col in columns:
@@ -510,12 +527,16 @@ class SQLQueryGenerator:
                 min_val=1,
                 max_val=10000
             )
-            
+
             if self.database_type == DatabaseType.MSSQL:
                 query = query.replace("SELECT\n", f"SELECT TOP {validated_limit}\n", 1)
             else:
                 query += f"LIMIT {validated_limit}\n"
-        
+
+        if offset is not None and self.database_type != DatabaseType.MSSQL:
+            validated_offset = self.validator.validate_integer(offset, min_val=0, max_val=10_000_000)
+            query += f"OFFSET {validated_offset}\n"
+
         query = query.rstrip() + ";"
         
         if self.audit_logger and user_id:
@@ -558,23 +579,74 @@ class SQLQueryGenerator:
     def optimize_query(self, query: str) -> Tuple[str, List[str]]:
         """Analyze and provide optimization suggestions"""
         suggestions = []
-        
+
         if "SELECT *" in query.upper():
             suggestions.append("Performance: Avoid SELECT *")
-        
+
         if "SELECT DISTINCT" in query.upper():
             suggestions.append("Performance: Consider GROUP BY instead of DISTINCT")
-        
+
         if "SELECT" in query.upper() and "LIMIT" not in query.upper() and "TOP" not in query.upper():
             suggestions.append("Performance: Consider adding LIMIT")
-        
+
         if "WHERE" in query.upper():
             suggestions.append("Performance: Ensure indexes on WHERE columns")
-        
+
         if "JOIN" in query.upper():
             suggestions.append("Performance: Ensure indexes on join columns")
-        
+
         return query, suggestions
+
+    def analyze_query(self, query: str) -> QueryAnalysis:
+        """Return quick complexity/risk scoring for CI and guardrails."""
+        q = query.upper()
+        recommendations: List[str] = []
+        tags: List[str] = []
+
+        complexity = 0
+        complexity += q.count(" JOIN ") * 2
+        complexity += q.count(" GROUP BY ") * 2
+        complexity += q.count(" ORDER BY ")
+        complexity += q.count(" WHERE ")
+        complexity += q.count(" HAVING ") * 2
+        complexity += q.count(" UNION ") * 3
+
+        risk = 0
+        if "SELECT *" in q:
+            risk += 2
+            recommendations.append("Replace SELECT * with explicit columns.")
+            tags.append("select-star")
+        if "DELETE" in q and "WHERE" not in q:
+            risk += 8
+            recommendations.append("DELETE without WHERE is dangerous.")
+            tags.append("destructive")
+        if "UPDATE" in q and "WHERE" not in q:
+            risk += 7
+            recommendations.append("UPDATE without WHERE is dangerous.")
+            tags.append("mass-update")
+        if "DROP " in q or "TRUNCATE " in q:
+            risk += 10
+            recommendations.append("Avoid destructive DDL in runtime flows.")
+            tags.append("ddl-danger")
+        if "WHERE" in q and not any(p in query for p in ["$", "?", "@", ":"]):
+            risk += 4
+            recommendations.append("Use parameterized placeholders in predicates.")
+            tags.append("non-parameterized")
+
+        if "LIMIT" not in q and "TOP" not in q and q.strip().startswith("SELECT"):
+            recommendations.append("Add LIMIT/TOP for safer pagination.")
+            tags.append("no-limit")
+
+        if not recommendations:
+            recommendations.append("Looks good. Keep parameterization and index coverage.")
+            tags.append("healthy")
+
+        return QueryAnalysis(
+            complexity_score=min(100, complexity * 5),
+            risk_score=min(100, risk * 10),
+            recommendations=recommendations,
+            tags=sorted(set(tags)),
+        )
 
 
 class NaturalLanguageParser:
@@ -651,8 +723,13 @@ def main():
                 print(f"  ⚠ {warning}")
         else:
             print("✓ No security issues detected")
+
+        analysis = generator.analyze_query(query)
+        print(f"Complexity Score: {analysis.complexity_score}/100")
+        print(f"Risk Score: {analysis.risk_score}/100")
+        print(f"Tags: {', '.join(analysis.tags)}")
         print()
-        
+
     except (ValidationException, SecurityException) as e:
         print(f"Error: {e}")
 
