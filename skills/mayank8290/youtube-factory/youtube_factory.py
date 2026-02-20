@@ -31,13 +31,16 @@ from urllib.parse import urlparse
 OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "~/Videos/OpenClaw")).expanduser()
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# Load Pexels API key from config or env
+# Load config from env file (only known keys for security)
+_ALLOWED_CONFIG_KEYS = {"PEXELS_API_KEY", "OUTPUT_DIR", "DEFAULT_VOICE"}
 _config_path = Path.home() / ".openclaw-video-skills" / "config.env"
 if _config_path.exists():
     for line in _config_path.read_text().splitlines():
         if "=" in line and not line.startswith("#"):
             key, val = line.split("=", 1)
-            os.environ.setdefault(key.strip(), val.strip())
+            key = key.strip()
+            if key in _ALLOWED_CONFIG_KEYS:
+                os.environ.setdefault(key, val.strip())
 
 PEXELS_API_KEY = os.getenv("PEXELS_API_KEY", "")
 
