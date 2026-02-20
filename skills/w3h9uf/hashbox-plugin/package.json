@@ -1,8 +1,8 @@
 {
   "name": "hashbox-plugin",
-  "version": "0.1.0",
+  "version": "0.4.5",
   "description": "OpenClaw plugin that connects an AI agent to the HashBox iOS app via Firebase webhook for push notifications",
-  "main": "dist/index.js",
+  "main": "index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
@@ -27,12 +27,14 @@
     "node": ">=18.0.0"
   },
   "files": [
+    "index.js",
     "dist",
+    "openclaw.plugin.json",
     "README.md",
     "SKILL.md"
   ],
   "openclaw": {
-    "extensions": "./dist/index.js",
+    "extensions": "./dist/openclaw-entry.js",
     "slots": [
       "tool"
     ],
@@ -40,5 +42,9 @@
       "name": "hashbox-plugin",
       "description": "Connects an AI agent to the HashBox iOS app via Firebase webhook for push notifications"
     }
+  },
+  "dependencies": {
+    "@sinclair/typebox": "^0.34.48",
+    "firebase": "^12.9.0"
   }
 }

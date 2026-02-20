@@ -1,79 +1,99 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
-import type { PayloadType, MetricEntry, AuditEntry, HashBoxPayload } from "./types.js";
+import type {
+  ArticlePayload,
+  MetricItem,
+  MetricPayload,
+  AuditFinding,
+  AuditPayload,
+  HashBoxRequest,
+} from "./types.js";
+import { loadConfig } from "./setupHashBox.js";
 
-const CONFIG_FILENAME = "hashbox_config.json";
 const WEBHOOK_BASE_URL =
   "https://webhook-vcphors6kq-uc.a.run.app/webhook";
-
-interface HashBoxConfig {
-  token: string;
-}
 
 interface SendResult {
   status: number;
   message: string;
 }
 
-async function loadConfig(): Promise<HashBoxConfig> {
-  const configPath = join(process.cwd(), CONFIG_FILENAME);
-  try {
-    const raw = await readFile(configPath, "utf-8");
-    return JSON.parse(raw) as HashBoxConfig;
-  } catch {
-    throw new Error(
-      "HashBox config not found. Run configureHashBox first."
-    );
+type PayloadData = string | MetricItem[] | AuditFinding[];
+
+function validateChannel(name: string): void {
+  if (!name || name.trim().length === 0) {
+    throw new Error("channel.name must not be empty");
   }
 }
 
-function buildPayload(
-  payloadType: PayloadType,
+function validatePayloadData(
+  payloadType: HashBoxRequest["type"],
+  contentOrData: PayloadData
+): void {
+  if (payloadType === "article") {
+    if (typeof contentOrData !== "string" || contentOrData.length === 0) {
+      throw new Error("payload.content must be a non-empty string");
+    }
+    return;
+  }
+  if (payloadType === "metric") {
+    if (!Array.isArray(contentOrData) || contentOrData.length === 0) {
+      throw new Error("payload.metrics must be a non-empty array");
+    }
+    return;
+  }
+  if (!Array.isArray(contentOrData) || contentOrData.length === 0) {
+    throw new Error("payload.findings must be a non-empty array");
+  }
+}
+
+function buildRequest(
+  payloadType: HashBoxRequest["type"],
   channelName: string,
   channelIcon: string,
   title: string,
-  contentOrData: string | MetricEntry[] | AuditEntry[]
-): HashBoxPayload {
+  contentOrData: PayloadData
+): HashBoxRequest {
+  validateChannel(channelName);
+  validatePayloadData(payloadType, contentOrData);
+
+  const channel = { name: channelName, icon: channelIcon };
+
   if (payloadType === "article") {
-    return {
-      type: "article",
-      channelName,
-      channelIcon,
+    const payload: ArticlePayload = {
       title,
-      body: contentOrData as string,
+      content: contentOrData as string,
     };
+    return { type: "article", channel, payload };
   }
   if (payloadType === "metric") {
-    return {
-      type: "metric",
-      channelName,
-      channelIcon,
+    const payload: MetricPayload = {
       title,
-      metrics: contentOrData as MetricEntry[],
+      metrics: contentOrData as MetricItem[],
     };
+    return { type: "metric", channel, payload };
   }
-  return {
-    type: "audit",
-    channelName,
-    channelIcon,
+  const payload: AuditPayload = {
     title,
-    entries: contentOrData as AuditEntry[],
+    findings: contentOrData as AuditFinding[],
   };
+  return { type: "audit", channel, payload };
 }
 
 export async function sendHashBoxNotification(
-  payloadType: PayloadType,
+  payloadType: HashBoxRequest["type"],
   channelName: string,
   channelIcon: string,
   title: string,
-  contentOrData: string | MetricEntry[] | AuditEntry[]
+  contentOrData: PayloadData
 ): Promise<SendResult> {
   const config = await loadConfig();
+  if (!config) {
+    throw new Error("HashBox config not found. Run configureHashBox first.");
+  }
   const url = `${WEBHOOK_BASE_URL}?token=${config.token}`;
-  const payload = buildPayload(
+  const request = buildRequest(
     payloadType, channelName, channelIcon, title, contentOrData
   );
-  const body = JSON.stringify(payload);
+  const body = JSON.stringify(request);
 
   try {
     const response = await fetch(url, {

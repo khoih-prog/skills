@@ -54,6 +54,7 @@ describe('package.json openclaw field', () => {
   const pkg = JSON.parse(
     readFileSync(join(ROOT, 'package.json'), 'utf-8')
   ) as {
+    main: string;
     openclaw: {
       extensions: string;
       slots: string[];
@@ -65,12 +66,16 @@ describe('package.json openclaw field', () => {
     files: string[];
   };
 
+  it('has main pointing to root index.js', () => {
+    expect(pkg.main).toBe('index.js');
+  });
+
   it('has an openclaw field', () => {
     expect(pkg.openclaw).toBeDefined();
   });
 
-  it('points extensions to ./dist/index.js', () => {
-    expect(pkg.openclaw.extensions).toBe('./dist/index.js');
+  it('points extensions to ./dist/openclaw-entry.js', () => {
+    expect(pkg.openclaw.extensions).toBe('./dist/openclaw-entry.js');
   });
 
   it('declares the tool slot', () => {
@@ -84,6 +89,10 @@ describe('package.json openclaw field', () => {
   it('includes catalog description', () => {
     expect(pkg.openclaw.catalog.description).toBeTruthy();
     expect(pkg.openclaw.catalog.description.length).toBeGreaterThan(10);
+  });
+
+  it('includes index.js in the files array', () => {
+    expect(pkg.files).toContain('index.js');
   });
 
   it('includes SKILL.md in the files array', () => {

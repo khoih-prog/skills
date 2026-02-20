@@ -59,7 +59,7 @@ Sends a push notification to the HashBox iOS app through the configured Firebase
 | `channelName` | string | Yes | Name of the notification channel |
 | `channelIcon` | string | Yes | Icon/emoji for the channel |
 | `title` | string | Yes | Notification title |
-| `contentOrData` | string \| MetricEntry[] \| AuditEntry[] | Yes | Content body (string for article) or structured data (array for metric/audit) |
+| `contentOrData` | string \| MetricItem[] \| AuditFinding[] | Yes | Content body (string for article) or structured data (array for metric/audit) |
 
 **Example (article):**
 
@@ -82,7 +82,7 @@ send_hashbox_notification({
   "channelIcon": "📊",
   "title": "Daily Metrics",
   "contentOrData": [
-    { "label": "CPU Usage", "value": 42, "unit": "%", "trend": "down" },
+    { "label": "CPU Usage", "value": 42, "unit": "%" },
     { "label": "Memory", "value": 8.2, "unit": "GB" }
   ]
 })
@@ -97,7 +97,7 @@ send_hashbox_notification({
   "channelIcon": "🔒",
   "title": "Audit Log",
   "contentOrData": [
-    { "timestamp": "2026-02-19T12:00:00Z", "event": "login", "severity": "info", "details": "User logged in from new device" }
+    { "severity": "info", "message": "User logged in from new device" }
   ]
 })
 ```

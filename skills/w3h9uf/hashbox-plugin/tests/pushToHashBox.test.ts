@@ -3,7 +3,7 @@ import { writeFile, mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { sendHashBoxNotification } from "../src/pushToHashBox.js";
-import type { MetricEntry, AuditEntry } from "../src/types.js";
+import type { MetricItem, AuditFinding } from "../src/types.js";
 
 let tempDir: string;
 
@@ -44,14 +44,12 @@ describe("sendHashBoxNotification", () => {
     const sentBody = JSON.parse(calledOptions.body as string);
     expect(sentBody).toEqual({
       type: "article",
-      channelName: "News",
-      channelIcon: "📰",
-      title: "Test Article",
-      body: "This is a test body",
+      channel: { name: "News", icon: "📰" },
+      payload: { title: "Test Article", content: "This is a test body" },
     });
   });
 
-  it("should POST metric payload with channelName and channelIcon", async () => {
+  it("should POST metric payload with channel object", async () => {
     const configPath = join(tempDir, "hashbox_config.json");
     await writeFile(configPath, JSON.stringify({ token: EXPECTED_TOKEN }), "utf-8");
 
@@ -59,7 +57,7 @@ describe("sendHashBoxNotification", () => {
     const fetchMock = vi.fn().mockResolvedValue(mockResponse);
     vi.stubGlobal("fetch", fetchMock);
 
-    const metrics: MetricEntry[] = [
+    const metrics: MetricItem[] = [
       { label: "CPU", value: 85, unit: "%" },
     ];
 
@@ -74,14 +72,12 @@ describe("sendHashBoxNotification", () => {
     );
     expect(sentBody).toEqual({
       type: "metric",
-      channelName: "System Monitor",
-      channelIcon: "📊",
-      title: "Server Stats",
-      metrics,
+      channel: { name: "System Monitor", icon: "📊" },
+      payload: { title: "Server Stats", metrics },
     });
   });
 
-  it("should POST audit payload with channelName and channelIcon", async () => {
+  it("should POST audit payload with channel object and findings", async () => {
     const configPath = join(tempDir, "hashbox_config.json");
     await writeFile(configPath, JSON.stringify({ token: EXPECTED_TOKEN }), "utf-8");
 
@@ -89,12 +85,12 @@ describe("sendHashBoxNotification", () => {
     const fetchMock = vi.fn().mockResolvedValue(mockResponse);
     vi.stubGlobal("fetch", fetchMock);
 
-    const entries: AuditEntry[] = [
-      { timestamp: "2026-02-19T00:00:00Z", event: "email_changed", severity: "info", details: "a@b.com -> c@d.com" },
+    const findings: AuditFinding[] = [
+      { severity: "info", message: "email changed from a@b.com to c@d.com" },
     ];
 
     const result = await sendHashBoxNotification(
-      "audit", "Audit Log", "🔍", "User Change", entries
+      "audit", "Audit Log", "🔍", "User Change", findings
     );
 
     expect(result.status).toBe(200);
@@ -104,10 +100,8 @@ describe("sendHashBoxNotification", () => {
     );
     expect(sentBody).toEqual({
       type: "audit",
-      channelName: "Audit Log",
-      channelIcon: "🔍",
-      title: "User Change",
-      entries,
+      channel: { name: "Audit Log", icon: "🔍" },
+      payload: { title: "User Change", findings },
     });
   });
 
@@ -143,6 +137,53 @@ describe("sendHashBoxNotification", () => {
     );
     expect(result.status).toBe(403);
     expect(result.message).toBe("Request failed with status 403");
+  });
+
+  it("should throw when channel name is empty", async () => {
+    const configPath = join(tempDir, "hashbox_config.json");
+    await writeFile(configPath, JSON.stringify({ token: EXPECTED_TOKEN }), "utf-8");
+
+    await expect(
+      sendHashBoxNotification("article", "", "📰", "Title", "Body")
+    ).rejects.toThrow("channel.name must not be empty");
+  });
+
+  it("should throw when channel name is only whitespace", async () => {
+    const configPath = join(tempDir, "hashbox_config.json");
+    await writeFile(configPath, JSON.stringify({ token: EXPECTED_TOKEN }), "utf-8");
+
+    await expect(
+      sendHashBoxNotification("article", "   ", "📰", "Title", "Body")
+    ).rejects.toThrow("channel.name must not be empty");
+  });
+
+  it("should throw when article content is empty string", async () => {
+    const configPath = join(tempDir, "hashbox_config.json");
+    await writeFile(configPath, JSON.stringify({ token: EXPECTED_TOKEN }), "utf-8");
+
+    await expect(
+      sendHashBoxNotification("article", "News", "📰", "Title", "")
+    ).rejects.toThrow("payload.content must be a non-empty string");
+  });
+
+  it("should throw when metric items array is empty", async () => {
+    const configPath = join(tempDir, "hashbox_config.json");
+    await writeFile(configPath, JSON.stringify({ token: EXPECTED_TOKEN }), "utf-8");
+
+    const emptyMetrics: MetricItem[] = [];
+    await expect(
+      sendHashBoxNotification("metric", "Monitor", "📊", "Stats", emptyMetrics)
+    ).rejects.toThrow("payload.metrics must be a non-empty array");
+  });
+
+  it("should throw when audit findings array is empty", async () => {
+    const configPath = join(tempDir, "hashbox_config.json");
+    await writeFile(configPath, JSON.stringify({ token: EXPECTED_TOKEN }), "utf-8");
+
+    const emptyFindings: AuditFinding[] = [];
+    await expect(
+      sendHashBoxNotification("audit", "Audit", "🔍", "Check", emptyFindings)
+    ).rejects.toThrow("payload.findings must be a non-empty array");
   });
 
   it("should not include token in the request body", async () => {

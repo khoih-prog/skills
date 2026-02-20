@@ -54,7 +54,7 @@ Pushes curated news, summaries, or system metrics to your HashBox iOS app.
 | `channelName` | string | Yes | Name of the notification channel |
 | `channelIcon` | string | Yes | Single emoji icon for the channel |
 | `title` | string | Yes | Notification title |
-| `contentOrData` | string \| MetricEntry[] \| AuditEntry[] | Yes | Markdown string for articles, or structured data for metrics/audits |
+| `contentOrData` | string \| MetricItem[] \| AuditFinding[] | Yes | Markdown string for articles, or structured data for metrics/audits |
 
 #### Payload Examples
 
@@ -77,7 +77,7 @@ Pushes curated news, summaries, or system metrics to your HashBox iOS app.
   "channelIcon": "📊",
   "title": "Daily Metrics",
   "contentOrData": [
-    { "label": "CPU Usage", "value": 42, "unit": "%", "trend": "down" },
+    { "label": "CPU Usage", "value": 42, "unit": "%" },
     { "label": "Memory", "value": 8.2, "unit": "GB" }
   ]
 }
@@ -91,7 +91,7 @@ Pushes curated news, summaries, or system metrics to your HashBox iOS app.
   "channelIcon": "🔒",
   "title": "Audit Log",
   "contentOrData": [
-    { "timestamp": "2026-02-19T12:00:00Z", "event": "login", "severity": "info", "details": "User logged in from new device" }
+    { "severity": "info", "message": "User logged in from new device" }
   ]
 }
 ```
