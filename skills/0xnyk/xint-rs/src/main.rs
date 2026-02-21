@@ -1,3 +1,4 @@
+mod action_result;
 mod api;
 mod auth;
 mod cache;
@@ -8,6 +9,7 @@ mod config;
 mod costs;
 mod format;
 mod mcp;
+mod mcp_dispatcher;
 mod models;
 mod output_meta;
 mod policy;
@@ -57,6 +59,7 @@ async fn main() -> Result<()> {
         Some(Commands::Tweet(args)) => commands::tweet::run(&args, &config, &client).await,
         Some(Commands::Media(args)) => commands::media::run(&args, &config, &client).await,
         Some(Commands::Article(args)) => commands::article::run(&args, &config).await,
+        Some(Commands::Tui(args)) => commands::tui::run(&args, cli.policy).await,
         Some(Commands::Bookmarks(args)) => commands::bookmarks::run(&args, &config, &client).await,
         Some(Commands::Bookmark(args)) => {
             commands::engagement::run_bookmark(&args, &config, &client).await

@@ -31,11 +31,32 @@
 ## Install
 
 ```bash
-# From release
-curl -sL https://github.com/0xNyk/xint-rs/releases/latest/download/xint -o xint
-chmod +x xint
+curl -fsSL https://raw.githubusercontent.com/0xNyk/xint-rs/main/install.sh | bash
+```
 
-# Or build
+Optional pinned version:
+
+```bash
+XINT_RS_INSTALL_VERSION=<version-tag> \
+curl -fsSL https://raw.githubusercontent.com/0xNyk/xint-rs/main/install.sh | bash
+```
+
+Homebrew (lightweight prebuilt binary on Apple Silicon):
+
+```bash
+brew tap 0xNyk/xint
+brew install xint
+```
+
+Or install the explicit Rust formula:
+
+```bash
+brew install xint-rs
+```
+
+Or build from source:
+
+```bash
 git clone https://github.com/0xNyk/xint-rs.git
 cd xint-rs
 cargo build --release
@@ -64,6 +85,7 @@ cargo build --release
 | Report | `xint report "crypto"` |
 | Article | `xint article <url> --ai "summarize"` |
 | Capabilities | `xint capabilities --json` |
+| TUI | `xint tui` |
 
 ### Shorthands
 
@@ -73,6 +95,22 @@ xint w "query"    # watch
 xint p @user     # profile
 xint tr           # trends
 xint bm           # bookmarks
+```
+
+### TUI Customization
+
+```bash
+# Built-in themes: classic | neon | minimal | ocean | amber
+XINT_TUI_THEME=ocean xint tui
+
+# Disable animated hero line
+XINT_TUI_HERO=0 xint tui
+
+# Disable icons in menu rows
+XINT_TUI_ICONS=0 xint tui
+
+# Optional theme token file
+XINT_TUI_THEME_FILE=./tui-theme.tokens.example.json xint tui
 ```
 
 ## Setup

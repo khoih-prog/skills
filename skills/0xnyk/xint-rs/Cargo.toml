@@ -1,6 +1,6 @@
 [package]
 name = "xint"
-version = "2026.2.19-6"
+version = "2026.2.20-2"
 edition = "2021"
 description = "X Intelligence CLI — search, analyze, and engage on X/Twitter from the terminal"
 license = "MIT"
@@ -32,6 +32,7 @@ anyhow = "1"
 thiserror = "2"
 url = "2"
 glob = "0.3"
+crossterm = "0.29"
 
 [profile.release]
 opt-level = "z"
