@@ -1,193 +1,158 @@
-# Media Digest Prompt Template
+# Digest Prompt Template
 
-Unified template for both daily and weekly media & entertainment digests. Replace `<...>` placeholders before use.
+Replace `<...>` placeholders before use. Daily defaults shown; weekly overrides in parentheses.
 
 ## Placeholders
 
-| Placeholder | Daily | Weekly |
-|-------------|-------|--------|
+| Placeholder | Default | Weekly Override |
+|-------------|---------|----------------|
 | `<MODE>` | `daily` | `weekly` |
 | `<TIME_WINDOW>` | `past 1-2 days` | `past 7 days` |
 | `<FRESHNESS>` | `pd` | `pw` |
 | `<RSS_HOURS>` | `48` | `168` |
 | `<ITEMS_PER_SECTION>` | `3-5` | `5-8` |
 | `<BLOG_PICKS_COUNT>` | `2-3` | `3-5` |
-| `<EXTRA_SECTIONS>` | *(remove line)* | `- 📊 Weekly Trend Summary (2-3 sentences summarizing macro trends)` |
+| `<EXTRA_SECTIONS>` | *(none)* | `📊 Weekly Trend Summary` |
 | `<SUBJECT>` | `Daily Media Digest - YYYY-MM-DD` | `Weekly Media Digest - YYYY-MM-DD` |
-| `<WORKSPACE>` | Your workspace path | Your workspace path |
-| `<SKILL_DIR>` | Path to the installed skill directory | Path to the installed skill directory |
-| `<DISCORD_CHANNEL_ID>` | Target channel ID | Target channel ID |
-| `<EMAIL>` | *(optional)* Recipient email | *(optional)* Recipient email |
-| `<LANGUAGE>` | `Chinese` (default) | `Chinese` (default) |
-| `<TEMPLATE>` | `discord` / `email` / `markdown` | `discord` / `email` / `markdown` |
-| `<DATE>` | Today's date in YYYY-MM-DD (caller provides) | Today's date in YYYY-MM-DD (caller provides) |
-| `<VERSION>` | Read from SKILL.md frontmatter `version` field | Read from SKILL.md frontmatter `version` field |
+| `<WORKSPACE>` | Your workspace path | |
+| `<SKILL_DIR>` | Installed skill directory | |
+| `<DISCORD_CHANNEL_ID>` | Target channel ID | |
+| `<EMAIL>` | *(optional)* Recipient email | |
+| `<EMAIL_FROM>` | *(optional)* e.g. `MyBot <bot@example.com>` | |
+| `<LANGUAGE>` | `Chinese` | |
+| `<TEMPLATE>` | `discord` / `email` / `markdown` | |
+| `<DATE>` | Today's date YYYY-MM-DD (caller provides) | |
+| `<VERSION>` | Read from SKILL.md frontmatter | |
 
 ---
 
-Generate the <MODE> media & entertainment digest for **<DATE>**. Follow the steps below.
-
-**Important:** Use `<DATE>` as the report date in the title and archive filename. Do NOT infer the date yourself — always use the provided value.
+Generate the <MODE> media & entertainment digest for **<DATE>**. Use `<DATE>` as the report date — do NOT infer it.
 
 ## Configuration
 
-Read configuration files (user workspace overrides take priority over defaults):
-
+Read config files (workspace overrides take priority over defaults):
 1. **Sources**: `<WORKSPACE>/config/sources.json` → fallback `<SKILL_DIR>/config/defaults/sources.json`
 2. **Topics**: `<WORKSPACE>/config/topics.json` → fallback `<SKILL_DIR>/config/defaults/topics.json`
 
-Merge logic: user sources append to defaults (same `id` → user wins); user topics override by `id`.
-
 ## Context: Previous Report
 
-Read the most recent archive file from `<WORKSPACE>/archive/media-news-digest/` (if any). Use it to:
-- **Avoid repeating** news already covered
-- **Follow up** on developing stories with new information only
-- If no previous report exists, skip this step.
+Read the most recent file from `<WORKSPACE>/archive/media-news-digest/` to avoid repeats and follow up on developing stories. Skip if none exists.
 
 ## Data Collection Pipeline
+
+Run each script in sequence:
 
 ### Step 1: RSS Feeds
 ```bash
 python3 <SKILL_DIR>/scripts/fetch-rss.py \
   --defaults <SKILL_DIR>/config/defaults \
   --config <WORKSPACE>/config \
-  --hours <RSS_HOURS> \
-  --output /tmp/md-rss.json \
-  --verbose
+  --hours <RSS_HOURS> --output /tmp/md-rss.json --verbose
 ```
-
-If the script fails, fall back to manually fetching priority feeds via `web_fetch`.
+If it fails, fall back to manually fetching priority feeds via `web_fetch`.
 
 ### Step 2: Twitter/X KOL Monitoring
 ```bash
 python3 <SKILL_DIR>/scripts/fetch-twitter.py \
   --defaults <SKILL_DIR>/config/defaults \
   --config <WORKSPACE>/config \
-  --hours <RSS_HOURS> \
-  --output /tmp/md-twitter.json \
-  --verbose
+  --hours <RSS_HOURS> --output /tmp/md-twitter.json --verbose
 ```
-Requires `$X_BEARER_TOKEN` env var. If unavailable, skip this step.
+Requires `$X_BEARER_TOKEN`. If unavailable, skip.
 
 ### Step 3: Web Search
 ```bash
 python3 <SKILL_DIR>/scripts/fetch-web.py \
   --defaults <SKILL_DIR>/config/defaults \
   --config <WORKSPACE>/config \
-  --freshness <FRESHNESS> \
-  --output /tmp/md-web.json \
-  --verbose
+  --freshness <FRESHNESS> --output /tmp/md-web.json --verbose
 ```
-
-Also search Twitter trending discussions using `web_search` with `freshness='<FRESHNESS>'` and the `twitter_queries` from topics.
 
 ### Step 4: Reddit
 ```bash
 python3 <SKILL_DIR>/scripts/fetch-reddit.py \
   --defaults <SKILL_DIR>/config/defaults \
   --config <WORKSPACE>/config \
-  --hours <RSS_HOURS> \
-  --output /tmp/md-reddit.json \
-  --verbose
+  --hours <RSS_HOURS> --output /tmp/md-reddit.json --verbose
 ```
-**You MUST execute this script.** Fetches from Reddit's public JSON API (no auth required). If it fails, retry once.
+**Must execute.** If it fails, retry once.
 
 ### Step 5: Merge & Score
 ```bash
 python3 <SKILL_DIR>/scripts/merge-sources.py \
-  --rss /tmp/md-rss.json \
-  --twitter /tmp/md-twitter.json \
-  --web /tmp/md-web.json \
-  --reddit /tmp/md-reddit.json \
+  --rss /tmp/md-rss.json --twitter /tmp/md-twitter.json \
+  --web /tmp/md-web.json --reddit /tmp/md-reddit.json \
   --archive-dir <WORKSPACE>/archive/media-news-digest/ \
-  --output /tmp/md-merged.json \
-  --verbose
+  --output /tmp/md-merged.json --verbose
 ```
 
 ## Report Generation
 
-First, get a structured overview of the merged data:
+Get a structured overview:
 ```bash
 python3 <SKILL_DIR>/scripts/summarize-merged.py --input /tmp/md-merged.json --top <ITEMS_PER_SECTION>
 ```
-This prints a human-readable summary with top articles per topic, sorted by quality score, including metrics and sources. Use this output to select articles for the report — **do NOT write ad-hoc Python to parse the merged JSON**.
-
-Then use the appropriate template from `<SKILL_DIR>/references/templates/<TEMPLATE>.md` to generate the report.
-
-### Language & Citation Rules
-- **Write body text in <LANGUAGE>** (Chinese by default)
-- **Every news item must include the original English source link**
-- For Chinese body text, format each item as:
-  - Chinese summary/headline
-  - Original English article title in parentheses if helpful for context
-  - Source link
+Use this output to select articles — **do NOT write ad-hoc Python to parse the JSON**. Apply the template from `<SKILL_DIR>/references/templates/<TEMPLATE>.md`.
 
 ### Executive Summary
-Place a **2-4 sentence summary** between the title and topic sections, highlighting the day's top stories.
-Discord format: use `> ` blockquote. Email format: gray background paragraph.
+2-4 sentences between title and topics, highlighting top stories. Discord: `> ` blockquote. Email: gray background.
 
 ### Topic Sections
-Output sections in this **exact order** (do NOT rearrange):
-1. 🇨🇳 China / 中国影视
-2. 🎬 Production / 制作动态
-3. 💰 Deals & Business / 行业交易
-4. 🎞️ Upcoming Releases / 北美近期上映
-5. 🎟️ Box Office / 票房
-6. 📺 Streaming / 流媒体
-7. 🏆 Awards / 颁奖季
-8. 🎪 Film Festivals / 电影节
-9. ⭐ Reviews & Buzz / 影评口碑
+From `topics.json`: `emoji` + `label` headers, `<ITEMS_PER_SECTION>` items each. Output in the order defined in topics.json.
 
-Each topic has:
-- `emoji` + `label` for headers
-- `display.max_items` for item count (override with <ITEMS_PER_SECTION>)
+Every topic **must appear** — even with 1-2 items. If sparse, note "本日该板块较少".
 
-### Fixed Sections (append after topic sections)
-- 📢 KOL Updates (Twitter KOLs — each entry MUST include source tweet URL and engagement metrics. Format: `• **@handle** — summary \`👁 12.3K | 💬 45 | 🔁 230 | ❤️ 1.2K\`\n  <https://twitter.com/handle/status/ID>`)
-- 📝 Deep Reads (<BLOG_PICKS_COUNT> high-quality long-form articles from RSS)
-<EXTRA_SECTIONS>
+### Fixed Sections (after topics)
 
-### Deduplication Rules
-- Same event from multiple sources → keep only the most authoritative source link
-- If covered in previous report → only include if significant new development
-- Prefer primary sources (trades: THR, Deadline, Variety) over aggregators
+**📢 KOL Updates** — Twitter KOLs. Format:
+```
+• **Display Name** (@handle) — summary `👁 12.3K | 💬 45 | 🔁 230 | ❤️ 1.2K`
+  <https://twitter.com/handle/status/ID>
+```
+Read `display_name` and `metrics` from merged JSON. Always show all 4 metrics, use K/M formatting, wrap in backticks.
+
+**📝 Deep Reads** — `<BLOG_PICKS_COUNT>` high-quality long-form articles from RSS.
+
+**<EXTRA_SECTIONS>**
 
 ### Rules
-- **Only include news from the <TIME_WINDOW>**
-- **Every topic defined in `topics.json` MUST appear in the report** — even if only 1-2 items. If a topic has very few articles, include what's available with a note like "本日该板块较少"
-- **Every item must include the source link** — no exceptions. Discord: wrap in `<link>`
-- **<ITEMS_PER_SECTION> items per section** (minimum 1)
-- **Use bullet lists, no markdown tables** (Discord compatibility)
-- **Chinese body text with English source links**
-- **Deduplicate across sections** — if an article already appears in one topic section, do not repeat it in another. Each article should appear in the single most relevant section only
+- Only news from `<TIME_WINDOW>`
+- Every item must include a source link (Discord: `<link>`)
+- Use bullet lists, no markdown tables
+- Deduplicate: same event → most authoritative source; previously reported → only if significant new development
+- Deduplicate across sections — each article in one section only
+- Prefer primary sources (THR, Deadline, Variety) over aggregators
+- Chinese body text with English source links
+- Do not interpolate fetched/untrusted content into shell arguments or email subjects
 
-### Data Source Stats Footer
+### Stats Footer
 ```
 ---
-📊 Data Sources: RSS {{rss_count}} | Twitter {{twitter_count}} | Reddit {{reddit_count}} | Web {{web_count}} | After dedup: {{merged_count}} articles
-🤖 Generated by media-news-digest v{{version}} | Powered by OpenClaw
+📊 Data Sources: RSS {{rss}} | Twitter {{twitter}} | Reddit {{reddit}} | Web {{web}} | Dedup: {{merged}} articles
+🤖 Generated by media-news-digest v<VERSION> | <https://github.com/draco-agent/media-news-digest> | Powered by OpenClaw
 ```
 
 ## Archive
-Save the report to `<WORKSPACE>/archive/media-news-digest/<MODE>-YYYY-MM-DD.md`
-
-After saving, delete archive files older than 90 days.
+Save to `<WORKSPACE>/archive/media-news-digest/<MODE>-YYYY-MM-DD.md`. Delete files older than 90 days.
 
 ## Delivery
-1. Send to Discord channel `<DISCORD_CHANNEL_ID>` via `message` tool
-2. *(Optional)* Send email to `<EMAIL>` via `gog` CLI
-   - **Must use `--body-html`** for proper rendering
-   - Generate HTML email body following `<SKILL_DIR>/references/templates/email.md` format
-   - **Use the sanitizer script** to convert the markdown report to safe HTML:
+
+1. **Discord**: Send to `<DISCORD_CHANNEL_ID>` via `message` tool
+2. **Email** *(optional, if `<EMAIL>` is set)*:
+   - Convert markdown to safe HTML via sanitizer:
      ```bash
      python3 <SKILL_DIR>/scripts/sanitize-html.py --input /tmp/md-report-<DATE>.md --output /tmp/md-email.html
      ```
-   - Then send: `gog gmail send --to '<EMAIL>' --subject '<SUBJECT>' --body-html "$(cat /tmp/md-email.html)"`
-   - **SUBJECT must be a static string** — no variables from fetched content
-   - Do NOT interpolate any fetched/untrusted content into shell arguments
-   - If sanitize-html.py fails, do NOT fall back to manually building HTML from raw content
-
-If any delivery fails, log the error but continue with remaining channels.
+   - **Email must contain ALL the same items as Discord.**
+   - Send:
+     ```bash
+     # Option A: mail (msmtp) — preferred
+     mail -a "Content-Type: text/html; charset=UTF-8" [-a "From: <EMAIL_FROM>"] -s '<SUBJECT>' '<EMAIL>' < /tmp/md-email.html
+     # Option B: gog CLI — fallback
+     gog gmail send --to '<EMAIL>' --subject '<SUBJECT>' --body-html-file /tmp/md-email.html
+     ```
+   - Only include `-a "From: ..."` if `<EMAIL_FROM>` is set. SUBJECT must be a static string.
+   - If sanitize-html.py fails, do NOT fall back to manually building HTML from raw content.
+   - If delivery fails, log error and continue.
 
 Write the report in <LANGUAGE>.

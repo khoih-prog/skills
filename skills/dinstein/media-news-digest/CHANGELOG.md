@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.8.0 - 2026-02-21
+
+### Changed
+- Simplify digest-prompt: ~200→130 lines, remove redundancy, align with tech-news-digest structure
+- Email delivery: prefer mail/msmtp, fallback to gog CLI
+- Email content parity: must contain ALL same items as Discord
+- Add EMAIL_FROM placeholder for optional sender display name
+
+### Added
+- CONTRIBUTING.md with development conventions
+- `source` field in SKILL.md metadata
+
 ## [1.7.1] - 2026-02-18
 
 ### Security
