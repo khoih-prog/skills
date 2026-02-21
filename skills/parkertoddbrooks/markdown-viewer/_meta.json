@@ -3,11 +3,16 @@
   "slug": "markdown-viewer",
   "displayName": "Markdown Viewer",
   "latest": {
-    "version": "1.0.9",
-    "publishedAt": 1771207329250,
-    "commit": "https://github.com/openclaw/skills/commit/63f79430669e34738b2374dbd279ce762d7c32aa"
+    "version": "1.2.0",
+    "publishedAt": 1771622710223,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.9",
+      "publishedAt": 1771207329250,
+      "commit": "https://github.com/openclaw/skills/commit/63f79430669e34738b2374dbd279ce762d7c32aa"
+    },
     {
       "version": "1.0.6",
       "publishedAt": 1771202993460,
