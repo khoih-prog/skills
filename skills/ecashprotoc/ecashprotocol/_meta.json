@@ -3,11 +3,16 @@
   "slug": "ecashprotocol",
   "displayName": "ECASH Protocol",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1771553228822,
-    "commit": "https://github.com/openclaw/skills/commit/aac7dd11ce2343f09a00c7d721ae603f084c292e"
+    "version": "1.0.6",
+    "publishedAt": 1771617754524,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1771553228822,
+      "commit": "https://github.com/openclaw/skills/commit/aac7dd11ce2343f09a00c7d721ae603f084c292e"
+    },
     {
       "version": "1.0.3",
       "publishedAt": 1771467819071,
