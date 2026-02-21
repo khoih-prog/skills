@@ -13,7 +13,7 @@ setup(
     name="clawback",
     version="1.1.0",
     author="Dayne",
-    author_email="",
+    author_email="dayne@example.com",
     description="Mirror congressional stock trades with automated broker execution",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -36,13 +36,12 @@ setup(
     install_requires=[
         "requests>=2.28.0",
         "requests-oauthlib>=1.3.1",
-        "python-dotenv>=1.0.0",
         "schedule>=1.2.0",
         "yfinance>=0.2.28",
         "pdfplumber>=0.10.2",
         "selenium>=4.15.0",
         "webdriver-manager>=4.0.1",
-        "peewee>=3.17.0",
+        "beautifulsoup4>=4.11.0",
     ],
     extras_require={
         "dev": [

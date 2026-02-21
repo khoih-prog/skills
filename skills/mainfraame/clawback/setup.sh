@@ -8,7 +8,10 @@ echo "=========================="
 
 # Check Python version
 echo "Checking Python version..."
-python3 --version
+if ! python3 --version; then
+    echo "❌ Python 3 is required but not found. Please install Python 3.9 or higher."
+    exit 1
+fi
 
 # Create virtual environment
 echo "Creating virtual environment..."

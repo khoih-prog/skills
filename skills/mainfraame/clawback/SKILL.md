@@ -18,12 +18,33 @@ When the user invokes `/clawback`, execute the appropriate command based on the 
 
 ### Commands
 
+When the user invokes `/clawback` with any arguments, execute the corresponding command:
+
 | Command | Action |
 |---------|--------|
-| `/clawback setup` | Interactive setup - prompt for credentials (see below) |
-| `/clawback status` | Check status: `cd {baseDir} && source venv/bin/activate && python -m clawback.cli status` |
-| `/clawback run` | Start trading: `cd {baseDir} && source venv/bin/activate && python -m clawback.cli run` |
-| `/clawback` | Default to status check |
+| `/clawback setup` | Run the setup wizard: Execute `{baseDir}/bin/clawback.py setup` |
+| `/clawback status` | Check system status: Execute `{baseDir}/bin/clawback.py status` |
+| `/clawback run` | Start trading bot: Execute `{baseDir}/bin/clawback.py run` |
+| `/clawback daemon` | Run as background service: Execute `{baseDir}/bin/clawback.py daemon` |
+| `/clawback test` | Test notifications: Execute `{baseDir}/bin/clawback.py test` |
+| `/clawback` (no args) | Show help: Execute `{baseDir}/bin/clawback.py --help` |
+
+### How to Execute Commands
+
+**Option 1: Using the wrapper script (recommended)**
+When executing ClawBack commands, always:
+1. Use the wrapper script at `{baseDir}/bin/clawback.py`
+2. Pass the command as an argument (e.g., `{baseDir}/bin/clawback.py status`)
+3. Capture and display the output to the user
+
+**Option 2: Direct Python execution (if wrapper doesn't work)**
+If the wrapper script fails, you can run ClawBack directly:
+1. Change to the skill directory: `cd {baseDir}`
+2. Activate the virtual environment: `source venv/bin/activate`
+3. Run the CLI: `python -m clawback.cli [command]`
+4. Capture and display the output
+
+**Important**: Always check if the virtual environment exists at `{baseDir}/venv`. If not, you may need to run the setup first.
 
 ### `/clawback setup` - Interactive Setup Flow
 
@@ -168,6 +189,39 @@ clawhub install clawback
 # Or install from local directory
 clawhub install ./clawback
 ```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Skill not executing**: If `/clawback` doesn't work in OpenClaw:
+   - Check if the skill is in the correct location: `{baseDir}/`
+   - Verify the wrapper script is executable: `chmod +x {baseDir}/bin/clawback.py`
+   - Check if virtual environment exists: `{baseDir}/venv/`
+
+2. **Authentication issues**: If E*TRADE authentication fails:
+   - Run the authentication utility: `python {baseDir}/scripts/auth_utility.py --auth`
+   - Run `{baseDir}/bin/clawback.py setup` to reconfigure
+   - Check credentials in `~/.clawback/config.json`
+   - Verify E*TRADE API keys are valid
+
+3. **Token expiration**: If tokens expire (30-day lifespan):
+   - Run: `python {baseDir}/scripts/auth_utility.py --refresh`
+   - Or start new authentication: `python {baseDir}/scripts/auth_utility.py --auth`
+
+4. **Python import errors**: If you see "ModuleNotFoundError":
+   - Ensure virtual environment is activated
+   - Run `pip install -e .` in `{baseDir}/`
+   - Check Python path includes `{baseDir}/src`
+
+### Debug Mode
+
+To debug skill execution, add `DEBUG=1` environment variable:
+```bash
+DEBUG=1 {baseDir}/bin/clawback.py status
+```
+
+This will show additional information about the execution context.
 
 ### Post-Installation Setup
 

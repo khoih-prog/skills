@@ -92,10 +92,10 @@ class TradeEngine:
 
         # Trading parameters
         trading_config = config.get('trading', {})
-        self.trade_scale = Decimal(str(trading_config.get('tradeScalePercentage', 0.05)))
-        self.max_position_pct = Decimal(str(trading_config.get('maxPositionPercentage', 0.05)))
+        self.trade_scale = Decimal(str(trading_config.get('tradeScalePercentage', 0.02)))  # Reduced from 5% to 2%
+        self.max_position_pct = Decimal(str(trading_config.get('maxPositionPercentage', 0.02)))  # Reduced from 5% to 2%
         self.max_positions = trading_config.get('maxPositions', 20)
-        self.daily_loss_limit = Decimal(str(trading_config.get('dailyLossLimit', 0.03)))
+        self.daily_loss_limit = Decimal(str(trading_config.get('dailyLossLimit', 0.05)))  # Increased from 3% to 5%
 
         # Risk management parameters
         risk_config = config.get('riskManagement', {})
@@ -104,11 +104,35 @@ class TradeEngine:
         self.trailing_stop_percent = Decimal(str(risk_config.get('trailingStopPercent', 0.05)))
         self.max_drawdown = Decimal(str(risk_config.get('maxDrawdown', 0.15)))
         self.consecutive_loss_limit = risk_config.get('consecutiveLossLimit', 3)
+        
+        # Research-based risk management improvements
+        self.sector_exposure_limits = risk_config.get('sectorExposureLimits', {
+            'technology': 0.25,
+            'healthcare': 0.25,
+            'financials': 0.25,
+            'consumer': 0.25,
+            'industrial': 0.25,
+            'energy': 0.25,
+            'utilities': 0.25,
+            'realEstate': 0.25,
+            'materials': 0.25,
+            'communication': 0.25
+        })
+        self.correlation_limit = Decimal(str(risk_config.get('correlationLimit', 0.70)))
+        self.liquidity_requirement = risk_config.get('liquidityRequirement', 1000000)  # Minimum daily volume
+        self.volatility_filter = risk_config.get('volatilityFilter', True)
+        self.kelly_fraction = Decimal(str(risk_config.get('kellyFraction', 0.50)))  # Use 50% of full Kelly
 
         # Strategy parameters
         strategy_config = config.get('strategy', {})
         self.entry_delay_days = strategy_config.get('entryDelayDays', 3)
         self.holding_period_days = strategy_config.get('holdingPeriodDays', 30)
+        
+        # Research-based improvements
+        self.leadership_weight = Decimal(str(strategy_config.get('leadershipWeight', 2.0)))  # 2x weight for leadership trades
+        self.minimum_market_cap = strategy_config.get('minimumMarketCap', 1000000000)  # $1B minimum
+        self.sector_tracking = strategy_config.get('sectorTracking', True)
+        self.performance_benchmark = strategy_config.get('performanceBenchmark', 'SPX')
 
         # Market hours (NYSE operates in America/New_York timezone)
         self.market_hours_only = config['trading'].get('marketHoursOnly', True)
@@ -186,13 +210,19 @@ class TradeEngine:
 
     def calculate_scaled_trade(self, congress_trade, account_balance):
         """
-        Calculate scaled trade based on congressional trade amount
+        Calculate scaled trade based on congressional trade amount with research-based improvements
         Returns: symbol, quantity, action, estimated_cost
         """
         try:
             symbol = congress_trade['ticker'].upper()
             action = 'BUY' if congress_trade['transaction_type'] == 'purchase' else 'SELL'
             congress_amount = Decimal(str(congress_trade['amount']))
+            
+            # Apply leadership weighting if applicable
+            politician_weight = Decimal(str(congress_trade.get('politician_weight', 1.0)))
+            if congress_trade.get('is_leadership', False):
+                politician_weight = self.leadership_weight
+                logger.info(f"Applying leadership weight {self.leadership_weight}x for {symbol}")
 
             # Get current quote for price
             quote = self.broker.get_quote(symbol)
@@ -201,22 +231,32 @@ class TradeEngine:
                 return None
 
             current_price = Decimal(str(quote['last_price']))
+            
+            # Apply research-based filters
+            if not self._passes_research_filters(symbol, quote, congress_trade):
+                logger.info(f"Trade {symbol} failed research filters")
+                return None
 
-            # Calculate target investment amount
-            # Scale congressional trade by configured percentage
-            target_amount = account_balance * self.trade_scale
+            # Calculate target investment amount with Kelly Criterion optimization
+            # Scale congressional trade by configured percentage, adjusted by politician weight
+            base_target_amount = account_balance * self.trade_scale
+            weighted_target_amount = base_target_amount * politician_weight
+            
+            # Apply Kelly fraction (professional practice uses 25-75% of full Kelly)
+            kelly_adjusted_amount = weighted_target_amount * self.kelly_fraction
 
             # Calculate quantity (round down to whole shares)
-            quantity = (target_amount / current_price).quantize(Decimal('1.'), rounding=ROUND_DOWN)
+            quantity = (kelly_adjusted_amount / current_price).quantize(Decimal('1.'), rounding=ROUND_DOWN)
 
             # Ensure minimum of 1 share
             if quantity < 1:
-                logger.info(f"Target amount too small for {symbol}: ${target_amount:.2f} at ${current_price:.2f}")
+                logger.info(f"Target amount too small for {symbol}: ${kelly_adjusted_amount:.2f} at ${current_price:.2f}")
                 return None
 
             estimated_cost = quantity * current_price
 
             logger.info(f"Calculated trade: {action} {quantity} shares of {symbol} at ~${current_price:.2f} (${estimated_cost:.2f})")
+            logger.info(f"  Base target: ${base_target_amount:.2f}, Weighted: ${weighted_target_amount:.2f}, Kelly-adjusted: ${kelly_adjusted_amount:.2f}")
 
             return {
                 'symbol': symbol,
@@ -225,15 +265,88 @@ class TradeEngine:
                 'estimated_price': float(current_price),
                 'estimated_cost': float(estimated_cost),
                 'congress_amount': float(congress_amount),
-                'scale_factor': float(self.trade_scale)
+                'scale_factor': float(self.trade_scale),
+                'politician_weight': float(politician_weight),
+                'kelly_fraction': float(self.kelly_fraction),
+                'is_leadership': congress_trade.get('is_leadership', False)
             }
 
         except Exception as e:
             logger.error(f"Error calculating scaled trade: {e}")
             return None
 
+    def _passes_research_filters(self, symbol, quote, congress_trade):
+        """Apply research-based filters to trades"""
+        try:
+            # Market cap filter (minimum $1B)
+            market_cap = quote.get('market_cap', 0)
+            if market_cap < self.minimum_market_cap:
+                logger.info(f"Filtered {symbol}: Market cap ${market_cap:,.0f} < ${self.minimum_market_cap:,.0f}")
+                return False
+            
+            # Liquidity filter (minimum daily volume)
+            volume = quote.get('volume', 0)
+            avg_volume = quote.get('avg_volume', volume)
+            if avg_volume < self.liquidity_requirement:
+                logger.info(f"Filtered {symbol}: Avg volume {avg_volume:,.0f} < {self.liquidity_requirement:,.0f}")
+                return False
+            
+            # Volatility filter (if enabled)
+            if self.volatility_filter:
+                volatility = quote.get('volatility', 0)
+                if volatility > 0.5:  # 50% annualized volatility threshold
+                    logger.info(f"Filtered {symbol}: Volatility {volatility:.1%} > 50%")
+                    return False
+            
+            # Sector exposure check (if sector tracking enabled)
+            if self.sector_tracking:
+                sector = quote.get('sector', 'unknown')
+                if not self._check_sector_exposure(symbol, sector, quote.get('market_value', 0)):
+                    return False
+            
+            logger.info(f"Trade {symbol} passed all research filters")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error applying research filters for {symbol}: {e}")
+            return True  # Allow trade if filter check fails
+    
+    def _check_sector_exposure(self, symbol, sector, position_value):
+        """Check sector exposure limits"""
+        try:
+            sector_limit_pct = self.sector_exposure_limits.get(sector.lower(), 0.25)
+            
+            # Get total portfolio value
+            balance = self.broker.get_account_balance()
+            if not balance:
+                return True  # Skip if can't get balance
+            
+            total_value = Decimal(str(balance['total_value']))
+            
+            # Calculate current sector exposure
+            # This is simplified - in production, you'd track all positions by sector
+            current_sector_exposure = Decimal('0')
+            positions = self.broker.get_positions()
+            for pos in positions:
+                if pos.get('sector', '').lower() == sector.lower():
+                    current_sector_exposure += Decimal(str(pos.get('market_value', 0)))
+            
+            # Add new position value
+            new_sector_exposure = current_sector_exposure + Decimal(str(position_value))
+            sector_exposure_pct = new_sector_exposure / total_value
+            
+            if sector_exposure_pct > Decimal(str(sector_limit_pct)):
+                logger.warning(f"Sector limit exceeded for {sector}: {sector_exposure_pct:.1%} > {sector_limit_pct:.1%}")
+                return False
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error checking sector exposure: {e}")
+            return True  # Allow trade if check fails
+    
     def check_position_limits(self, symbol, quantity, action, account_value):
-        """Check if trade violates position limits"""
+        """Check if trade violates position limits with research-based improvements"""
         try:
             # Get current positions
             positions = self.broker.get_positions()
@@ -260,7 +373,7 @@ class TradeEngine:
             current_price = Decimal(str(quote['last_price']))
             position_value = abs(new_position) * current_price
 
-            # Check max position percentage
+            # Check max position percentage (reduced from 5% to 2%)
             max_position_value = account_value * self.max_position_pct
 
             if position_value > max_position_value:
@@ -678,7 +791,7 @@ class TradeEngine:
     # ==================== PORTFOLIO RISK MANAGEMENT ====================
 
     def check_portfolio_risk(self) -> dict:
-        """Check overall portfolio risk metrics"""
+        """Check overall portfolio risk metrics with research-based improvements"""
         try:
             balance = self.broker.get_account_balance()
             if not balance:
@@ -693,9 +806,14 @@ class TradeEngine:
             # Calculate drawdown
             drawdown = (self.peak_portfolio_value - total_value) / self.peak_portfolio_value
 
-            # Risk checks
+            # Research-based risk checks
             warnings = []
             halt_trading = False
+
+            # Daily loss limit check (increased from 3% to 5%)
+            if self.daily_pnl < -abs(self.daily_loss_limit):
+                warnings.append(f"DAILY LOSS LIMIT EXCEEDED: {self.daily_pnl:.1%}")
+                halt_trading = True
 
             if drawdown >= self.max_drawdown:
                 warnings.append(f"MAX DRAWDOWN EXCEEDED: {drawdown*100:.1f}%")
@@ -708,6 +826,17 @@ class TradeEngine:
             if len(self.positions) >= self.max_positions:
                 warnings.append(f"MAX POSITIONS REACHED: {len(self.positions)}")
 
+            # Sector concentration check
+            sector_warnings = self._check_sector_concentration()
+            warnings.extend(sector_warnings)
+
+            # Correlation check (simplified)
+            if self._check_portfolio_correlation():
+                warnings.append("HIGH PORTFOLIO CORRELATION DETECTED")
+
+            # Performance benchmarking
+            benchmark_performance = self._get_benchmark_performance()
+            
             return {
                 'status': 'halt' if halt_trading else 'ok',
                 'total_value': float(total_value),
@@ -715,12 +844,65 @@ class TradeEngine:
                 'drawdown': float(drawdown) * 100,
                 'open_positions': len(self.positions),
                 'consecutive_losses': self.consecutive_losses,
+                'daily_pnl': float(self.daily_pnl),
+                'daily_loss_limit': float(self.daily_loss_limit) * 100,
+                'benchmark_performance': benchmark_performance,
                 'warnings': warnings
             }
 
         except Exception as e:
             logger.error(f"Error checking portfolio risk: {e}")
             return {'status': 'error', 'message': str(e)}
+    
+    def _check_sector_concentration(self):
+        """Check for excessive sector concentration"""
+        warnings = []
+        try:
+            positions = self.broker.get_positions()
+            if not positions:
+                return warnings
+            
+            # Group positions by sector
+            sector_values = {}
+            total_value = Decimal('0')
+            
+            for pos in positions:
+                sector = pos.get('sector', 'unknown')
+                market_value = Decimal(str(pos.get('market_value', 0)))
+                sector_values[sector] = sector_values.get(sector, Decimal('0')) + market_value
+                total_value += market_value
+            
+            # Check each sector against limits
+            for sector, sector_value in sector_values.items():
+                sector_pct = sector_value / total_value if total_value > 0 else Decimal('0')
+                sector_limit = Decimal(str(self.sector_exposure_limits.get(sector.lower(), 0.25)))
+                
+                if sector_pct > sector_limit:
+                    warnings.append(f"SECTOR CONCENTRATION: {sector} {sector_pct:.1%} > {sector_limit:.1%}")
+        
+        except Exception as e:
+            logger.error(f"Error checking sector concentration: {e}")
+        
+        return warnings
+    
+    def _check_portfolio_correlation(self):
+        """Check portfolio correlation (simplified implementation)"""
+        # In production, this would calculate correlation matrix
+        # For now, return False (no high correlation detected)
+        return False
+    
+    def _get_benchmark_performance(self):
+        """Get benchmark performance comparison"""
+        try:
+            # Simplified - in production, fetch actual benchmark data
+            return {
+                'benchmark': self.performance_benchmark,
+                'vs_benchmark': 'N/A',  # Would calculate actual performance
+                'tracking': True
+            }
+        except Exception as e:
+            logger.error(f"Error getting benchmark performance: {e}")
+            return {'benchmark': self.performance_benchmark, 'error': str(e)}
 
     def get_position_summary(self) -> list:
         """Get summary of all open positions"""

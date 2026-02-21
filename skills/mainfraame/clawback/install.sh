@@ -18,7 +18,8 @@ if [ -f "$SCRIPT_DIR/SKILL.md" ]; then
     mkdir -p "$SCRIPT_DIR/scripts"
     
     # Make scripts executable
-    chmod +x "$SCRIPT_DIR/setup.sh" "$SCRIPT_DIR/install.sh" 2>/dev/null || true
+    echo "Making scripts executable..."
+    chmod +x "$SCRIPT_DIR/setup.sh" "$SCRIPT_DIR/install.sh" 2>/dev/null || echo "Warning: Could not make scripts executable"
     
     # Run setup
     echo "Running setup..."
