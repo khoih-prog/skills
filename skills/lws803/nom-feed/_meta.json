@@ -1,0 +1,11 @@
+{
+  "owner": "lws803",
+  "slug": "nom-feed",
+  "displayName": "Search recent repo activities",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1771553411764,
+    "commit": null
+  },
+  "history": []
+}
