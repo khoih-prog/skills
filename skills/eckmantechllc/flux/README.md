@@ -20,7 +20,7 @@ Copy skill to OpenClaw workspace:
 ```bash
 # On OpenClaw VM
 mkdir -p ~/workspace/skills
-scp -r etl@192.168.50.13:/home/etl/projects/nyx/skills/flux-interact ~/workspace/skills/
+scp -r <your-host>:/path/to/flux-interact ~/workspace/skills/
 ```
 
 OpenClaw will auto-discover on next startup.
@@ -34,7 +34,7 @@ clawhub install flux-interact
 
 ## Prerequisites
 
-1. **Flux running** at `http://192.168.50.13:3000`
+1. **Flux running** at `http://localhost:3000`
 2. **curl** installed (required)
 3. **jq** recommended (optional, has fallback)
 
@@ -165,7 +165,7 @@ SKILL.md instructions
     ↓
 flux.sh script
     ↓
-curl → Flux API (http://192.168.50.13:3000)
+curl → Flux API (http://localhost:3000)
     ↓
 Event Ingestion → NATS → State Engine → Query Response
 ```
@@ -190,4 +190,4 @@ This skill is part of the [NYX project](https://github.com/EckmanTechLLC/nyx).
 
 ## License
 
-MIT License - Part of the [Flux project](https://github.com/EckmanTechLLC/flux).
+*To be determined*

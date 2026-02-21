@@ -1,6 +1,6 @@
 # Flux API Reference
 
-**Base URL:** Set via `FLUX_URL` environment variable (default: `http://localhost:3000`)
+**Base URL:** `http://localhost:3000`
 
 ---
 
@@ -8,13 +8,14 @@
 
 ### POST /api/events
 
-Publish a single event to create or update an entity.
+Publish single event to Flux.
 
+**Request:**
 ```json
 {
   "stream": "sensors",
-  "source": "my-agent",
-  "timestamp": 1707900000000,
+  "source": "agent-01",
+  "timestamp": 1739290200000,
   "payload": {
     "entity_id": "temp-sensor-01",
     "properties": {
@@ -25,131 +26,237 @@ Publish a single event to create or update an entity.
 }
 ```
 
-**Response (200):**
+**Optional Fields:**
+- `eventId` - Auto-generated UUIDv7 if omitted
+- `timestamp` - Defaults to current time if omitted
+- `key` - Optional ordering/grouping hint
+- `schema` - Optional schema metadata
+
+**Response:**
 ```json
 {
-  "eventId": "019c5c88-5386-7ae0-ab4d-80a8c1ce631a",
+  "eventId": "019c4da0-3e28-75c3-991b-ae7b2576485a",
   "stream": "sensors"
 }
 ```
 
-**Fields:**
-- `stream` (required) — logical namespace
-- `source` (required) — who published this event
-- `timestamp` (optional) — Unix epoch milliseconds, defaults to now
-- `payload.entity_id` (required) — target entity
-- `payload.properties` (required) — key-value pairs to merge into entity state
+---
 
 ### POST /api/events/batch
 
-Publish multiple events atomically.
+Publish multiple events at once.
 
+**Request:**
 ```json
 {
   "events": [
-    {"stream": "sensors", "source": "agent-01", "payload": {"entity_id": "s-01", "properties": {"temp": 22}}},
-    {"stream": "sensors", "source": "agent-01", "payload": {"entity_id": "s-02", "properties": {"temp": 23}}}
+    {
+      "stream": "sensors",
+      "source": "agent-01",
+      "payload": {
+        "entity_id": "sensor-01",
+        "properties": {"temp": 22}
+      }
+    },
+    {
+      "stream": "sensors",
+      "source": "agent-01",
+      "payload": {
+        "entity_id": "sensor-02",
+        "properties": {"temp": 23}
+      }
+    }
+  ]
+}
+```
+
+**Response:**
+```json
+{
+  "successful": 2,
+  "failed": 0,
+  "results": [
+    {
+      "eventId": "019c4da0-...",
+      "stream": "sensors",
+      "error": null
+    },
+    {
+      "eventId": "019c4da1-...",
+      "stream": "sensors",
+      "error": null
+    }
   ]
 }
 ```
 
 ---
 
-## State Queries
+## State Query
 
 ### GET /api/state/entities
 
-List all entities. Optional `?prefix=` filter.
+List all entities in current world state.
 
-```bash
-curl http://localhost:3000/api/state/entities
-curl http://localhost:3000/api/state/entities?prefix=host-
+**Response:**
+```json
+[
+  {
+    "id": "temp-sensor-01",
+    "properties": {
+      "temperature": 22.5,
+      "unit": "celsius"
+    },
+    "lastUpdated": "2026-02-11T16:54:33.260296395+00:00"
+  },
+  {
+    "id": "temp-sensor-02",
+    "properties": {
+      "temperature": 23.8,
+      "unit": "celsius"
+    },
+    "lastUpdated": "2026-02-11T16:55:12.123456789+00:00"
+  }
+]
 ```
 
-**Response:** Array of entity objects with `id`, `properties`, `lastUpdated`.
+---
 
 ### GET /api/state/entities/:id
 
-Get a single entity by ID.
+Get specific entity by ID.
 
-**Response (200):**
+**Response (200 OK):**
 ```json
 {
   "id": "temp-sensor-01",
-  "properties": {"temperature": 22.5, "unit": "celsius"},
-  "lastUpdated": "2026-02-14T12:00:00Z"
+  "properties": {
+    "temperature": 22.5,
+    "unit": "celsius",
+    "location": "lab-A"
+  },
+  "lastUpdated": "2026-02-11T16:54:33.260296395+00:00"
 }
 ```
 
-**Response (404):** Entity not found.
-
----
-
-## Entity Deletion
-
-### DELETE /api/state/entities/:id
-
-Delete a single entity. Event-sourced (tombstone event persists deletion across restarts).
-
-**Response (200):**
+**Response (404 Not Found):**
 ```json
-{"entity_id": "temp-sensor-01", "eventId": "..."}
-```
-
-### POST /api/state/entities/delete
-
-Batch delete by filter. Choose one filter:
-
-```json
-{"prefix": "loadtest-"}
-{"namespace": "sandbox"}
-{"entity_ids": ["id1", "id2", "id3"]}
-```
-
-**Response (200):**
-```json
-{"deleted": 3, "failed": 0, "errors": []}
-```
-
-**Limit:** Max 10,000 entities per batch (configurable).
-
----
-
-## WebSocket
-
-### WS /api/ws
-
-Real-time subscriptions for state updates, metrics, and deletions.
-
-**Subscribe:**
-```json
-{"type": "subscribe", "entity_id": "sensor-01"}
-{"type": "subscribe", "entity_id": "*"}
-```
-
-**Receive state updates:**
-```json
-{"type": "state_update", "entity_id": "sensor-01", "property": "temp", "value": 22.5, "timestamp": "..."}
-```
-
-**Receive metrics (every 2s):**
-```json
-{"type": "metrics_update", "timestamp": "...", "entities": {"total": 15}, "events": {"total": 50000, "rate_per_second": 120.5}, "websocket": {"connections": 3}, "publishers": {"active": 5}}
-```
-
-**Entity deleted:**
-```json
-{"type": "entity_deleted", "entity_id": "sensor-01", "timestamp": "..."}
+{
+  "error": "Entity not found"
+}
 ```
 
 ---
 
-## Namespaces & Auth
+## State Derivation Model
 
-When `FLUX_AUTH_ENABLED=true`:
-- Entities use format: `namespace/entity-id`
-- Bearer token required: `Authorization: Bearer <token>`
-- Tokens are scoped to namespaces
-- `GET /api/state/namespaces` lists available namespaces
+### How Events Become State
 
-When auth is disabled (default): open access, no tokens needed.
+1. **Event Published:**
+   ```json
+   {
+     "stream": "sensors",
+     "payload": {
+       "entity_id": "sensor-01",
+       "properties": {"temperature": 22.5}
+     }
+   }
+   ```
+
+2. **Flux Processes Event:**
+   - Validates envelope
+   - Persists to NATS JetStream
+   - State engine consumes event
+
+3. **State Derived:**
+   - Entity `sensor-01` created/updated
+   - Property `temperature` set to `22.5`
+   - `lastUpdated` timestamp recorded
+
+4. **Query Returns Current State:**
+   ```json
+   {
+     "id": "sensor-01",
+     "properties": {"temperature": 22.5},
+     "lastUpdated": "2026-02-11T..."
+   }
+   ```
+
+### Property Updates
+
+Properties merge on updates (last write wins per property):
+
+```bash
+# Event 1: Set temperature and unit
+{"entity_id": "sensor-01", "properties": {"temperature": 22.5, "unit": "celsius"}}
+
+# Event 2: Update temperature only
+{"entity_id": "sensor-01", "properties": {"temperature": 23.0}}
+
+# Result: Both properties preserved
+{"temperature": 23.0, "unit": "celsius"}
+```
+
+---
+
+## WebSocket Subscription (Future)
+
+Real-time state updates via WebSocket (not included in skill yet):
+
+**Endpoint:** `ws://localhost:3000/api/ws`
+
+**Subscribe Message:**
+```json
+{
+  "type": "subscribe",
+  "entityId": "temp-sensor-01"
+}
+```
+
+**Update Notification:**
+```json
+{
+  "type": "update",
+  "entity": {
+    "id": "temp-sensor-01",
+    "properties": {"temperature": 24.0},
+    "lastUpdated": "2026-02-11T..."
+  }
+}
+```
+
+---
+
+## Error Responses
+
+**400 Bad Request:**
+```json
+{
+  "error": "stream is required"
+}
+```
+
+**500 Internal Server Error:**
+```json
+{
+  "error": "Failed to publish event to NATS"
+}
+```
+
+---
+
+## Architecture Notes
+
+**Event Flow:**
+```
+Agent → POST /api/events → Validation → NATS JetStream → State Engine → In-Memory State (DashMap)
+                                                                               ↓
+Agent ← GET /api/state/entities ← Query API ← In-Memory State
+```
+
+**Key Characteristics:**
+- Events are immutable (never modified)
+- State is derived (not directly written)
+- NATS provides durability (events persist)
+- State engine rebuilds from events on restart
+- Multiple agents observe same canonical state
