@@ -1,18 +1,15 @@
 ---
 name: drain-mcp
 description: >-
-  Open marketplace for AI services — LLMs, image/video generation, web scraping,
-  model hosting, data extraction, OCR, TTS, and autonomous agent workflows.
-  Agents pay per use with USDC micropayments on Polygon via off-chain payment
-  channels. No API keys, no subscriptions. Use when the agent needs to call any
-  AI service, generate images/video, scrape websites, or run hosted models
-  without managing API keys.
+  MCP server for the Handshake58 AI marketplace. Agents discover providers,
+  open USDC payment channels on Polygon, and call AI services — pay per use
+  with off-chain signed vouchers. No API keys, no subscriptions.
 license: MIT
 homepage: https://github.com/kimbo128/DRAIN
 compatibility: Requires Node.js >= 18 and internet access
 metadata:
   author: Handshake58
-  version: "1.3"
+  version: "1.7"
   website: https://handshake58.com
   npm: drain-mcp
   source: https://github.com/kimbo128/DRAIN
@@ -21,6 +18,7 @@ metadata:
     requires:
       env: ["DRAIN_PRIVATE_KEY"]
     primaryEnv: "DRAIN_PRIVATE_KEY"
+    always: false
 ---
 
 # Handshake58 — Protocol Documentation
@@ -28,11 +26,8 @@ metadata:
 > You CAN use this. Handshake58 is built for autonomous AI agents.
 
 Handshake58 provides an MCP server (`drain-mcp`) that gives AI agents access to
-a growing catalog of AI services — not just LLMs, but also image/video
-generation, web scraping (Apify), model hosting (Replicate), data extraction,
-OCR, TTS, autonomous agent tools, multi-step workflows, and any service a
-provider deploys. New providers join constantly. Pay per use with USDC
-micropayments on Polygon. No credit cards, no subscriptions, no API keys.
+a growing catalog of AI services. Pay per use with USDC micropayments on Polygon.
+No credit cards, no subscriptions, no API keys.
 
 ## Quick Start: MCP Server (Primary Interface)
 
@@ -55,15 +50,20 @@ Add to your Claude Desktop, Cursor, or any MCP-compatible config:
 }
 ```
 
-`DRAIN_PRIVATE_KEY` is a standard Polygon/Ethereum wallet private key — the same
-kind of key any Ethereum wallet uses. It controls a wallet that holds USDC on Polygon.
+`DRAIN_PRIVATE_KEY` is a standard Polygon/Ethereum wallet key used to sign
+payment vouchers and on-chain transactions locally. It is never transmitted
+to any server.
 
-**Security: Use a dedicated ephemeral wallet.** Never reuse your main wallet.
-Create a fresh wallet with minimal funds ($1–5 USDC + $0.10 POL for gas).
-If the key is compromised, only the small balance is at risk.
+**Use a dedicated ephemeral wallet.** Create a fresh wallet with minimal funds
+($1–5 USDC + $0.10 POL for gas). Never reuse your main wallet.
 
-Create a fresh wallet using MetaMask, Rabby, or any EVM wallet tool.
-Then fund it with USDC (even $1 works) + ~$0.10 POL for gas on Polygon.
+### Optional Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `DRAIN_RPC_URL` | Public RPC | Custom Polygon RPC (Alchemy/Infura recommended) |
+| `DRAIN_DIRECTORY_URL` | `handshake58.com/api/mcp/providers` | Provider directory endpoint |
+| `DRAIN_CHAIN_ID` | `137` | Polygon Mainnet chain ID |
 
 The MCP server handles everything: provider discovery, channel management, payments, and requests.
 Package: https://www.npmjs.com/package/drain-mcp
@@ -91,7 +91,7 @@ You need a Polygon wallet with USDC:
 ### Create a Wallet
 
 Use MetaMask, Rabby, or any EVM-compatible wallet to create a new account.
-Export the private key from that wallet's settings. Agents can also generate
+Export the key from that wallet's settings. Agents can also generate
 a wallet programmatically using any Ethereum library (ethers.js, viem, web3.py).
 
 ### Fund Your Wallet
@@ -103,10 +103,10 @@ a wallet programmatically using any Ethereum library (ethers.js, viem, web3.py).
 
 1. **Pay Session Fee** — Transfer $0.01 USDC to the marketplace fee wallet
 2. **Open Channel** — Deposit USDC into smart contract (~$0.02 gas)
-3. **Use AI Services** — Each request signs a payment voucher (off-chain, $0 gas). A channel is a session: send as many requests as you want within one channel. Works for LLM calls, image generation, web scraping, workflows, and any other service a provider offers.
+3. **Use AI Services** — Each request signs a payment voucher (off-chain, $0 gas). A channel is a session: send as many requests as you want within one channel.
 4. **Close Channel** — Call `close(channelId)` after expiry to withdraw unused USDC. Funds do NOT return automatically.
 
-**Key advantage (Channel Reuse):** Unlike per-request payment protocols (e.g. x402), you only pay gas twice (open + close) — every request in between is off-chain. Generate 100 images, scrape 50 URLs, run multi-step workflows, or have a multi-hour conversation — all within one channel, $0 gas per request.
+**Channel Reuse:** You only pay gas twice (open + close) — every request in between is off-chain and free.
 
 ### Session Fee
 
@@ -132,7 +132,6 @@ Each provider specifies `minDuration` and `maxDuration` (in seconds) — choose 
 await usdc.approve('0x1C1918C99b6DcE977392E4131C91654d8aB71e64', amount);
 
 // Open channel: provider address, USDC amount, duration in seconds
-// Duration: check provider.minDuration and provider.maxDuration
 await contract.open(providerAddress, amount, durationSeconds);
 ```
 
@@ -145,7 +144,7 @@ X-DRAIN-Voucher: {"channelId":"0x...","amount":"150000","nonce":"1","signature":
 ```
 
 The voucher authorizes cumulative payment. Increment amount with each request.
-Signature: EIP-712 typed data signed by the channel opener wallet.
+Signature: EIP-712 typed data signed locally by the channel opener wallet.
 
 All providers use the OpenAI-compatible chat completion format.
 
@@ -160,12 +159,10 @@ const data = await res.json();
 const ch = data.channels[0];
 
 if (ch.status === 'expired_unclosed') {
-  // Send the close transaction using the provided calldata
   await wallet.sendTransaction({
     to: '0x1C1918C99b6DcE977392E4131C91654d8aB71e64',
     data: ch.closeCalldata,
   });
-  // Refund of (deposit - claimed) will be sent to your wallet
 }
 ```
 
@@ -173,42 +170,44 @@ if (ch.status === 'expired_unclosed') {
 
 ## External Endpoints
 
-Every network request the MCP server makes is listed here. The private key **never** leaves your machine.
+Every network request the MCP server makes is listed here.
 
-| Endpoint | Method | Data Sent | Private Key Transmitted? |
-|---|---|---|---|
-| `handshake58.com/api/mcp/providers` | GET | Nothing (public catalog) | No |
-| `handshake58.com/api/directory/config` | GET | Nothing (reads fee wallet) | No |
-| `handshake58.com/api/channels/status` | GET | channelId (public on-chain) | No |
-| Provider `apiUrl` `/v1/chat/completions` | POST | Chat messages + signed voucher | No — only the EIP-712 **signature** is sent |
-| Polygon RPC (on-chain tx) | POST | Signed transactions (approve, open, close, transfer) | No — key signs locally, only the signature is broadcast |
+| Endpoint | Method | Data Sent |
+|---|---|---|
+| `handshake58.com/api/mcp/providers` | GET | Nothing (public catalog) |
+| `handshake58.com/api/directory/config` | GET | Nothing (reads fee wallet) |
+| `handshake58.com/api/channels/status` | GET | channelId (public on-chain data) |
+| Provider `apiUrl` `/v1/chat/completions` | POST | Chat messages + signed voucher |
+| Polygon RPC (on-chain tx) | POST | Signed transactions (approve, open, close, transfer) |
 
-No endpoint ever receives the raw private key. The key is used exclusively inside the local MCP process for cryptographic signing.
+No endpoint ever receives raw signing keys. All signing happens locally inside the MCP process.
+
+Providers listed in the marketplace are reviewed and approved by Handshake58 before appearing in the directory. The agent connects only to vetted providers.
 
 ## Security & Privacy
 
-**Private key handling:** `DRAIN_PRIVATE_KEY` is loaded into memory by the local MCP server process. It is used exclusively for:
-1. **EIP-712 voucher signing** — generates a cryptographic signature (off-chain, no network call)
-2. **On-chain transaction signing** — signs approve/open/close/transfer transactions locally before broadcasting to Polygon RPC
+**Signing key handling:** `DRAIN_PRIVATE_KEY` is loaded into memory by the local MCP process. It is used for:
+1. **EIP-712 voucher signing** — off-chain, no network call
+2. **On-chain transaction signing** — signed locally, only the resulting signature is broadcast
 
-The private key is **never transmitted** to Handshake58 servers, AI providers, or any third party. Only the resulting signatures are sent. Providers verify signatures against the on-chain channel state — they never need or receive the key itself.
+The key is never transmitted to Handshake58 servers, AI providers, or any third party. Providers verify signatures against on-chain channel state — they never need or receive the key.
 
 **What leaves your machine:**
 - Public API queries to `handshake58.com` (provider list, fee wallet, channel status)
 - Chat messages to AI providers (sent to the provider's `apiUrl`, not to Handshake58)
-- Signed payment vouchers (contain a signature, not the key)
+- Signed payment vouchers (contain a cryptographic signature, not the key)
 - Signed on-chain transactions (broadcast to Polygon)
 
 **What stays local:**
-- Your private key (never transmitted)
-- Your wallet address derivation
-- All cryptographic signing operations
+- Your signing key (never transmitted)
+- All cryptographic operations
+
+**Spending is capped by design.** The smart contract payment channel limits exposure to the deposited amount only. The user chooses how much to deposit (typically $1–5), sets the channel duration, and reclaims unused funds after expiry via `close()`. The agent cannot spend more than the deposit, even in a worst-case scenario.
 
 **Recommended safeguards:**
 - Use a **dedicated ephemeral wallet** with $1–5 USDC. Never reuse your main wallet.
 - **Audit the source code** before installing: [github.com/kimbo128/DRAIN](https://github.com/kimbo128/DRAIN)
 - Run in an **isolated environment** if handling sensitive data
-- Monitor outbound network traffic to confirm key isolation
 
 ## Contract Addresses
 
@@ -227,9 +226,16 @@ GET https://handshake58.com/api/mcp/providers
 - Protocol fee: 0%
 - Gas: ~$0.02 per channel open
 
+## Model Invocation Note
+
+This skill uses the standard MCP autonomous invocation model (`always: false`). It is only active when the user's MCP client loads it and does **not** run in the background or persist between sessions.
+
+- **Opt-out:** Remove the `drain` entry from your MCP config to disable the skill entirely.
+- **Natural confirmation point:** Every channel open requires an on-chain transaction — an explicit spending commitment, not a silent background action.
+
 ## Trust Statement
 
-By using this skill, chat messages are sent to third-party AI providers via the Handshake58 marketplace. The private key is used locally for signing only and is never transmitted to any server. Only install if you trust the `drain-mcp` npm package — audit the source at [github.com/kimbo128/DRAIN](https://github.com/kimbo128/DRAIN) before use.
+By using this skill, chat messages are sent to third-party AI providers via the Handshake58 marketplace. The signing key is used locally only and is never transmitted to any server. Only install if you trust the `drain-mcp` npm package — audit the source at [github.com/kimbo128/DRAIN](https://github.com/kimbo128/DRAIN) before use.
 
 ## Links
 
