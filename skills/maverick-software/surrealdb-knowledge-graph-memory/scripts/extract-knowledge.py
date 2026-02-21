@@ -26,7 +26,7 @@ from typing import Optional
 # Configuration
 # ============================================
 
-WORKSPACE_DIR = Path(os.environ.get("OPENCLAW_WORKSPACE", Path.home() / ".openclaw" / "workspace"))
+WORKSPACE_DIR = Path.home() / ".openclaw" / "workspace"
 STATE_FILE = Path.home() / ".openclaw" / "memory" / "extraction-state.json"
 SESSION_CACHE_FILE = Path.home() / ".openclaw" / "memory" / "session-cache.json"
 PROGRESS_FILE = Path.home() / ".openclaw" / "memory" / "extraction-progress.json"
@@ -317,8 +317,8 @@ def find_similar_facts(db, content: str, threshold: float = 0.85) -> list[dict]:
     # Results come as flat list of dicts
     return results if isinstance(results, list) else []
 
-def store_fact(db, fact: dict) -> str:
-    """Store a new fact in the database."""
+def store_fact(db, fact: dict, agent_id: str = "main") -> str:
+    """Store a new fact in the database, tagged with the source agent."""
     embedding = get_embedding(fact["content"])
     
     result = db.create("fact", {
@@ -329,6 +329,8 @@ def store_fact(db, fact: dict) -> str:
         "file_source": fact.get("file_source", ""),
         "extracted_at": datetime.now().isoformat(),
         "tags": [],
+        "agent_id": agent_id,
+        "scope": "agent",
     })
     
     fact_id = result[0]["id"] if isinstance(result, list) else result["id"]
@@ -383,8 +385,8 @@ def update_fact_confidence(db, fact_id: str, new_confidence: float):
 # ============================================
 
 def extract_from_file(db, file_path: Path, verbose: bool = False, 
-                      file_idx: int = 0, total_files: int = 1) -> dict:
-    """Extract knowledge from a single file."""
+                      file_idx: int = 0, total_files: int = 1, agent_id: str = "main") -> dict:
+    """Extract knowledge from a single file, tagging facts with the source agent."""
     content = file_path.read_text(encoding="utf-8", errors="ignore")
     chunks = chunk_content(content)
     
@@ -422,11 +424,11 @@ def extract_from_file(db, file_path: Path, verbose: bool = False,
                         stats["facts_skipped"] += 1
                 else:
                     # Unexpected structure, treat as new
-                    store_fact(db, fact)
+                    store_fact(db, fact, agent_id=agent_id)
                     stats["facts_new"] += 1
             else:
                 # New fact - store it
-                store_fact(db, fact)
+                store_fact(db, fact, agent_id=agent_id)
                 stats["facts_new"] += 1
         
         if verbose and (i + 1) % 5 == 0:
@@ -435,7 +437,7 @@ def extract_from_file(db, file_path: Path, verbose: bool = False,
     return stats
 
 
-def run_extraction(full: bool = False, verbose: bool = False):
+def run_extraction(full: bool = False, verbose: bool = False, agent_id: str = "main"):
     """Run knowledge extraction from memory files."""
     # Write immediate progress so UI doesn't show stale "Starting..."
     write_progress("init", 0, 1, "Working", "Scanning files...")
@@ -483,7 +485,7 @@ def run_extraction(full: bool = False, verbose: bool = False):
                 rel_path
             )
             print(f"\n📄 {rel_path}")
-            stats = extract_from_file(db, file_path, verbose, file_idx, len(changed))
+            stats = extract_from_file(db, file_path, verbose, file_idx, len(changed), agent_id=agent_id)
             
             # Update file hash
             state["file_hashes"][str(file_path)] = hash_file(file_path)
@@ -522,8 +524,8 @@ def run_extraction(full: bool = False, verbose: bool = False):
     return {"success": True, **total_stats}
 
 
-def run_single_file_extraction(file_path_str: str, verbose: bool = False):
-    """Extract knowledge from a single file."""
+def run_single_file_extraction(file_path_str: str, verbose: bool = False, agent_id: str = "main"):
+    """Extract knowledge from a single file, tagging facts with the given agent."""
     if not SURREALDB_AVAILABLE:
         print("Error: surrealdb package not installed", file=sys.stderr)
         return {"success": False, "error": "surrealdb not available"}
@@ -544,7 +546,7 @@ def run_single_file_extraction(file_path_str: str, verbose: bool = False):
         db.signin({"username": SURREAL_CONFIG["user"], "password": SURREAL_CONFIG["password"]})
         db.use(SURREAL_CONFIG["namespace"], SURREAL_CONFIG["database"])
         
-        stats = extract_from_file(db, file_path, verbose)
+        stats = extract_from_file(db, file_path, verbose, agent_id=agent_id)
         
         print(f"✓ {stats['facts_new']} new, {stats['facts_updated']} updated, {stats['facts_skipped']} skipped")
         
@@ -1125,6 +1127,9 @@ def main():
     parser = argparse.ArgumentParser(description="Knowledge Extraction from Memory Files")
     subparsers = parser.add_subparsers(dest="command", required=True)
     
+    # Global --agent-id option (usable with any subcommand)
+    parser.add_argument("--agent-id", default="main", help="Agent ID to tag extracted facts with (default: main)")
+
     # extract
     extract_p = subparsers.add_parser("extract", help="Extract knowledge from memory files")
     extract_p.add_argument("--full", action="store_true", help="Process all files, not just changed")
@@ -1156,11 +1161,13 @@ def main():
     
     args = parser.parse_args()
     
+    agent_id = getattr(args, "agent_id", "main") or "main"
+
     if args.command == "extract":
         if args.file:
-            result = run_single_file_extraction(args.file, verbose=args.verbose)
+            result = run_single_file_extraction(args.file, verbose=args.verbose, agent_id=agent_id)
         else:
-            result = run_extraction(full=args.full, verbose=args.verbose)
+            result = run_extraction(full=args.full, verbose=args.verbose, agent_id=agent_id)
         sys.exit(0 if result.get("success") else 1)
     
     elif args.command == "status":

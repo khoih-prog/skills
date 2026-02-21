@@ -2,6 +2,30 @@
 
 All notable changes to the SurrealDB Memory skill will be documented in this file.
 
+## [2.2.0] - 2026-02-19
+
+### Added
+- **Per-agent memory isolation** — each agent now reads and writes only its own facts
+  - `knowledge_store` / `knowledge_store_sync`: write `agent_id` + `scope: "agent"` on every new fact
+  - `knowledge_search`, `knowledge_recall`, `context_aware_search`, `memory_inject`: all queries now filter `WHERE (agent_id = $agent_id OR scope = 'global' OR agent_id IS NONE)`
+  - `episode_search` / `episode_learnings`: pass `agent_id` to `EpisodicMemory()` constructor (which already supported it)
+  - All MCP tool schemas updated to document the optional `agent_id` parameter
+  - Tool dispatch updated to forward `agent_id` from call arguments
+- **Global-scope facts** — set `scope: "global"` when storing to make a fact visible to all agents (user preferences, shared project context, etc.)
+- **`enhanced-loop-hook.ts` patch** (`references/enhanced-loop-hook-agent-isolation.patch`) — when auto-injection is enabled, the hook now extracts the agent ID from the session key (`agent:scout-monitor:webchat` → `scout-monitor`) and passes it as `agent_id` to `memory_inject`
+- **`extract-knowledge.py` agent tagging** — new `--agent-id` CLI argument (default: `"main"`); extracted facts are tagged with the specified agent ID
+- **Backward compatible** — existing facts with no `agent_id` (schema defaults to `"main"`) still match the filter predicate via `agent_id IS NONE`, so no data migration needed
+
+### Changed
+- `extract-knowledge.py`: `run_extraction`, `run_single_file_extraction`, `extract_from_file`, `store_fact` all accept and propagate `agent_id`
+- `mcp-server-v2.py`: `context_aware_search` internal `EpisodicMemory()` call now passes `agent_id`; `memory_inject` episode lookup also scoped to agent
+
+### Verified
+- Live DB test: `main` (391 facts) → 391 visible; `scout-monitor` (0 facts) → 0 visible ✅
+- Write isolation: fact written as `scout-monitor` invisible to `main` ✅
+- Global scope: fact with `scope='global'` visible to all agents regardless of `agent_id` ✅
+- End-to-end mcporter: `agent_id='scout-monitor'` returns 0; `agent_id='main'` returns correct results ✅
+
 ## [2.1.1] - 2026-02-18
 
 ### Fixed

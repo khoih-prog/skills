@@ -1,6 +1,6 @@
-# SurrealDB Knowledge Graph Memory v2.1
+# SurrealDB Knowledge Graph Memory v2.2
 
-A comprehensive knowledge graph memory system with semantic search, episodic memory, working memory, and automatic context injection.
+A comprehensive knowledge graph memory system with semantic search, episodic memory, working memory, automatic context injection, and **per-agent isolation** — enabling every agent to become a continuously self-improving AI.
 
 ## Description
 
@@ -10,10 +10,108 @@ Use this skill for:
 - **Working Memory** — Track active task state with crash recovery
 - **Auto-Injection** — Automatically inject relevant context into agent prompts
 - **Outcome Calibration** — Facts gain/lose confidence based on task outcomes
+- **Self-Improvement** — Scheduled extraction and relation discovery make every agent smarter over time
 
 **Triggers:** "remember this", "store fact", "what do you know about", "memory search", "find similar tasks", "learn from history"
 
-## Features (v2)
+> **Security:** This skill reads workspace memory files and sends their content to OpenAI for extraction. It registers two background cron jobs and (optionally) patches OpenClaw source files. All behaviors are opt-in or documented. See [SECURITY.md](SECURITY.md) for the full breakdown before enabling.
+>
+> **Required:** `OPENAI_API_KEY`, `surreal` binary, `python3` ≥3.10
+
+---
+
+## 🔄 Self-Improving Agent Loop
+
+This is the core concept: **every agent equipped with this skill improves itself automatically**, with no manual intervention required. Two scheduled cron jobs — knowledge extraction and relationship correlation — run on a fixed schedule and continuously grow the knowledge graph. Combined with auto-injection, the agent gets progressively smarter with each conversation.
+
+### The Cycle
+
+```
+[Agent Conversation]
+       ↓  stores important facts via knowledge_store_sync
+[Memory Files]  ← agent writes to MEMORY.md / daily memory/*.md files
+       ↓  every 6 hours — extraction cron fires
+[Entity + Fact Extraction]  ← LLM reads files, extracts structured facts + entities
+       ↓  facts stored with embeddings + agent_id tag
+[Knowledge Graph]  ← SurrealDB: facts, entities, mentions
+       ↓  daily at 3 AM — relation discovery cron fires
+[Relationship Correlation]  ← AI finds semantic links between facts
+       ↓  relates_to edges created between connected facts
+[Richer Knowledge Graph]  ← facts are no longer isolated; they form a web
+       ↓  on every new message — auto-injection reads the graph
+[Context Window]  ← relevant facts + relations + episodes injected automatically
+       ↓
+[Better Responses]  ← agent uses accumulated knowledge to respond more accurately
+       ↑  new insights written back to memory files → cycle repeats
+```
+
+### What Each Scheduled Job Does
+
+#### Job 1 — Knowledge Extraction (every 6 hours)
+**Script:** `scripts/extract-knowledge.py extract`
+
+- Reads `MEMORY.md` and all `memory/YYYY-MM-DD.md` files in the workspace
+- Uses an LLM (GPT-4) to extract structured facts, entities, and key concepts
+- Hashes file content to skip unchanged files — only processes diffs
+- Stores each fact with:
+  - A vector embedding (OpenAI `text-embedding-3-small`) for semantic search
+  - A `confidence` score (defaults to 0.9)
+  - An `agent_id` tag so facts stay isolated to the right agent
+  - `source` metadata pointing back to the originating file
+- Result: raw conversational knowledge becomes searchable, structured memory
+
+#### Job 2 — Relationship Correlation (daily at 3 AM)
+**Script:** `scripts/extract-knowledge.py discover-relations`
+
+- Queries the graph for facts that have no relationships yet ("isolated facts")
+- Batches them and asks an LLM to identify semantic connections between them
+- Creates `relates_to` edges in SurrealDB linking related facts
+- Result: isolated facts become a **connected knowledge web** — the agent can now traverse relationships, not just keyword-match
+- Over time, the graph evolves from a flat list into a rich semantic network
+
+### Why This Makes Agents Self-Improving
+
+When auto-injection is enabled, every new conversation starts with the most relevant slice of the accumulated knowledge graph. As the agent:
+1. Has conversations → writes insights to memory files
+2. Extraction job fires → converts those insights into structured facts
+3. Relation job fires → connects those facts to existing knowledge
+4. Next conversation → auto-injection pulls in richer, more connected context
+
+...the agent effectively gets smarter with every cycle. It learns from its own outputs, grounds future responses in its accumulated history, and avoids repeating mistakes (via episodic memory and outcome calibration).
+
+### OpenClaw Cron Jobs (as configured)
+
+These jobs are registered in OpenClaw and run automatically:
+
+| Job Name | Cron ID | Schedule | What it runs |
+|----------|---------|----------|--------------|
+| Memory Knowledge Extraction | `b9936b69-c652-4683-9eae-876cd02128c7` | Every 6 hours (`0 */6 * * *`) | `python3 scripts/extract-knowledge.py extract` |
+| Memory Relation Discovery | `2a3dd973-5d4d-46cf-848d-0cf31ab53fa1` | Daily at 3 AM (`0 3 * * *`) | `python3 scripts/extract-knowledge.py discover-relations` |
+
+Both jobs use `sessionTarget: "main"` and deliver via `systemEvent`, so the main agent session receives the command and executes it inline.
+
+To check job status at any time:
+```bash
+# Via OpenClaw cron list (in Koda's chat)
+# Or via CLI:
+openclaw cron list
+```
+
+### Adding Cron Jobs for a New Agent
+
+When spawning a new agent that should self-improve, register its own extraction job:
+
+```bash
+# OpenClaw cron add (via Koda) — example for a 'scout-monitor' agent
+# Schedule: every 6h, extract facts tagged to scout-monitor
+python3 scripts/extract-knowledge.py extract --agent-id scout-monitor
+```
+
+The `--agent-id` flag ensures extracted facts are isolated to that agent's pool and don't pollute the main agent's knowledge. Each agent self-improves independently while still reading shared `scope='global'` facts.
+
+---
+
+## Features (v2.2)
 
 | Feature | Description |
 |---------|-------------|
@@ -24,6 +122,61 @@ Use this skill for:
 | **Auto-Injection** | Relevant facts/episodes injected into prompts automatically |
 | **Entity Extraction** | Automatic entity linking and relationship discovery |
 | **Confidence Decay** | Stale facts naturally decay over time |
+| **Agent Isolation** | Each agent has its own scoped memory pool; `scope='global'` facts are shared across all agents |
+| **Self-Improving Loop** | Scheduled extraction + relation discovery automatically grow the graph |
+
+---
+
+## Agent Isolation (v2.2)
+
+Each agent in OpenClaw has its own scoped memory pool. Facts are tagged with `agent_id` on write; all read queries filter to `(agent_id = $agent_id OR scope = 'global')`.
+
+### How it works
+
+```
+Agent A (main)          Agent B (scout-monitor)
+   ┌──────────┐              ┌──────────┐
+   │ 391 facts│              │   0 facts│   ← isolated pools
+   └──────────┘              └──────────┘
+         ↑                         ↑
+         └──── scope='global' ─────┘   ← shared facts visible to both
+```
+
+### Storing facts
+
+All `knowledge_store` / `knowledge_store_sync` calls accept `agent_id`:
+
+```bash
+# Stored to scout-monitor's pool only
+mcporter call surrealdb-memory.knowledge_store \
+    content="API is healthy at /ping" \
+    agent_id='scout-monitor'
+
+# Stored globally (visible to all agents)
+mcporter call surrealdb-memory.knowledge_store \
+    content="Project uses Python 3.12" \
+    agent_id='main' scope='global'
+```
+
+### Auto-injection (agent-aware)
+
+With `references/enhanced-loop-hook-agent-isolation.md` applied to `src/agents/enhanced-loop-hook.ts`, the enhanced loop automatically extracts the agent ID from the session key and passes it to `memory_inject`. No manual configuration needed — each agent's auto-injection is silently scoped to its own facts.
+
+### Extraction (agent-aware)
+
+Pass `--agent-id` to `extract-knowledge.py` so cron-extracted facts are correctly tagged:
+
+```bash
+python3 scripts/extract-knowledge.py extract --agent-id scout-monitor
+```
+
+Default is `"main"`. Update cron jobs accordingly for non-main agents.
+
+### Backward compatibility
+
+Existing facts without an explicit `agent_id` are treated as owned by `"main"`. Nothing is lost on upgrade to v2.2.
+
+---
 
 ## Dashboard UI
 
@@ -51,6 +204,8 @@ The Memory tab in the Control dashboard provides a two-column layout:
 - **💡 Tips** — Quick reference for operations
 
 When the system needs setup, an **Installation** section appears with manual controls.
+
+---
 
 ## Prerequisites
 
@@ -95,6 +250,8 @@ Add to your `config/mcporter.json`:
 }
 ```
 
+---
+
 ## MCP Tools (11 total)
 
 ### Core Tools
@@ -121,12 +278,14 @@ Add to your `config/mcporter.json`:
 The `memory_inject` tool returns formatted context ready for prompt injection:
 
 ```bash
+# Scoped to a specific agent (returns only that agent's facts + global facts)
 mcporter call surrealdb-memory.memory_inject \
     query="user message" \
     max_facts:7 \
     max_episodes:3 \
     confidence_threshold:0.9 \
-    include_relations:true
+    include_relations:true \
+    agent_id='scout-monitor'
 ```
 
 **Output:**
@@ -141,6 +300,8 @@ mcporter call surrealdb-memory.memory_inject \
 ✅ Task: Previous task goal [similarity]
    → Key learning from that task
 ```
+
+---
 
 ## Auto-Injection (Enhanced Loop Integration)
 
@@ -157,6 +318,7 @@ When enabled, memory is automatically injected into every agent turn:
    - Relevant facts are searched based on the user's query
    - If average fact confidence < threshold, episodic memories are included
    - Formatted context is injected into the agent's system prompt
+   - **v2.2:** With `references/enhanced-loop-hook-agent-isolation.md` applied, the active agent's ID is automatically extracted from the session key and passed as `agent_id` — each agent's injection is silently scoped to its own facts
 
 3. **Configuration (in Mode settings):**
    | Setting | Default | Description |
@@ -167,16 +329,7 @@ When enabled, memory is automatically injected into every agent turn:
    | Confidence Threshold | 90% | Include episodes when below this |
    | Include Relations | On | Include entity relationships |
 
-## Extraction with Progress Tracking
-
-When you run extraction operations from the UI, you'll see:
-
-1. **Progress Bar** — Visual indicator with percentage
-2. **Current Step** — What's being processed (e.g., "Extracting facts from MEMORY.md")
-3. **Counter** — Progress like "(3/7)" for file processing
-4. **Detail Text** — Sub-step information
-
-The progress updates in real-time via polling. When complete, statistics automatically refresh.
+---
 
 ## CLI Commands
 
@@ -196,11 +349,20 @@ python scripts/knowledge-tool.py stats
 # Run maintenance
 python scripts/memory-cli.py maintain
 
-# Extract from files
-python scripts/extract-knowledge.py extract        # Changed files only
-python scripts/extract-knowledge.py extract --full # All files
+# Extract from files (incremental)
+python scripts/extract-knowledge.py extract
+
+# Extract for a specific agent
+python scripts/extract-knowledge.py extract --agent-id scout-monitor
+
+# Force full extraction (all files, not just changed)
+python scripts/extract-knowledge.py extract --full
+
+# Discover semantic relationships
 python scripts/extract-knowledge.py discover-relations
 ```
+
+---
 
 ## Database Schema (v2)
 
@@ -218,6 +380,7 @@ python scripts/extract-knowledge.py discover-relations
 - `confidence` — Base confidence (0-1)
 - `success_count` / `failure_count` — Outcome tracking
 - `scope` — global, client, or agent
+- `agent_id` — Which agent owns this fact (v2.2)
 
 ### Key Fields (episode)
 - `goal` — What was attempted
@@ -226,6 +389,8 @@ python scripts/extract-knowledge.py discover-relations
 - `problems` — Problems encountered (structured)
 - `solutions` — Solutions applied (structured)
 - `key_learnings` — Extracted lessons
+
+---
 
 ## Confidence Scoring
 
@@ -237,15 +402,35 @@ Effective confidence is calculated from:
 - **- Contradiction drain** from conflicting facts
 - **- Time decay** (configurable, ~5% per month)
 
+---
+
 ## Maintenance
 
-### Automated (Cron)
-```bash
-# Extract facts from memory files (every 6 hours)
-0 */6 * * * cd ~/openclaw/skills/surrealdb-memory && source .venv/bin/activate && python scripts/extract-knowledge.py extract
+### Automated — OpenClaw Cron (as deployed)
 
-# Discover relations (daily at 3 AM)
-0 3 * * * cd ~/openclaw/skills/surrealdb-memory && source .venv/bin/activate && python scripts/extract-knowledge.py discover-relations
+The self-improving loop runs via two registered OpenClaw cron jobs:
+
+```
+Every 6h  → python3 scripts/extract-knowledge.py extract
+             (reads memory files, extracts facts into the graph)
+
+Daily 3AM → python3 scripts/extract-knowledge.py discover-relations
+             (finds semantic relationships between existing facts)
+```
+
+These jobs are pre-registered in OpenClaw. To verify they're active:
+```bash
+openclaw cron list
+# or ask Koda: "list cron jobs"
+```
+
+To manually trigger extraction:
+```bash
+# From the Memory dashboard UI: click "Extract Changes" or "Find Relations"
+# Or via CLI:
+cd ~/openclaw/skills/surrealdb-memory && source .venv/bin/activate
+python3 scripts/extract-knowledge.py extract
+python3 scripts/extract-knowledge.py discover-relations
 ```
 
 ### Manual (UI)
@@ -253,6 +438,8 @@ Use the **Maintenance** section in the Memory tab:
 - **Apply Decay** — Reduce confidence of stale facts
 - **Prune Stale** — Archive facts below 0.3 confidence
 - **Full Sweep** — Run complete maintenance cycle
+
+---
 
 ## Files
 
@@ -264,7 +451,7 @@ Use the **Maintenance** section in the Memory tab:
 | `episodes.py` | Episodic memory module |
 | `working_memory.py` | Working memory module |
 | `memory-cli.py` | CLI for manual operations |
-| `extract-knowledge.py` | Bulk extraction from files |
+| `extract-knowledge.py` | Bulk extraction from files (supports `--agent-id`) |
 | `knowledge-tools.py` | Higher-level extraction |
 | `schema-v2.sql` | v2 database schema |
 | `migrate-v2.py` | Migration script |
@@ -275,6 +462,8 @@ Use the **Maintenance** section in the Memory tab:
 | `openclaw-integration/gateway/memory.ts` | Gateway server methods |
 | `openclaw-integration/ui/memory-view.ts` | Memory dashboard UI |
 | `openclaw-integration/ui/memory-controller.ts` | UI controller |
+
+---
 
 ## Troubleshooting
 
@@ -289,13 +478,22 @@ Use the **Maintenance** section in the Memory tab:
 → Verify SurrealDB is running and schema is initialized
 
 **Empty search results**
-→ Run extraction from the UI or via CLI to populate facts from memory files
+→ Run extraction from the UI or via CLI: `python3 scripts/extract-knowledge.py extract`
+
+**"No facts to analyze" on relation discovery**
+→ This is normal if all facts are already related — the graph is well-connected. Run extraction first if the graph is empty.
 
 **Progress bar not updating**
 → Ensure the gateway has been restarted after UI updates
 → Check browser console for polling errors
 
-## Migration from v1
+**Facts from wrong agent appearing**
+→ Check that `agent_id` is being passed correctly to all store/search calls
+→ Verify `references/enhanced-loop-hook-agent-isolation.md` is applied for auto-injection scoping
+
+---
+
+## Migration from v1 / v2.1
 
 ```bash
 # Apply v2 schema (additive, won't delete existing data)
@@ -305,6 +503,10 @@ Use the **Maintenance** section in the Memory tab:
 source .venv/bin/activate
 python scripts/migrate-v2.py
 ```
+
+All existing facts without an `agent_id` are treated as owned by `"main"` — backward compatible.
+
+---
 
 ## Stats
 
@@ -323,3 +525,7 @@ Example output:
   "avg_confidence": 0.99
 }
 ```
+
+---
+
+*v2.2 — Agent isolation, self-improving loop, cron-based extraction & relationship correlation*

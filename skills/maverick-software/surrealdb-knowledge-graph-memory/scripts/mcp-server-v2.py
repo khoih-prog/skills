@@ -109,8 +109,8 @@ def get_embedding(text: str) -> list:
 # Original Tool implementations (v1)
 # ============================================
 
-def knowledge_search(query: str, limit: int = 10, min_confidence: float = 0.3) -> dict:
-    """Search for facts in the knowledge graph."""
+def knowledge_search(query: str, limit: int = 10, min_confidence: float = 0.3, agent_id: str = "main") -> dict:
+    """Search for facts in the knowledge graph, scoped to the given agent (plus global facts)."""
     if not DEPS_AVAILABLE:
         return {"error": "Dependencies not available (surrealdb, openai)"}
     
@@ -122,19 +122,23 @@ def knowledge_search(query: str, limit: int = 10, min_confidence: float = 0.3) -
             results = db.query("""
                 SELECT id, content, confidence, source, tags
                 FROM fact
-                WHERE archived = false AND content CONTAINS $query
+                WHERE (archived = false OR archived IS NONE)
+                  AND (agent_id = $agent_id OR scope = 'global' OR agent_id IS NONE)
+                  AND content CONTAINS $query
                 ORDER BY confidence DESC
                 LIMIT $limit
-            """, {"query": query, "limit": limit})
+            """, {"query": query, "limit": limit, "agent_id": agent_id})
         else:
             results = db.query("""
                 SELECT id, content, confidence, source, tags,
                     vector::similarity::cosine(embedding, $embedding) AS similarity
                 FROM fact
-                WHERE archived = false AND confidence >= $min_conf
+                WHERE (archived = false OR archived IS NONE)
+                  AND (agent_id = $agent_id OR scope = 'global' OR agent_id IS NONE)
+                  AND confidence >= $min_conf
                 ORDER BY similarity DESC
                 LIMIT $limit
-            """, {"embedding": embedding, "limit": limit, "min_conf": min_confidence})
+            """, {"embedding": embedding, "limit": limit, "min_conf": min_confidence, "agent_id": agent_id})
         
         close_db(db)
         
@@ -157,8 +161,8 @@ def knowledge_search(query: str, limit: int = 10, min_confidence: float = 0.3) -
         return {"error": str(e)}
 
 
-def knowledge_recall(fact_id: str = None, query: str = None) -> dict:
-    """Recall a specific fact with its full context."""
+def knowledge_recall(fact_id: str = None, query: str = None, agent_id: str = "main") -> dict:
+    """Recall a specific fact with its full context, scoped to the given agent."""
     if not DEPS_AVAILABLE:
         return {"error": "Dependencies not available"}
     
@@ -166,7 +170,7 @@ def knowledge_recall(fact_id: str = None, query: str = None) -> dict:
         db = get_db()
         
         if query and not fact_id:
-            search_result = knowledge_search(query, limit=1)
+            search_result = knowledge_search(query, limit=1, agent_id=agent_id)
             if search_result.get("facts"):
                 fact_id = search_result["facts"][0]["id"]
             else:
@@ -217,8 +221,8 @@ def knowledge_recall(fact_id: str = None, query: str = None) -> dict:
         return {"error": str(e)}
 
 
-def knowledge_store(content: str, source: str = "explicit", confidence: float = 0.9, tags: list = None) -> dict:
-    """Store a new fact in the knowledge graph."""
+def knowledge_store(content: str, source: str = "explicit", confidence: float = 0.9, tags: list = None, agent_id: str = "main") -> dict:
+    """Store a new fact in the knowledge graph, tagged with the agent that stored it."""
     if not DEPS_AVAILABLE:
         return {"error": "Dependencies not available"}
     
@@ -232,6 +236,8 @@ def knowledge_store(content: str, source: str = "explicit", confidence: float = 
             "source": source,
             "confidence": confidence,
             "tags": tags or [],
+            "agent_id": agent_id,
+            "scope": "agent",
             "success_count": 0,
             "failure_count": 0,
         })
@@ -257,11 +263,11 @@ def knowledge_stats() -> dict:
     try:
         db = get_db()
         
-        facts = db.query("SELECT count() FROM fact WHERE archived = false GROUP ALL")
+        facts = db.query("SELECT count() FROM fact WHERE (archived = false OR archived IS NONE) GROUP ALL")
         entities = db.query("SELECT count() FROM entity GROUP ALL")
         relations = db.query("SELECT count() FROM relates_to GROUP ALL")
         episodes = db.query("SELECT count() FROM episode GROUP ALL")
-        avg_conf = db.query("SELECT math::mean(confidence) AS avg FROM fact WHERE archived = false GROUP ALL")
+        avg_conf = db.query("SELECT math::mean(confidence) AS avg FROM fact WHERE (archived = false OR archived IS NONE) GROUP ALL")
         
         close_db(db)
         
@@ -286,7 +292,8 @@ def knowledge_store_sync(
     source: str = "inferred",
     confidence: float = None,
     tags: list = None,
-    context: str = None
+    context: str = None,
+    agent_id: str = "main"
 ) -> dict:
     """
     Store a fact with importance-based routing.
@@ -298,7 +305,7 @@ def knowledge_store_sync(
         if confidence is None:
             confidence = 0.85 if source == "explicit" else 0.7
         
-        result = knowledge_store(content, source, confidence, tags)
+        result = knowledge_store(content, source, confidence, tags, agent_id=agent_id)
         result["sync_written"] = True
         result["importance"] = importance
         return result
@@ -312,12 +319,12 @@ def knowledge_store_sync(
         }
 
 
-def episode_search(query: str, limit: int = 5, outcome: str = None) -> dict:
-    """Search for similar past episodes/tasks."""
+def episode_search(query: str, limit: int = 5, outcome: str = None, agent_id: str = "main") -> dict:
+    """Search for similar past episodes/tasks, scoped to the given agent."""
     if not MODULES_AVAILABLE:
         return {"error": "Episode module not available"}
     
-    em = EpisodicMemory()
+    em = EpisodicMemory(agent_id=agent_id)
     episodes = em.find_similar_episodes(query, limit, outcome)
     
     return {
@@ -327,12 +334,12 @@ def episode_search(query: str, limit: int = 5, outcome: str = None) -> dict:
     }
 
 
-def episode_learnings(task_goal: str, limit: int = 10) -> dict:
-    """Get relevant learnings from past similar tasks."""
+def episode_learnings(task_goal: str, limit: int = 10, agent_id: str = "main") -> dict:
+    """Get relevant learnings from past similar tasks, scoped to the given agent."""
     if not MODULES_AVAILABLE:
         return {"error": "Episode module not available"}
     
-    em = EpisodicMemory()
+    em = EpisodicMemory(agent_id=agent_id)
     learnings = em.get_learnings_for_task(task_goal, limit)
     
     return {
@@ -343,11 +350,12 @@ def episode_learnings(task_goal: str, limit: int = 10) -> dict:
 
 
 def episode_store(episode_data: dict) -> dict:
-    """Store a completed episode."""
+    """Store a completed episode (agent_id should be set inside episode_data)."""
     if not MODULES_AVAILABLE:
         return {"error": "Episode module not available"}
     
-    em = EpisodicMemory()
+    agent_id = episode_data.get("agent_id", "main")
+    em = EpisodicMemory(agent_id=agent_id)
     episode_id = em.store_episode(episode_data)
     
     if episode_id:
@@ -373,10 +381,11 @@ def context_aware_search(
     query: str,
     task_context: str = None,
     limit: int = 10,
-    include_episodes: bool = True
+    include_episodes: bool = True,
+    agent_id: str = "main"
 ) -> dict:
     """
-    Search with awareness of current task context.
+    Search with awareness of current task context, scoped to the given agent (plus global facts).
     Boosts facts relevant to both query AND current task.
     """
     if not DEPS_AVAILABLE:
@@ -390,15 +399,16 @@ def context_aware_search(
         if not query_embedding:
             return {"error": "Could not generate embedding"}
         
-        # Base semantic search
+        # Base semantic search scoped to agent + global facts
         base_results = db.query("""
             SELECT id, content, confidence, source, tags,
                 vector::similarity::cosine(embedding, $embedding) AS similarity
             FROM fact
-            WHERE archived = false
+            WHERE (archived = false OR archived IS NONE)
+              AND (agent_id = $agent_id OR scope = 'global' OR agent_id IS NONE)
             ORDER BY similarity DESC
             LIMIT $limit
-        """, {"embedding": query_embedding, "limit": limit * 2})
+        """, {"embedding": query_embedding, "limit": limit * 2, "agent_id": agent_id})
         
         facts = base_results if isinstance(base_results, list) else []
         
@@ -434,13 +444,203 @@ def context_aware_search(
             ]
         }
         
-        # Optionally include relevant episodes
+        # Optionally include relevant episodes (scoped to agent)
         if include_episodes and MODULES_AVAILABLE and task_context:
-            em = EpisodicMemory()
+            em = EpisodicMemory(agent_id=agent_id)
             episodes = em.find_similar_episodes(task_context, limit=3)
             result["related_episodes"] = episodes
         
         return result
+        
+    except Exception as e:
+        return {"error": str(e)}
+
+
+def memory_inject(
+    query: str,
+    max_facts: int = 7,
+    max_episodes: int = 3,
+    confidence_threshold: float = 0.9,
+    include_relations: bool = True,
+    task_context: str = None,
+    agent_id: str = "main"
+) -> dict:
+    """
+    Intelligent context injection from knowledge graph.
+    
+    Returns formatted context suitable for injection into agent prompts.
+    Automatically includes episodic memories when fact confidence is below threshold.
+    
+    Args:
+        query: The search query (usually current user message or task)
+        max_facts: Maximum semantic facts to return
+        max_episodes: Maximum episodic memories to return (0 to disable)
+        confidence_threshold: Include episodes if avg fact confidence below this
+        include_relations: Include related entities and supporting facts
+        task_context: Optional task context for boosting relevance
+    
+    Returns:
+        Formatted context with facts and episodes, plus metadata
+    """
+    if not DEPS_AVAILABLE:
+        return {"error": "Dependencies not available"}
+    
+    # Ensure proper types (mcporter may pass strings)
+    max_facts = int(max_facts) if max_facts is not None else 7
+    max_episodes = int(max_episodes) if max_episodes is not None else 3
+    confidence_threshold = float(confidence_threshold) if confidence_threshold is not None else 0.9
+    include_relations = bool(include_relations) if include_relations is not None else True
+    
+    try:
+        db = get_db()
+        query_embedding = get_embedding(query)
+        
+        if not query_embedding:
+            return {"error": "Could not generate embedding for query"}
+        
+        # Search for semantic facts scoped to agent + global facts
+        fact_results = db.query("""
+            SELECT id, content, confidence, source, tags,
+                vector::similarity::cosine(embedding, $embedding) AS similarity
+            FROM fact
+            WHERE (archived = false OR archived IS NONE)
+              AND (agent_id = $agent_id OR scope = 'global' OR agent_id IS NONE)
+            ORDER BY similarity DESC
+            LIMIT $limit
+        """, {"embedding": query_embedding, "limit": max_facts * 2, "agent_id": agent_id})
+        
+        facts = fact_results if isinstance(fact_results, list) else []
+        
+        # Apply task context boosting if provided
+        if task_context:
+            task_embedding = get_embedding(task_context)
+            if task_embedding:
+                for fact in facts:
+                    fact_emb = fact.get("embedding", [])
+                    if fact_emb and len(fact_emb) >= 100:
+                        task_sim = sum(a*b for a,b in zip(fact_emb[:100], task_embedding[:100])) / 100
+                        if task_sim > 0.3:
+                            fact["similarity"] = fact.get("similarity", 0) * 1.3
+                            fact["task_boosted"] = True
+        
+        # Sort by similarity and limit
+        facts = sorted(facts, key=lambda f: f.get("similarity", 0), reverse=True)[:max_facts]
+        
+        # Calculate average confidence
+        avg_confidence = sum(f.get("confidence", 0) for f in facts) / len(facts) if facts else 0
+        
+        # Prepare formatted facts for context
+        formatted_facts = []
+        for f in facts:
+            fact_entry = {
+                "content": f.get("content", ""),
+                "confidence": round(f.get("confidence", 0), 2),
+                "relevance": round(f.get("similarity", 0), 2),
+            }
+            if f.get("task_boosted"):
+                fact_entry["task_relevant"] = True
+            formatted_facts.append(fact_entry)
+        
+        # Collect related entities if requested
+        related_entities = []
+        if include_relations and facts:
+            for fact in facts[:3]:  # Only top 3 facts for relations
+                fact_id = fact.get("id")
+                if fact_id:
+                    entities = db.query("""
+                        SELECT out.name AS name, out.type AS type, role
+                        FROM mentions WHERE in = $fact_id
+                        LIMIT 3
+                    """, {"fact_id": fact_id})
+                    if entities:
+                        related_entities.extend([
+                            {"name": e.get("name"), "type": e.get("type"), "role": e.get("role")}
+                            for e in entities if isinstance(e, dict)
+                        ])
+        
+        close_db(db)
+        
+        # Include episodes if confidence below threshold
+        episodes = []
+        episode_context = []
+        if max_episodes > 0 and avg_confidence < confidence_threshold and MODULES_AVAILABLE:
+            em = EpisodicMemory(agent_id=agent_id)
+            search_query = task_context if task_context else query
+            episodes = em.find_similar_episodes(search_query, limit=max_episodes)
+            
+            for ep in episodes:
+                ep_entry = {
+                    "goal": ep.get("goal", ""),
+                    "outcome": ep.get("outcome", ""),
+                    "relevance": round(ep.get("similarity", 0), 2),
+                }
+                if ep.get("key_learnings"):
+                    ep_entry["learnings"] = ep["key_learnings"][:3]
+                if ep.get("problems") and ep.get("outcome") == "failure":
+                    # Extract problem text from structured problems
+                    problems = ep["problems"][:2]
+                    ep_entry["warnings"] = [
+                        p.get("problem", p.get("text", str(p))) if isinstance(p, dict) else str(p)
+                        for p in problems
+                    ]
+                episode_context.append(ep_entry)
+        
+        # Build formatted context string for injection
+        context_parts = []
+        
+        if formatted_facts:
+            context_parts.append("## Semantic Memory (Relevant Facts)")
+            for i, f in enumerate(formatted_facts, 1):
+                rel = f.get("relevance", 0)
+                conf = f.get("confidence", 0)
+                marker = "🎯" if f.get("task_relevant") else "📌"
+                context_parts.append(f"{marker} [{rel:.0%} relevant, {conf:.0%} confidence] {f['content']}")
+        
+        if related_entities:
+            # Deduplicate entities
+            seen = set()
+            unique_entities = []
+            for e in related_entities:
+                key = (e.get("name"), e.get("type"))
+                if key not in seen:
+                    seen.add(key)
+                    unique_entities.append(e)
+            
+            if unique_entities:
+                context_parts.append("\n## Related Entities")
+                for e in unique_entities[:5]:
+                    context_parts.append(f"• {e.get('name')} ({e.get('type')})")
+        
+        if episode_context:
+            context_parts.append("\n## Episodic Memory (Past Experiences)")
+            for ep in episode_context:
+                outcome_icon = "✅" if ep.get("outcome") == "success" else "⚠️"
+                context_parts.append(f"{outcome_icon} Task: {ep['goal'][:80]} [{ep.get('relevance', 0):.0%} similar]")
+                if ep.get("learnings"):
+                    for learning in ep["learnings"]:
+                        context_parts.append(f"   → {learning}")
+                if ep.get("warnings"):
+                    for warning in ep["warnings"]:
+                        context_parts.append(f"   ⚡ Warning: {warning}")
+        
+        formatted_context = "\n".join(context_parts) if context_parts else ""
+        
+        return {
+            "formatted_context": formatted_context,
+            "metadata": {
+                "facts_count": len(formatted_facts),
+                "episodes_count": len(episode_context),
+                "avg_fact_confidence": round(avg_confidence, 2),
+                "confidence_threshold": confidence_threshold,
+                "episodes_triggered": avg_confidence < confidence_threshold,
+                "entities_found": len(set((e.get("name"), e.get("type")) for e in related_entities)),
+            },
+            "raw": {
+                "facts": formatted_facts,
+                "episodes": episode_context,
+                "entities": related_entities[:5] if related_entities else [],
+            }
+        }
         
     except Exception as e:
         return {"error": str(e)}
@@ -454,13 +654,14 @@ TOOLS = [
     # Original v1 tools
     {
         "name": "knowledge_search",
-        "description": "Search the knowledge graph for facts matching a query. Returns semantically similar facts ranked by relevance and confidence.",
+        "description": "Search the knowledge graph for facts matching a query. Returns semantically similar facts ranked by relevance and confidence. Scoped to the specified agent plus any global facts.",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "query": {"type": "string", "description": "Search query"},
                 "limit": {"type": "integer", "description": "Max results (default: 10)", "default": 10},
-                "min_confidence": {"type": "number", "description": "Min confidence 0-1 (default: 0.3)", "default": 0.3}
+                "min_confidence": {"type": "number", "description": "Min confidence 0-1 (default: 0.3)", "default": 0.3},
+                "agent_id": {"type": "string", "description": "Agent ID to scope results to (default: 'main')", "default": "main"}
             },
             "required": ["query"]
         }
@@ -478,14 +679,15 @@ TOOLS = [
     },
     {
         "name": "knowledge_store",
-        "description": "Store a new fact in the knowledge graph.",
+        "description": "Store a new fact in the knowledge graph, tagged to the specified agent.",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "content": {"type": "string", "description": "The fact content"},
                 "source": {"type": "string", "description": "Source type: 'explicit' or 'inferred'", "default": "explicit"},
                 "confidence": {"type": "number", "description": "Confidence 0-1 (default: 0.9)", "default": 0.9},
-                "tags": {"type": "array", "items": {"type": "string"}, "description": "Optional tags"}
+                "tags": {"type": "array", "items": {"type": "string"}, "description": "Optional tags"},
+                "agent_id": {"type": "string", "description": "Agent ID that owns this fact (default: 'main')", "default": "main"}
             },
             "required": ["content"]
         }
@@ -579,6 +781,23 @@ TOOLS = [
             },
             "required": ["query"]
         }
+    },
+    {
+        "name": "memory_inject",
+        "description": "Intelligent context injection from knowledge graph. Returns formatted context suitable for agent prompts. Automatically includes episodic memories when fact confidence is below threshold.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "Search query (usually current user message or task)"},
+                "max_facts": {"type": "integer", "default": 7, "description": "Maximum semantic facts to return"},
+                "max_episodes": {"type": "integer", "default": 3, "description": "Maximum episodic memories to return (0 to disable)"},
+                "confidence_threshold": {"type": "number", "default": 0.9, "description": "Include episodes if avg fact confidence below this (0-1)"},
+                "include_relations": {"type": "boolean", "default": True, "description": "Include related entities and supporting facts"},
+                "task_context": {"type": "string", "description": "Optional task context for boosting relevance"},
+                "agent_id": {"type": "string", "default": "main", "description": "Agent ID to scope memory retrieval to (facts for this agent + global facts)"}
+            },
+            "required": ["query"]
+        }
     }
 ]
 
@@ -611,17 +830,20 @@ def handle_tools_call(id, params):
         "knowledge_search": lambda: knowledge_search(
             arguments.get("query", ""),
             arguments.get("limit", 10),
-            arguments.get("min_confidence", 0.3)
+            arguments.get("min_confidence", 0.3),
+            arguments.get("agent_id", "main")
         ),
         "knowledge_recall": lambda: knowledge_recall(
             arguments.get("fact_id"),
-            arguments.get("query")
+            arguments.get("query"),
+            arguments.get("agent_id", "main")
         ),
         "knowledge_store": lambda: knowledge_store(
             arguments.get("content", ""),
             arguments.get("source", "explicit"),
             arguments.get("confidence", 0.9),
-            arguments.get("tags")
+            arguments.get("tags"),
+            arguments.get("agent_id", "main")
         ),
         "knowledge_stats": knowledge_stats,
         "knowledge_store_sync": lambda: knowledge_store_sync(
@@ -630,24 +852,37 @@ def handle_tools_call(id, params):
             arguments.get("source", "inferred"),
             arguments.get("confidence"),
             arguments.get("tags"),
-            arguments.get("context")
+            arguments.get("context"),
+            arguments.get("agent_id", "main")
         ),
         "episode_search": lambda: episode_search(
             arguments.get("query", ""),
             arguments.get("limit", 5),
-            arguments.get("outcome")
+            arguments.get("outcome"),
+            arguments.get("agent_id", "main")
         ),
         "episode_learnings": lambda: episode_learnings(
             arguments.get("task_goal", ""),
-            arguments.get("limit", 10)
+            arguments.get("limit", 10),
+            arguments.get("agent_id", "main")
         ),
         "episode_store": lambda: episode_store(arguments.get("episode_data", {})),
         "working_memory_status": working_memory_status,
+        "memory_inject": lambda: memory_inject(
+            arguments.get("query", ""),
+            arguments.get("max_facts", 7),
+            arguments.get("max_episodes", 3),
+            arguments.get("confidence_threshold", 0.9),
+            arguments.get("include_relations", True),
+            arguments.get("task_context"),
+            arguments.get("agent_id", "main")
+        ),
         "context_aware_search": lambda: context_aware_search(
             arguments.get("query", ""),
             arguments.get("task_context"),
             arguments.get("limit", 10),
-            arguments.get("include_episodes", True)
+            arguments.get("include_episodes", True),
+            arguments.get("agent_id", "main")
         )
     }
     

@@ -1,13 +1,18 @@
 {
   "owner": "maverick-software",
   "slug": "surrealdb-knowledge-graph-memory",
-  "displayName": "Agentic Memory Upgrade",
+  "displayName": "Self-improving Agent Memory Upgrade (SurrealDB)",
   "latest": {
-    "version": "2.0.0",
-    "publishedAt": 1771463263363,
-    "commit": "https://github.com/openclaw/skills/commit/0ddedf93fa418bcaff50f502760b47b5d147d76b"
+    "version": "2.2.0",
+    "publishedAt": 1771626828624,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.0.0",
+      "publishedAt": 1771463263363,
+      "commit": "https://github.com/openclaw/skills/commit/0ddedf93fa418bcaff50f502760b47b5d147d76b"
+    },
     {
       "version": "1.0.2",
       "publishedAt": 1771314945738,
