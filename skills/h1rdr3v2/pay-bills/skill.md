@@ -8,11 +8,11 @@ Buy data, airtime, and digital products for Nigerian phone numbers via wallet ba
 
 These Node.js scripts live in the `pay-bills-skill/` directory. Run them with `node` to generate IDs and manage auth state.
 
-| Script                  | Command                                      | Purpose                                                                                                                                            |
-| ----------------------- | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `generate-order-id.js`  | `node pay-bills-skill/generate-order-id.js`  | Outputs a unique `ORDER_<timestamp>_<random>` string. Use this as `trx_id` for every order — **never hardcode or reuse a trx_id**.                 |
-| `generate-device-id.js` | `node pay-bills-skill/generate-device-id.js` | Outputs a persistent device UUID (saved to `.device_id`). Use this as the `deviceId` in auth requests. The same ID is returned on subsequent runs. |
-| `session-token.js`      | see below                                    | Manages the session token for auth.                                                                                                                |
+| Script                  | Command                                               | Purpose                                                                                                                            |
+| ----------------------- | ----------------------------------------------------- |------------------------------------------------------------------------------------------------------------------------------------|
+| `generate-order-id.js`  | `node pay-bills-skill/generate-order-id.js`           | Outputs a unique `ORDER_<timestamp>_<random>` string. Use this as `trx_id` for every order — **never hardcode or reuse a trx_id**. |
+| `generate-device-id.js` | `node pay-bills-skill/generate-device-id.js [userId]` | Outputs a device ID. With `userId`: `openclaw_<userId>`. Use as `deviceId` in auth requests. |
+| `session-token.js`      | see below                                             | Manages the session token for auth.                                                                                                |
 
 ### Session Token Commands
 
@@ -30,7 +30,7 @@ node pay-bills-skill/session-token.js clear              → deletes the saved t
    - If `loggedIn: false` → start the login flow (see Auth below).
 2. **After a successful login** (steps that return `sessionToken`): run `node pay-bills-skill/session-token.js save <sessionToken>` to persist it.
 3. **Before placing an order:** run `node pay-bills-skill/generate-order-id.js` to get a fresh `trx_id`.
-4. **For auth requests:** run `node pay-bills-skill/generate-device-id.js` to get the `deviceId`.
+4. **For auth requests:** run `node pay-bills-skill/generate-device-id.js` (no userId before login). After login, run `node pay-bills-skill/generate-device-id.js <userId>` to bind the device to the user.
 5. **On logout or 401:** run `node pay-bills-skill/session-token.js clear` and re-auth.
 
 ## Auth
@@ -127,7 +127,41 @@ GET  /user/profile                → { id, balance, fullName, email, phone }
 GET  /user/deposit-account        → { account: { AccountNumber, AccountName, BankName } | null }
 GET  /transactions?page=&limit=&type=&status=&fromDate=&toDate=  → { transactions[], total, page, totalPages }
 GET  /transactions/recent-phones  → { recentlyUsedPhones: [{ phone_number, network_id, network_name }] }
-POST /payment/deposit [auth]      { amount (min 100), paymentMethod:"flutterwave"|"monnify" } → { paymentLink }
+POST /payment/deposit [auth]      { amount (min 100) } → { paymentLink }
+```
+
+## Notification Preferences (all [auth])
+
+Users can view and update which notifications they receive.
+
+```
+GET   /user/notification-preferences                → { ok, preferences }
+PATCH /user/notification-preferences                → { ok, preferences }
+```
+
+### Preference Fields (all boolean, all optional on update)
+
+| Field                  | Description                     | Default |
+| ---------------------- | ------------------------------- | ------- |
+| `emailEnabled`         | Master switch for email channel | true    |
+| `chatEnabled`          | Master switch for chat channel  | true    |
+| `orderConfirmations`   | Order placed / confirmed        | true    |
+| `orderStatusUpdates`   | Order completed / failed        | true    |
+| `depositConfirmations` | Deposit successful              | true    |
+| `paymentFailures`      | Payment failed / underpaid      | true    |
+| `refundNotifications`  | Refund processed                | true    |
+| `giveawayUpdates`      | Giveaway created / activated    | true    |
+| `giveawayClaimAlerts`  | Someone claimed your giveaway   | true    |
+| `pointsAndCashback`    | Cashback & points earned        | true    |
+| `promotionalEmails`    | Marketing / promotional content | true    |
+| `lowBalanceWarning`    | Balance below threshold         | true    |
+
+### Example
+
+```json
+PATCH /user/notification-preferences
+{ "promotionalEmails": false, "lowBalanceWarning": false }
+→ { "ok": true, "preferences": { ...all fields... } }
 ```
 
 ## Saved Contacts (all [auth])
@@ -183,6 +217,6 @@ GET /product/education
 ## Enums
 
 - **type:** `data`, `airtime`
-- **payment_method:** `wallet`, `flutterwave`, `monnify`
+- **payment_method:** `wallet`, `online`
 - **transaction type:** `deposit`, `purchase_data`, `purchase_airtime`, `giveaway_funding`, `giveaway_claim`
 - **plan category:** `daily`, `weekly`, `monthly`, `yearly`

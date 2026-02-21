@@ -1,33 +1,19 @@
 #!/usr/bin/env node
 
 /**
- * Generates or retrieves a persistent device ID (UUID v4-style).
- * The ID is saved to .device_id in the same directory so the same
- * device ID is reused across sessions (important for auth flow).
+ * Generates a device ID based on the user's ID.
+ * Format: openclaw_<userId>  (e.g. "openclaw_42")
  *
- * Usage: node generate-device-id.js
- * Output: the device UUID string
+ * Usage:
+ *   node generate-device-id.js <userId>
+ *
+ * Output: the device ID string
  */
 
-const fs = require("fs")
-const path = require("path")
-const crypto = require("crypto")
-
-const DEVICE_ID_FILE = path.join(__dirname, ".device_id")
-
-function generateDeviceId() {
-	return crypto.randomUUID()
+function getDeviceId(userId) {
+	return `openclaw_${userId}`
 }
 
-function getOrCreateDeviceId() {
-	if (fs.existsSync(DEVICE_ID_FILE)) {
-		const existing = fs.readFileSync(DEVICE_ID_FILE, "utf-8").trim()
-		if (existing) return existing
-	}
-	const id = generateDeviceId()
-	fs.writeFileSync(DEVICE_ID_FILE, id, "utf-8")
-	return id
-}
-
-const deviceId = getOrCreateDeviceId()
+const userId = process.argv[2]
+const deviceId = getDeviceId(userId)
 process.stdout.write(deviceId)
