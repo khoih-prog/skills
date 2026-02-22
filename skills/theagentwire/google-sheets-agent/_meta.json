@@ -1,0 +1,11 @@
+{
+  "owner": "theagentwire",
+  "slug": "google-sheets-agent",
+  "displayName": "Google Sheets Agent",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1771794922898,
+    "commit": null
+  },
+  "history": []
+}
