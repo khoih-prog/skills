@@ -1,0 +1,11 @@
+{
+  "owner": "jacqueskang",
+  "slug": "ms-foundry-image-gen",
+  "displayName": "Microsoft Foundry image generation",
+  "latest": {
+    "version": "1.0.5",
+    "publishedAt": 1771790683480,
+    "commit": null
+  },
+  "history": []
+}
