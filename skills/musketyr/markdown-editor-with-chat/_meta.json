@@ -3,9 +3,15 @@
   "slug": "markdown-editor-with-chat",
   "displayName": "Markdown Editor With Chat",
   "latest": {
-    "version": "1.0.2",
-    "publishedAt": 1771766882081,
-    "commit": "https://github.com/openclaw/skills/commit/6fa37c0dac6a7045e692d16b5304326497b49418"
+    "version": "1.1.2",
+    "publishedAt": 1771777782582,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.2",
+      "publishedAt": 1771766882081,
+      "commit": "https://github.com/openclaw/skills/commit/6fa37c0dac6a7045e692d16b5304326497b49418"
+    }
+  ]
 }

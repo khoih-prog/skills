@@ -368,7 +368,21 @@
     .message.assistant .bubble {
       background: var(--bg-secondary);
       border: 1px solid var(--border);
+      text-align: left;
     }
+    
+    /* Markdown inside chat bubbles - smaller scale */
+    .message .bubble h1 { font-size: 1.1em; font-weight: 600; margin: 0.5em 0 0.3em; }
+    .message .bubble h2 { font-size: 1.05em; font-weight: 600; margin: 0.5em 0 0.3em; }
+    .message .bubble h3 { font-size: 1em; font-weight: 600; margin: 0.5em 0 0.3em; }
+    .message .bubble h4 { font-size: 0.95em; font-weight: 600; margin: 0.5em 0 0.3em; }
+    .message .bubble p { margin: 0.4em 0; }
+    .message .bubble ul, .message .bubble ol { margin: 0.4em 0; padding-left: 1.5em; }
+    .message .bubble li { margin: 0.2em 0; }
+    .message .bubble code { font-size: 0.85em; padding: 1px 4px; }
+    .message .bubble pre { margin: 0.5em 0; padding: 8px; font-size: 0.85em; }
+    .message .bubble hr { margin: 0.5em 0; }
+    .message .bubble blockquote { margin: 0.4em 0; padding-left: 10px; }
     
     .chat-input {
       padding: 16px;
@@ -377,7 +391,7 @@
       gap: 8px;
     }
     
-    .chat-input input {
+    .chat-input textarea {
       flex: 1;
       padding: 10px 14px;
       background: var(--bg);
@@ -386,9 +400,13 @@
       color: var(--text);
       font-size: 14px;
       outline: none;
+      resize: none;
+      min-height: 40px;
+      max-height: 120px;
+      font-family: inherit;
     }
     
-    .chat-input input:focus {
+    .chat-input textarea:focus {
       border-color: var(--accent);
     }
     
@@ -500,7 +518,7 @@
         </div>
       </div>
       <div class="chat-input">
-        <input type="text" id="chatInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendChat()">
+        <textarea id="chatInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();sendChat()}"></textarea>
         <button onclick="sendChat()" id="sendBtn">Send</button>
       </div>
     </div>
@@ -894,11 +912,19 @@
     // Render chat messages
     function renderChatMessages() {
       const container = document.getElementById('chatMessages');
-      container.innerHTML = chatMessages.map(m => `
-        <div class="message ${m.role}${m.loading ? ' loading' : ''}">
-          <div class="bubble">${m.loading ? '<span class="loading-spinner"></span> Thinking...' : escapeHtml(m.content)}</div>
-        </div>
-      `).join('');
+      container.innerHTML = chatMessages.map(m => {
+        let content;
+        if (m.loading) {
+          content = '<span class="loading-spinner"></span> Thinking...';
+        } else if (m.role === 'assistant') {
+          content = renderMarkdown(m.content);
+        } else {
+          content = escapeHtml(m.content);
+        }
+        return `<div class="message ${m.role}${m.loading ? ' loading' : ''}">
+          <div class="bubble">${content}</div>
+        </div>`;
+      }).join('');
       container.scrollTop = container.scrollHeight;
     }
     

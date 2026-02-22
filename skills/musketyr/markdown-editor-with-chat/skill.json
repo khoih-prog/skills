@@ -1,6 +1,6 @@
 {
   "name": "markdown-editor-with-chat",
-  "version": "1.0.2",
+  "version": "1.1.2",
   "description": "Lightweight markdown editor with optional OpenClaw gateway chat. Filesystem-based, no database required.",
   "author": "telegraphic-dev",
   "license": "MIT",

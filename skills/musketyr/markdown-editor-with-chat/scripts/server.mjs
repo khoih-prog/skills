@@ -190,6 +190,11 @@ function getFile(filePath) {
   if (!fullPath) {
     return { error: 'Invalid path' };
   }
+  // Security: Only allow .md files, block dotfiles
+  const basename = path.basename(filePath);
+  if (basename.startsWith('.') || !filePath.endsWith('.md')) {
+    return { error: 'Only .md files allowed' };
+  }
   if (!fs.existsSync(fullPath)) {
     return { error: 'File not found' };
   }
@@ -206,6 +211,11 @@ function saveFile(filePath, content) {
   const fullPath = safePath(filePath);
   if (!fullPath) {
     return { error: 'Invalid path' };
+  }
+  // Security: Only allow .md files, block dotfiles
+  const basename = path.basename(filePath);
+  if (basename.startsWith('.') || !filePath.endsWith('.md')) {
+    return { error: 'Only .md files allowed' };
   }
   // Ensure parent directory exists
   const dir = path.dirname(fullPath);
