@@ -106,17 +106,10 @@ clawdhub install clawdex
 
 ## 🔧 Installation
 
-### Via pip
+### Via pip (Recommended)
 
 ```bash
 pip install crabukit
-```
-
-### Via Homebrew (macOS/Linux)
-
-```bash
-brew tap moltatron/crabukit
-brew install crabukit
 ```
 
 ### As OpenClaw Skill

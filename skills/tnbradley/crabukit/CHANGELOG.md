@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] - 2026-02-21
+
+### Fixed
+- scripts/claw-safe-install.sh: Removed hardcoded path `/Users/moltatron/Library/Python/3.14/bin`
+  * Now prompts user to install manually instead of auto-install with hardcoded path
+  * Fixes VirusTotal/ClawHub security flag
+
+### Documentation
+- SECURITY.md: Added section explaining antivirus false positives
+  * Documents why crabukit may be flagged as "SordealStealer" or similar
+  * Clarifies defensive vs offensive use of security patterns
+
+## [0.1.2] - 2026-02-21
+
+### Fixed
+- SKILL.md metadata: Changed from `openclaw` to `clawdbot` namespace (ClawHub preferred)
+- SKILL.md metadata: Added `files:` section to properly declare package contents
+- Removed fake Homebrew tap reference from README (never existed)
+
+### Security
+- Fixes "instruction-only" vs packaged skill metadata mismatch for ClawHub
+
 ## [0.1.1] - 2026-02-21
 
 ### Added

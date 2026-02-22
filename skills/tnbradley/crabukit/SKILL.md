@@ -2,9 +2,17 @@
 name: crabukit
 description: Security scanner for OpenClaw skills with Clawdex integration. Analyzes SKILL.md and scripts for dangerous permissions, hardcoded secrets, shell injection vulnerabilities, and malicious code patterns. Automatically uses Clawdex database if installed for known-malicious skill detection. Use when (1) installing a skill from an untrusted source, (2) developing a skill before publishing, (3) auditing installed skills, or (4) running CI/CD security checks.
 metadata:
-  openclaw:
+  clawdbot:
     emoji: "🔒"
     category: "security"
+    files:
+      - "pyproject.toml"
+      - "crabukit/**/*.py"
+      - "scripts/**/*"
+      - "tests/**/*"
+      - "README.md"
+      - "LICENSE"
+      - "CHANGELOG.md"
     install:
       - id: pip
         kind: pip

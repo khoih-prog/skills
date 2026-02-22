@@ -1,5 +1,33 @@
 # Security Policy
 
+## Antivirus / Malware Scanner False Positives
+
+**Crabukit may be flagged by antivirus scanners (including VirusTotal) as "suspicious" or as malware (e.g., "SordealStealer", "Generic.PY"). This is a FALSE POSITIVE.**
+
+### Why This Happens
+
+Crabukit is a **defensive security scanner** (like Bandit, Semgrep, or YARA). It is flagged because:
+
+1. **Pattern Matching**: AV engines detect code patterns like `eval()`, `exec()`, subprocess calls, and file scanning
+2. **Similarity to Malware**: Real malware (like SordealStealer) uses these patterns for malicious purposes
+3. **Defensive vs Offensive**: Crabukit uses these patterns to **detect** threats, not **perform** them
+
+### What's Actually in the Code
+
+- ✅ **Searches for credentials** - To warn users about exposed secrets
+- ✅ **Detects `eval()`/`exec()`** - To flag dangerous code
+- ✅ **Uses subprocess** - To run external security tools like Clawdex
+- ✅ **Scans files** - To analyze SKILL.md and scripts for vulnerabilities
+
+### Verification
+
+- **Open Source**: All code is auditable at https://github.com/tnbradley/crabukit
+- **Purpose**: Defensive security scanning for OpenClaw skills
+- **No Network Exfiltration**: Only calls public Clawdex API (optional)
+- **No Persistence**: Does not install backdoors or modify system files
+
+If you have concerns, please review the code or contact us via GitHub Security Advisories.
+
 ## Supported Versions
 
 | Version | Supported          |

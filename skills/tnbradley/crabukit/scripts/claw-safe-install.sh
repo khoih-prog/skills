@@ -41,16 +41,12 @@ claw-safe-install() {
     # Check if crabukit is available
     if ! command -v crabukit &> /dev/null; then
         echo "⚠️  crabukit not found in PATH"
-        echo "Installing from /tmp/crabukit..."
-        if [ -d "/tmp/crabukit" ]; then
-            (cd /tmp/crabukit && pip3 install . --user --break-system-packages -q 2>/dev/null)
-            export PATH="$PATH:/Users/moltatron/Library/Python/3.14/bin"
-        fi
-        
-        if ! command -v crabukit &> /dev/null; then
-            echo "❌ crabukit not available. Please install it first."
-            return 1
-        fi
+        echo "Please install crabukit first:"
+        echo "  pip install crabukit"
+        echo "Or from source:"
+        echo "  git clone https://github.com/tnbradley/crabukit.git"
+        echo "  cd crabukit && pip install -e ."
+        return 1
     fi
     
     # Create temp workdir
