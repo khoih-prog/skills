@@ -1,0 +1,11 @@
+{
+  "owner": "aprilox",
+  "slug": "philips-hue",
+  "displayName": "Philips Hue",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1771707088581,
+    "commit": null
+  },
+  "history": []
+}
