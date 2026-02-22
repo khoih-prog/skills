@@ -309,5 +309,5 @@ Direct file paths always work: `https://<slug>.here.now/report.pdf`
 | -------------- | ------------------ | ---------------------------- |
 | Max file size  | 250 MB             | 5 GB                         |
 | Expiry         | 24 hours           | Permanent (or custom TTL)    |
-| Rate limit     | 5 / hour / IP      | Unlimited                    |
+| Rate limit     | 5 / hour / IP      | 60 / hour / account          |
 | Account needed | No                 | Yes (get key at here.now)    |
