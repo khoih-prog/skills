@@ -1,0 +1,11 @@
+{
+  "owner": "mcollina",
+  "slug": "snipgrapher",
+  "displayName": "Snipgrapher - generate images from code snippets",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1771679754241,
+    "commit": null
+  },
+  "history": []
+}
