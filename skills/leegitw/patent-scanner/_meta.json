@@ -1,13 +1,18 @@
 {
   "owner": "leegitw",
   "slug": "patent-scanner",
-  "displayName": "Patent Scanner",
+  "displayName": "Patent Scanner - Discover What Makes Your Concept Distinctive",
   "latest": {
-    "version": "1.1.3",
-    "publishedAt": 1770791007007,
-    "commit": "https://github.com/openclaw/skills/commit/bd844f3b62502a25f23e045fcac0a8489a3978c1"
+    "version": "1.3.0",
+    "publishedAt": 1771646175485,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.1.3",
+      "publishedAt": 1770791007007,
+      "commit": "https://github.com/openclaw/skills/commit/bd844f3b62502a25f23e045fcac0a8489a3978c1"
+    },
     {
       "version": "1.1.1",
       "publishedAt": 1770708164745,

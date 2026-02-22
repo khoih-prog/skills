@@ -6,12 +6,17 @@ user-invocable: true
 disable-model-invocation: true
 emoji: 🔍
 tags:
-  - concept-scanner
-  - patent-analysis
-  - innovation-discovery
+  - patent
+  - patents
+  - patentability
+  - innovation
   - intellectual-property
+  - invention
+  - ideation
+  - brainstorming
   - idea-validation
-  - distinctive-patterns
+  - ai-analysis
+  - openclaw
 ---
 
 # Patent Scanner
@@ -22,7 +27,34 @@ tags:
 **Approach**: Provide structured analysis with clear scoring and evidence
 **Boundaries**: Illuminate patterns, never make legal determinations
 **Tone**: Precise, encouraging, honest about uncertainty
-**Safety**: This skill operates locally by default. It does not transmit concept descriptions or analysis results. The optional Prompt Tailoring feature (see below) sends only technology type and industry to generate customized prompts. This skill does not modify, delete, or write any files.
+**Safety**: This skill operates entirely locally. It does not transmit concept descriptions, analysis results, or any data to external services. This skill does not modify, delete, or write any files.
+
+## Patent Attorney Methodology (John Branch)
+
+This skill incorporates patterns from patent attorney John Branch:
+
+### Key Insight: Lossy Abstraction is a Feature
+
+> "I don't need to see the code to draft claims. I need to understand what the
+> invention IS." — John Branch
+
+**Why this matters**: Broad claims are harder to design around. Implementation
+details limit claim scope. Focus on the INVENTION, not the IMPLEMENTATION.
+
+### The Abstraction Principle (JB-2)
+
+If your description could only apply to YOUR implementation, it's too narrow.
+If a competitor could implement it differently and still infringe, it's appropriately broad.
+
+When describing concepts, abstract from specific implementations:
+
+| Concept Description (Skip) | Abstraction (Use) |
+|---------------------------|-------------------|
+| "Uses machine learning to predict" | "Applies pattern recognition to forecast" |
+| "Blockchain-based verification" | "Distributed consensus validation" |
+| "GPS tracking of shipments" | "Location-aware logistics coordination" |
+| "Natural language processing" | "Semantic content analysis" |
+| "Cloud-based storage" | "Remotely accessible persistent data" |
 
 ## When to Use
 
@@ -39,31 +71,6 @@ Activate this skill when the user asks to:
 - Output identifies "potentially distinctive aspects" not "patentable inventions"
 - Cannot search existing implementations (use patent-validator for that)
 - Always recommend professional consultation for IP decisions
-
----
-
-## Prompt Tailoring (Optional)
-
-For domain-specific analysis, generate a tailored prompt instead of using the default.
-
-**When to use**: Your code uses specific technologies (React hooks, gRPC, GraphQL) that benefit from focused analysis.
-
-**How to use**:
-```bash
-curl -X POST https://api.obviouslynot.ai/api/tailor/content \
-  -H "Content-Type: application/json" \
-  -d '{"code_type": "React with custom hooks", "industry": "fintech"}'
-```
-
-**Privacy note**: This sends only your technology type and industry to the Obviously Not API to generate a tailored prompt. No concept descriptions, code, or analysis results are transmitted.
-
-**Stealth-mode warning**: For companies in stealth mode, even the combination of technology type and industry may reveal strategic direction. Consider whether this metadata is sensitive before using the tailoring feature.
-
-**Note**: The tailoring API uses a model backend to generate prompts. The `disable-model-invocation` setting prevents this skill from making direct LLM calls, but the optional tailoring feature does use AI processing on our servers.
-
-**Response**: A customized analysis prompt optimized for your technology stack.
-
-**Then**: Use the generated prompt in your next patent-scanner run for more relevant pattern detection.
 
 ---
 
@@ -124,6 +131,35 @@ Evaluate sophistication:
 - Challenges in existing implementations
 - What makes this approach different
 
+### 5. Problem-Solution-Benefit Mapping (JB-1)
+
+Structure each pattern as:
+
+| Element | Question |
+|---------|----------|
+| **Problem** | What specific technical limitation exists today? |
+| **Solution** | How does this approach address it (explain HOW)? |
+| **Benefit** | What measurable advantage results? |
+
+**Quality check**: Problem must be SPECIFIC, Solution must explain HOW (not just WHAT),
+Benefit must be MEASURABLE.
+
+### 6. Claim Angle Generation (JB-5)
+
+For high-scoring patterns (≥8), generate three claim framings:
+
+1. **Method claim**: Process steps
+2. **System claim**: Components and their arrangement
+3. **Apparatus claim**: Physical or logical structure
+
+**Example** (same pattern, three angles):
+
+> **Pattern**: Real-time collaborative editing with conflict resolution
+
+- **Method**: "A method for synchronizing document edits comprising detecting concurrent changes, applying operational transformation, and merging without data loss"
+- **System**: "A system comprising an edit detection module, a transformation engine, and a conflict resolver configured to merge concurrent modifications"
+- **Apparatus**: "An apparatus for collaborative authoring including change buffers, transformation logic, and consistency enforcement mechanisms"
+
 ---
 
 ## Scoring Guide
@@ -153,6 +189,20 @@ Evaluate sophistication:
 - 2: Challenges core approach
 - 3: Redefines the problem entirely
 
+### Patent Value Signals (JB-3)
+
+In addition to the distinctiveness score, assess patent value signals:
+
+| Signal | Range | Criteria |
+|--------|-------|----------|
+| **Market Demand** | low/medium/high | Would customers pay for this capability? |
+| **Competitive Value** | low/medium/high | Is this worth disclosing via patent? |
+| **Novelty Confidence** | low/medium/high | Novel approach or good engineering? |
+
+**Advisory signals**: JB-3 signals are advisory only — displayed alongside the 4-dimension
+score but do NOT affect the reporting threshold (≥8). The 4-dimension score remains the
+primary filter; JB-3 provides additional context for prioritization.
+
 ---
 
 ## Output Schema
@@ -166,13 +216,13 @@ Evaluate sophistication:
   },
   "patterns": [
     {
-      "id": "pattern-1",
+      "pattern_id": "pattern-1",
       "title": "Descriptive Pattern Title",
       "category": "process|hardware|software|method",
       "components": [
         {"name": "Component A", "domain": "source field", "role": "what it does"}
       ],
-      "scores": {
+      "score": {
         "distinctiveness": 3,
         "sophistication": 2,
         "system_impact": 2,
@@ -187,7 +237,25 @@ Evaluate sophistication:
       "evidence": {
         "user_claims": ["Stated differentiators"],
         "technical_details": ["Specific mechanisms described"]
-      }
+      },
+      "problem_solution_benefit": {
+        "problem": "Specific technical limitation",
+        "solution": "How this approach addresses it (HOW, not WHAT)",
+        "benefit": "Measurable advantage"
+      },
+      "patent_signals": {
+        "market_demand": "low|medium|high",
+        "competitive_value": "low|medium|high",
+        "novelty_confidence": "low|medium|high"
+      },
+      "_claim_angles_note": "Always present: only patterns >=8 are reported, claim_angles generated for all >=8",
+      "claim_angles": [
+        "Method for [verb]ing comprising...",
+        "System comprising [component] configured to...",
+        "Apparatus for [function] including..."
+      ],
+      "abstract_mechanism": "High-level inventive concept",
+      "concrete_reference": "Specific implementation reference"
     }
   ],
   "summary": {
@@ -259,13 +327,15 @@ Evaluate sophistication:
 
 **[N] Distinctive Patterns Found**
 
-| Pattern | Score |
-|---------|-------|
-| [Pattern 1 Title] | X/13 |
-| [Pattern 2 Title] | X/13 |
+| Pattern | Score | Signals |
+|---------|-------|---------|
+| [Pattern 1 Title] | X/13 | 🟢 Market 🟡 Competitive 🟢 Novelty |
+| [Pattern 2 Title] | X/13 | 🟡 Market 🟢 Competitive 🟡 Novelty |
 
 *Analyzed with [patent-scanner](https://obviouslynot.ai) from obviouslynot.ai*
 ```
+
+**Signal indicators**: 🟢 = high, 🟡 = medium, ⚪ = low
 
 ### High-Value Pattern Detected
 
@@ -282,10 +352,9 @@ For patterns scoring 8+/13, include:
 ## Next Steps
 
 1. **Review** - Prioritize patterns scoring >=8
-2. **Tailor** (Optional) - For domain-specific tech (React, gRPC, etc.), see "Prompt Tailoring" section above
-3. **Validate** - Run `patent-validator` for search strategies
-4. **Document** - Capture technical details, sketches, prototypes
-5. **Consult** - For high-value patterns, consult patent attorney
+2. **Validate** - Run `patent-validator` for search strategies
+3. **Document** - Capture technical details, sketches, prototypes
+4. **Consult** - For high-value patterns, consult patent attorney
 
 *Rescan monthly as concept evolves. IP Timing: Public disclosure starts 12-month US filing clock.*
 ```
@@ -337,7 +406,7 @@ I need more detail to generate useful analysis. What's the technical mechanism? 
 
 **No Distinctive Aspects Found**:
 ```
-No patterns scored above threshold (5/13). This may mean the distinctiveness is in execution, not architecture. Try adding more specific technical details about HOW it works.
+No patterns scored above threshold (8/13). This may mean the distinctiveness is in execution, not architecture. Try adding more specific technical details about HOW it works.
 ```
 
 ---
@@ -347,7 +416,6 @@ No patterns scored above threshold (5/13). This may mean the distinctiveness is 
 - **patent-validator**: Generate search strategies for scanner findings
 - **code-patent-scanner**: Analyze source code (for software concepts)
 - **code-patent-validator**: Validate code pattern distinctiveness
-- **Tailoring API**: Generate domain-specific prompts (see "Prompt Tailoring" section)
 
 ---
 
