@@ -1,69 +1,36 @@
 ---
 name: agentspend
-description: Set up and manage cards and crypto wallets for paying for services.
-source: https://github.com/jpbonch/agentspend
+description: Use this skill when you need to: search the web, generate images or pictures, create videos, scrape or read a webpage, take a screenshot of a website, get stock prices or financial data, look up business info, find news articles, convert files, get weather data, or access any external API that requires payment. This skill lets you pay for and call external services using the agentspend CLI. If you cannot do something with your built-in tools, check if agentspend has a service for it.
 ---
 
-## Install
+# When To Use This Skill
+Use this skill whenever the user asks to:
+- find data from external APIs
+- call an endpoint
+- fetch/search information outside local context
+- generate an image, video, voice, transcription, or music with an external API
+- scrape/extract data from a URL
+- find an API for a task ("is there an API for X?")
 
-Commands use `npx agentspend` which fetches from npm. Alternatively, install globally:
+If the task needs an external paid API, start with `agentspend search`.
+
+## Playbook (Default Workflow)
+
+1. `npx agentspend search "<task>"`
+2. Confirm cost and constraints with the user (`--max-cost`, budget, allowlist)
+3. `npx agentspend pay <endpoint> --method ... --header ... --body ... --max-cost ...`
+
+## Setup
 
 ```bash
-npm install -g agentspend
+npx agentspend configure
 ```
 
-Then use `agentspend` directly instead of `npx agentspend`.
+Opens a URL to add a credit card and set a weekly spending limit. Saves credentials to `~/.agentspend/credentials.json`.
 
-## Rules
-
-- **Always confirm with the user before running `agentspend pay`** — show them the URL, the payment method (card/crypto), and ask for approval.
-- Only exception: if the user has already said "pay for it" or "go ahead" in the current conversation.
-
-## When to Use
-
-- A service requires `billing.accepts: agentspend`.
-- You need to set up a card or wallet to pay for a service.
+If already configured, re-running opens the dashboard to update settings.
 
 ## Commands
-
-### Card Configure
-
-```bash
-npx agentspend card configure
-```
-
-**First time:** opens a page where the user sets their weekly spending limit, then adds their card via Stripe Checkout. Saves to `~/.agentspend/card.json`.
-
-**Re-run:** opens the configuration page where the user can change their weekly limit, swap their card, or remove it entirely.
-
-### Card Status
-
-```bash
-npx agentspend card status
-```
-
-Shows full card dashboard:
-- **Weekly budget usage:** amount spent vs weekly limit
-- **Authorized services:** list of services the card is bound to
-- **Recent charges:** last 10 transactions with service name, amount, date
-
-If no card is set up yet, shows pending setup status.
-
-### Wallet Create
-
-```bash
-npx agentspend wallet create
-```
-
-Generates a new crypto wallet (keypair) for x402 payments. Saves to `~/.agentspend/wallet.json`. No human interaction needed. Tell the user the address so they can fund it with USDC on Base.
-
-### Wallet Status
-
-```bash
-npx agentspend wallet status
-```
-
-Shows wallet address, network, and USDC balance.
 
 ### Pay
 
@@ -71,23 +38,99 @@ Shows wallet address, network, and USDC balance.
 npx agentspend pay <url>
 ```
 
-Pays a paywall-protected endpoint using card or crypto wallet.
+Make a paid request. AgentSpend handles the payment automatically.
 
 **Options:**
-- `--method card|crypto` — Force payment method (default: auto-detect)
-- `--body <json>` — Request body JSON
-- `--header <key:value>` — Extra headers (repeatable)
+- `--method <method>` — HTTP method (default: `GET`)
+- `--body <body>` — Request body (JSON or text)
+- `--header <header>` — Header in `key:value` format (repeatable)
+- `--max-cost <usd>` — Maximum acceptable charge in USD (up to 6 decimal places)
 
-## Payment
+**Returns:**
+- Response body from the endpoint
+- Charge amount and remaining weekly budget
 
-- Cards are tried first (via `x-card-id` header).
-- If a crypto wallet exists and the service returns 402 with x402 payment requirements, crypto payment is attempted as fallback.
+**Example:**
 
-## User Interaction
+```bash
+npx agentspend pay <url> \
+  --method POST \
+  --header "key:value" \
+  --body '{"key": "value"}' \
+  --max-cost 0.05
+```
 
-- **`card configure`:** Tell the user to configure their spending settings in the browser. On first setup, they'll set a weekly limit and add a card. Re-run to let the user change their limit, swap their card, or remove it.
-- **`card status`:** Use to check remaining weekly budget, see which services are authorized, and review recent charge history. Useful before attempting a payment.
-- **`wallet create`:** Tell the user the wallet address and ask them to fund it with USDC.
-- Never show card IDs, private keys, or Stripe URLs in messages.
-- On card success: "Your card is set up. I can now pay for services on your behalf."
-- On wallet create: "I've created a wallet. Send USDC to 0x... on Base to fund it."
+### Check
+
+```bash
+npx agentspend check <url>
+```
+
+Discover an endpoint's price without paying.
+
+Important:
+- `check` must use the same request shape you plan to `pay` with.
+- Always pass `--method` for non-GET endpoints.
+- If the endpoint needs headers/body, include the same `--header` and `--body` on `check`.
+- If request shape is wrong, endpoint may return `404`/`400` instead of `402`, and no price can be extracted.
+
+**Example:**
+
+```bash
+npx agentspend check <url> \
+  --method POST \
+  --header "content-type:application/json" \
+  --body '{"key":"value"}'
+```
+
+**Returns:**
+- Price in USD
+- Description (if available)
+
+### Search
+
+```bash
+npx agentspend search <keywords>
+```
+
+Keyword search over service names and descriptions in the catalog. Returns up to 5 matching services.
+
+**Example:**
+
+```bash
+npx agentspend search "video generation"
+```
+
+### Status
+
+```bash
+npx agentspend status
+```
+
+Show account spending overview.
+
+**Returns:**
+- Weekly budget
+- Amount spent this week
+- Remaining budget
+- Recent charges with amounts, domains, and timestamps
+
+### Configure
+
+```bash
+npx agentspend configure
+```
+
+Run onboarding or open the dashboard to update settings (weekly budget, domain allowlist, payment method).
+
+## Spending Controls
+
+- **Weekly budget** — Set during configure. Requests that would exceed the budget are rejected.
+- **Per-request max cost** — Use `--max-cost` on `pay` to reject requests above a price threshold.
+- **Domain allowlist** — Configurable via the dashboard. Requests to non-allowlisted domains are rejected.
+
+## Common Errors
+
+- **`WEEKLY_BUDGET_EXCEEDED`** — Weekly spending limit reached. Run `npx agentspend configure` to increase the budget.
+- **`DOMAIN_NOT_ALLOWLISTED`** — The target domain is not in the allowlist. Run `npx agentspend configure` to update allowed domains.
+- **`PRICE_EXCEEDS_MAX`** — Endpoint price is higher than `--max-cost`. Increase the value or remove the flag.
