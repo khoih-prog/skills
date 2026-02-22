@@ -3,9 +3,15 @@
   "slug": "greek-email-processor",
   "displayName": "Greek Email Processor",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1771534357900,
-    "commit": "https://github.com/openclaw/skills/commit/ab91cf0348797c8b5892a7aa8d7fb4c871a9f731"
+    "version": "0.1.1",
+    "publishedAt": 1771660546579,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1771534357900,
+      "commit": "https://github.com/openclaw/skills/commit/ab91cf0348797c8b5892a7aa8d7fb4c871a9f731"
+    }
+  ]
 }

@@ -1,16 +1,45 @@
 ---
 name: greek-email-processor
-description: Automated email processing skill for Greek accounting workflows. Monitors Gmail, Outlook, and other email providers for Greek financial documents, AADE notifications, bank statements, invoices, and client correspondence. Provides intelligent document classification, automated forwarding, and Greek language support for accounting automation.
+description: Email processing for Greek accounting. Connects via IMAP to scan for financial documents, AADE notices, and invoices. Routes to local pipelines.
 version: 1.0.0
 author: openclaw-greek-accounting
 homepage: https://github.com/satoshistackalotto/openclaw-greek-accounting
-tags: ["greek", "accounting", "email", "document-classification", "gmail"]
-metadata: {"openclaw": {"requires": {"bins": ["jq", "curl"], "env": ["OPENCLAW_DATA_DIR"]}}}
+tags: ["greek", "accounting", "email", "document-classification", "imap"]
+metadata: {"openclaw": {"requires": {"bins": ["jq", "curl"], "env": ["OPENCLAW_DATA_DIR", "IMAP_HOST", "IMAP_USER", "IMAP_PASSWORD"]}, "optional_env": {"SMTP_HOST": "Email server for auto-responses (requires human approval before sending)", "SMTP_USER": "Email account for sending responses", "SMTP_PASSWORD": "Email account password (use app-specific passwords)", "GOOGLE_CLIENT_ID": "Gmail API OAuth client ID (alternative to IMAP for Gmail users)", "GOOGLE_CLIENT_SECRET": "Gmail API OAuth client secret", "MS_CLIENT_ID": "Microsoft Graph API client ID (alternative to IMAP for Outlook users)", "MS_CLIENT_SECRET": "Microsoft Graph API client secret", "GOOGLE_CALENDAR_ID": "Google Calendar ID for deadline event creation", "SLACK_WEBHOOK_URL": "Webhook URL for processing status notifications"}, "notes": "IMAP credentials are the only required credentials — works with any email provider. Gmail API and Microsoft Graph API are optional alternatives that provide richer features. SMTP, Calendar, and Slack integrations are optional notification channels. All auto-responses require human approval."}}
 ---
 
 # Greek Email Processor
 
 This skill transforms OpenClaw into an intelligent Greek business email processor that automatically detects, categorizes, and processes financial documents and official communications from Greek government agencies, banks, and business partners.
+
+## Setup
+
+```bash
+# 1. Set data directory
+export OPENCLAW_DATA_DIR="/data"
+
+# 2. Configure email access (use a scoped service account with read-only access)
+export IMAP_HOST="imap.your-provider.com" # e.g. imap.gmail.com, imap.outlook.com
+export IMAP_USER="accounting@yourfirm.gr"
+export IMAP_PASSWORD="app-specific-password"  # Use app passwords, not main password
+
+# 3. Configure outbound email (optional — only needed for auto-responses)
+export SMTP_HOST="smtp.your-provider.com" # e.g. smtp.gmail.com, smtp.outlook.com
+export SMTP_USER="accounting@yourfirm.gr"
+export SMTP_PASSWORD="app-specific-password"
+
+# 4. Ensure dependencies are installed
+which jq curl || sudo apt install jq curl
+
+# 5. Create incoming directories
+mkdir -p $OPENCLAW_DATA_DIR/incoming/{invoices,receipts,statements,government}
+```
+
+**Security notes:**
+- Use app-specific passwords or app-specific passwords — never your main email password
+- Grant the service account the minimum required permissions (read-only for IMAP)
+- SMTP credentials are optional — only needed if you enable auto-response features
+- All auto-responses require human approval before sending
 
 ## Core Philosophy
 
@@ -31,8 +60,10 @@ This skill transforms OpenClaw into an intelligent Greek business email processo
 - **Receipt Processing**: Identify expense receipts and business documentation
 
 ### 2. Email Provider Integration
-- **Gmail Business Accounts**: Full integration with Google Workspace and personal Gmail
-- **Outlook/Exchange**: Microsoft business email integration
+- **Gmail / Google Workspace**: Via IMAP (use app-specific password) or optional Gmail API (set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET)
+- **Outlook / Exchange**: Via IMAP or optional Microsoft Graph API (set MS_CLIENT_ID, MS_CLIENT_SECRET)
+- **Any IMAP Provider**: Standard IMAP connection to any email provider
+- **IMAP/SMTP Providers**: Any IMAP-compatible business email
 - **Yahoo Business**: Yahoo business email support
 - **Custom IMAP/POP3**: Support for Greek business email providers
 - **Multi-Account Support**: Handle multiple email accounts simultaneously
@@ -51,20 +82,19 @@ This skill transforms OpenClaw into an intelligent Greek business email processo
 - **Smart Forwarding**: Route emails to appropriate processing pipelines
 - **Client Notification**: Automated responses in Greek for document receipt
 - **Priority Escalation**: Flag urgent emails (overdue payments, government notices)
-- **Calendar Integration**: Create calendar events for payment due dates and deadlines
+- **Calendar Integration** (optional): Create calendar events for payment due dates if GOOGLE_CALENDAR_ID is configured
 - **Task Creation**: Generate accounting tasks from email content
 
 ## Implementation Guidelines
 
 ### Email Monitoring Architecture
 
-#### Gmail Integration
+#### IMAP Email Integration
 ```yaml
-Gmail_API_Configuration:
-  oauth_scopes:
-    - "https://www.googleapis.com/auth/gmail.readonly"
-    - "https://www.googleapis.com/auth/gmail.send"
-    - "https://www.googleapis.com/auth/gmail.modify"
+IMAP_Configuration:
+  imap_permissions:
+    protocol: "IMAP for reading, SMTP for sending"
+    security: "TLS/SSL required"
   
   monitoring_labels:
     - "INBOX"
@@ -79,9 +109,9 @@ Gmail_API_Configuration:
     client_payments: "subject:(πληρπ°μή OR payment OR οπ ειλή OR due)"
 ```
 
-#### Outlook/Exchange Integration
+#### IMAP/SMTP Providers Integration
 ```yaml
-Outlook_API_Configuration:
+Alternative_Provider_Notes:
   microsoft_graph_scopes:
     - "https://graph.microsoft.com/Mail.Read"
     - "https://graph.microsoft.com/Mail.Send"
@@ -156,7 +186,7 @@ Content_Analysis_Rules:
   
   automated_actions:
     high_priority_actions:
-      - immediate_notification: "SMS + email alert"
+      - immediate_notification: "notification to assigned accountant"
       - create_calendar_event: "Add deadline to calendar"
       - create_task: "Generate action item in task management"
       - escalate_to_human: "Flag for immediate attention"
@@ -327,7 +357,7 @@ AADE_Email_Processing:
   automatic_actions:
     tax_deadline_changes:
       - extract_new_deadline: "Parse email content for deadline changes"
-      - update_calendar: "Update compliance calendar immediately"
+      - update_calendar: "Update compliance deadline tracker immediately"
       - alert_clients: "Notify affected clients of deadline changes"
       - log_compliance: "Record change in compliance tracking system"
       
@@ -337,7 +367,7 @@ AADE_Email_Processing:
       - reschedule_activities: "Move planned TAXIS submissions if needed"
       
     audit_notifications:
-      - high_priority_alert: "Immediate SMS and email notification"
+      - high_priority_alert: "Immediate notification to assigned accountant"
       - create_urgent_task: "Generate audit response task"
       - gather_documents: "Prepare standard audit documentation"
       - legal_consultation: "Flag for legal review if needed"
@@ -424,19 +454,19 @@ Auto_Response_Logic:
 Multi_Account_Setup:
   primary_business_account:
     email: "accounting@company.gr"
-    provider: "Gmail"
+    protocol: "IMAP"
     processing_priority: "high"
     auto_responses: "enabled"
     
   client_communication_account:
     email: "info@company.gr"  
-    provider: "Outlook"
+    protocol: "IMAP"
     processing_priority: "medium"
     auto_responses: "enabled"
     
   government_notifications_account:
     email: "compliance@company.gr"
-    provider: "Gmail"
+    protocol: "IMAP"
     processing_priority: "critical"
     auto_responses: "disabled"
     
@@ -509,30 +539,24 @@ openclaw email extract-attachments --process-with deepread-skill
 openclaw email invoices --process-with greek-vat-calculator
 
 # Integration with client management
-openclaw email client-communications --update-crm-system
+openclaw email client-communications --update-client-records
 openclaw email payments --update-accounting-ledger
+
+# Update client records with email-derived data (requires client-data-management skill)
+openclaw email client-communications --update-client-records
 ```
 
-### External System Integration
+### Internal Skill Integration
 ```yaml
-Accounting_Software_Integration:
-  quickbooks: "Direct API integration for invoice processing"
-  xero: "Automated transaction import from email processing"
-  sage: "Client communication logging integration"
-  
-Calendar_Integration:
-  google_calendar: "Create events for payment due dates and deadlines"
-  outlook_calendar: "Sync with business calendar systems"
-  
-Task_Management_Integration:
-  asana: "Create accounting tasks from email requests"
-  trello: "Client workflow management"
-  slack: "Team notifications for urgent emails"
-  
-Banking_Integration:
-  auto_reconciliation: "Match email notifications with bank transactions"
-  payment_processing: "Trigger payments based on email approvals"
+Companion_Skills:
+  accounting-workflows: "Route extracted documents to processing pipeline"
+  greek-document-ocr: "Send attachments for OCR processing"
+  client-data-management: "Update client records from email content"
+  greek-compliance-aade: "Forward AADE notifications for compliance tracking"
+  greek-banking-integration: "Match email payment notifications with bank transactions"
 ```
+
+> **Note**: This skill does NOT integrate with external software. It processes emails and routes extracted data to companion OpenClaw skills via the local filesystem.
 
 ## Usage Examples
 
@@ -577,7 +601,7 @@ AADE Notification Processed (1):
    ├─ Change: March VAT deadline moved from 25th to 20th
    ├─ Impact: 5 days earlier than expected
    ├─ Actions Taken:
-   ─š   ├─ Updated compliance calendar ✅
+   ─š   ├─ Updated compliance deadline tracker ✅
    ─š   ├─ Notified affected clients ✅
    ─š   ├─ Rescheduled VAT preparation tasks ✅
    ─š   └─ Created urgent alert for accounting team ✅
@@ -631,7 +655,7 @@ openclaw email process-attachments --extract-invoices --auto-classify
 openclaw email generate-responses --templates-greek --auto-send false
 
 # Email integration through file system
-openclaw email scan-exports --source gmail-backup --process-new
+openclaw email scan-exports --source imap-archive --process-new
 openclaw email parse-greek-documents --invoices --government --banking
 ```
 
@@ -679,7 +703,7 @@ openclaw email greek-forward --accounting-system --include-metadata
 # Chain with other OpenClaw skills
 openclaw email process-batch | openclaw accounting validate-invoices
 openclaw email extract-data | openclaw greek-compliance calculate-vat
-openclaw email government-alerts | openclaw deadline update-calendar
+openclaw email government-alerts | openclaw deadline update-deadlines
 ```
 
 A successful Greek email processing system should achieve:
