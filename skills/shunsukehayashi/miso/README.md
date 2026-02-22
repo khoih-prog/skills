@@ -46,16 +46,31 @@ See `SLASH-COMMANDS.md` for concise command usage.
 
 ### Telegram bot custom slash commands
 Register these Telegram menu commands via bot API:
-- `/start`
-- `/plan`
-- `/close`
-- `/status`
-- `/task_start`
-- `/task_plan`
-- `/task_close`
+- `/miso_start`
+- `/miso_plan`
+- `/miso_close`
+- `/miso_status`
+- `/miso_task_start`
+- `/miso_task_plan`
+- `/miso_task_close`
 
 To apply now:
 
 ```powershell
 pwsh .\scripts\set-telegram-commands.ps1 -BotToken "<YOUR_TELEGRAM_BOT_TOKEN>"
 ```
+
+### Quick reference (one-screen)
+
+**Instant operation table**
+
+- `/miso_start` or `/miso_task_start` → initialize mission format (owner/issue/goal)
+- `/miso_plan` or `/miso_task_plan` → output execution breakdown (analysis/plan/execute/verify)
+- `/miso_close` or `/miso_task_close` → complete summary format (result/risk/notify)
+- `/miso_status` → quick status/approval check
+- `/agent analyze` → mission context and impact classification
+- `/agent execute` → start multi-agent run mode
+- `/agent review` → review/quality check pass template
+- `/agent status` → run-state readback and next action
+
+This format is optimized for mobile and copy-paste operations.
