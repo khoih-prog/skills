@@ -1,3 +1,32 @@
+---
+name: guardrail-smart-accounts
+description: Create, fund, and manage isolated ERC-4337 smart accounts for AI agents with enforced on-chain spending guardrails.
+version: 1.0.7
+metadata:
+  openclaw:
+    requires:
+      env:
+        - GUARDRAIL_CHAIN_ID
+        - GUARDRAIL_RPC_URL
+        - GUARDRAIL_SIGNING_MODE
+    optionalSecrets:
+      - name: GUARDRAIL_SIGNER_ENDPOINT
+        when: GUARDRAIL_SIGNING_MODE is external_signer
+        sensitive: true
+        description: External signer service URL
+      - name: GUARDRAIL_SIGNER_AUTH_TOKEN
+        when: GUARDRAIL_SIGNING_MODE is external_signer
+        sensitive: true
+        description: Scoped, revocable auth token for the external signer
+      - name: GUARDRAIL_DASHBOARD_API_KEY
+        when: Using dashboard API only
+        sensitive: true
+        description: Dashboard API key for management UI interaction
+    primaryEnv: GUARDRAIL_RPC_URL
+    emoji: "\U0001F6E1"
+    homepage: https://agentguardrail.xyz
+---
+
 # Guardrail Smart Accounts Skill
 
 > Create, fund, and manage isolated ERC-4337 smart accounts for AI agents with enforced on-chain spending guardrails.
@@ -60,25 +89,33 @@ If secure signing is not configured, use this skill in **read-only mode** until 
 
 These values must be provided via secure secret storage (not chat):
 
-**Required:**
+- `GUARDRAIL_CHAIN_ID` — Target chain identifier
+- `GUARDRAIL_RPC_URL` — JSON-RPC endpoint for the target chain (treat as sensitive — hosted RPC URLs often contain API keys)
+- `GUARDRAIL_SIGNING_MODE` — one of: `external_signer`, `wallet_connector`, `session_key`
 
-- `GUARDRAIL_CHAIN_ID`
-- `GUARDRAIL_RPC_URL`
-- `GUARDRAIL_SIGNING_MODE` — one of:
-  - `external_signer`
-  - `wallet_connector`
-  - `session_key`
+### Conditional Secrets (declared in manifest as optionalSecrets)
 
-**If Using External Signer:**
+These are only required when using specific signing modes:
 
-- `GUARDRAIL_SIGNER_ENDPOINT`
-- `GUARDRAIL_SIGNER_AUTH_TOKEN`
+- `GUARDRAIL_SIGNER_ENDPOINT` — External signer service URL. Only required when `GUARDRAIL_SIGNING_MODE` is `external_signer`. Not needed for `wallet_connector` or `session_key` modes.
+- `GUARDRAIL_SIGNER_AUTH_TOKEN` — Scoped, revocable authentication token for the external signer. Only required when `GUARDRAIL_SIGNING_MODE` is `external_signer`. Must be stored in secure secret storage, never in chat or logs.
+- `GUARDRAIL_DASHBOARD_API_KEY` — API key for dashboard management UI interaction. Not required for direct contract usage.
 
-**Optional:**
+### Signer Token Rotation and Revocation
 
-- `GUARDRAIL_DASHBOARD_API_KEY` — Only required if interacting with dashboard APIs. Not required for direct contract usage.
+When using `external_signer` mode:
 
-The runtime must validate `chainId` and reject unsupported networks by default.
+- `GUARDRAIL_SIGNER_AUTH_TOKEN` should be scoped to the minimum required permissions (allowlists, rate limits, spend caps).
+- Tokens should be short-lived and rotated on a regular schedule.
+- The external signer provider must support immediate token revocation.
+- If a token is compromised, revoke it at the signer provider and rotate to a new token in secure secret storage.
+- Never use long-lived owner EOA private keys as signer tokens.
+
+### Dashboard API Key Usage
+
+`GUARDRAIL_DASHBOARD_API_KEY` provides access to the management dashboard API for registering agents, managing policies, and viewing audit logs. It does not grant signing or fund-transfer capability. Store it in secure secret storage and rotate periodically.
+
+The runtime must validate the chain ID and reject unsupported networks by default.
 
 ## Core Capabilities
 
@@ -251,6 +288,14 @@ Because this skill can move funds on-chain:
 3. Use strict Guardrail policies.
 4. Enable autonomous execution only with secure signing configured.
 5. Apply rate limits and allowlists at the signer layer.
+
+## Privacy and Data Handling
+
+- This skill does not store, log, or transmit private keys, seed phrases, or signer tokens.
+- `GUARDRAIL_RPC_URL` may contain an embedded API key (common with hosted RPC providers). Treat it as sensitive.
+- `GUARDRAIL_SIGNER_AUTH_TOKEN` grants signing capability when combined with the signer endpoint. It must be stored in secure secret storage and never exposed in logs, prompts, or chat.
+- On-chain transactions are public by nature. The skill does not add any off-chain data collection beyond what the blockchain records.
+- The skill does not access local files, browser storage, or environment variables beyond those declared in the manifest metadata.
 
 ## Design Principles
 
