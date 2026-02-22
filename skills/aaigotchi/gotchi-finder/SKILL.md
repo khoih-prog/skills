@@ -23,6 +23,7 @@ Find and display any Aavegotchi by ID with complete traits and image.
 - ✅ **Instant ID lookup** - Fetch any gotchi by ID number
 - ✅ Fetch any gotchi by ID from Base mainnet
 - ✅ Display full traits (BRS, Kinship, Level, XP, Haunt, Name, Owner)
+- ✅ **TOTAL BRS** - Shows base + wearables modifiers (true power level)
 - ✅ Generate PNG images (standard 512x512 or hi-res 1024x1024)
 - ✅ Export as SVG (scalable vector graphics)
 - ✅ Flexible format options (PNG, hi-res, SVG, or all)
@@ -228,3 +229,44 @@ Built with 💜 by AAI
 **ClawHub Status:** Approved  
 **Risk Level:** NONE (Read-only)  
 **Last Audit:** 2026-02-19
+
+## BRS Calculation (OFFICIAL)
+
+**gotchi-finder ALWAYS uses TOTAL BRS** = Base BRS + Wearables Modifiers
+
+This shows the gotchi's **true power level** with all equipped gear!
+
+### JSON Output Fields
+
+- `brs` - **TOTAL BRS** (base + wearables) - main field ⭐
+- `baseBrs` - Base BRS only (no wearables)
+- `baseRarityScore` - Same as baseBrs (from contract)
+- `modifiedRarityScore` - Same as brs (from contract)
+
+### Example Output
+
+```json
+{
+  "name": "SHAAMAAN",
+  "brs": "670",           // ← TOTAL BRS (used everywhere)
+  "baseBrs": "562",       // Base only (reference)
+  "traits": { ... },      // Base traits (no wearables)
+  "modifiedTraits": { ... } // Modified traits (with wearables)
+}
+```
+
+**Console Display:**
+```
+⭐ Total BRS: 670 (Base: 562 + Wearables: +108)
+```
+
+### Why Total BRS?
+
+- ✅ Shows gotchi's **actual strength** in battles
+- ✅ Reflects equipped gear value
+- ✅ Determines rarity tier with wearables
+- ✅ Consistent with Baazaar listings
+
+**A MYTHICAL gotchi can become GODLIKE with the right gear!** 🔥
+
+---
