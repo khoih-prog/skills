@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
 """
-Fetch usage data from OpenClaw sessions AND optionally from external APIs
+Fetch usage data from OpenClaw session logs. 100% Local.
 """
 import argparse
 import json
 import os
 import sys
 import glob
-import yaml
 from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -90,11 +88,12 @@ def parse_openclaw_session(file_path: str, date: str = None) -> List[Dict]:
                 )
 
                 # Determine provider from model
-                if "claude" in model.lower() or "anthropic" in model.lower():
+                model_lower = model.lower()
+                if "claude" in model_lower or "anthropic" in model_lower:
                     provider = "anthropic"
-                elif "gpt" in model.lower() or "openai" in model.lower():
+                elif "gpt" in model_lower or "openai" in model_lower:
                     provider = "openai"
-                elif "gemini" in model.lower():
+                elif "gemini" in model_lower:
                     provider = "gemini"
                 else:
                     provider = "unknown"
@@ -113,10 +112,8 @@ def parse_openclaw_session(file_path: str, date: str = None) -> List[Dict]:
                 cache_read_tokens = usage.get("cacheReadTokens", 0) or usage.get("cache_read_tokens", 0) or 0
                 cache_creation_tokens = usage.get("cacheCreationTokens", 0) or usage.get("cache_creation_tokens", 0) or 0
 
-                # Cost - prefer real cost if available (check if field exists first)
+                # Cost - prefer real cost if available
                 cost = None
-                
-                # Try different paths for cost
                 if isinstance(usage.get("cost"), dict):
                     cost = usage.get("cost", {}).get("total")
                 elif "cost" in usage:
@@ -124,11 +121,10 @@ def parse_openclaw_session(file_path: str, date: str = None) -> List[Dict]:
                 elif "totalCost" in usage:
                     cost = usage.get("totalCost")
                 
-                # If no real cost (None), calculate it
+                # If no real cost, calculate it
                 if cost is None:
                     cost_val, savings = calculate_cost(model, input_tokens, output_tokens, cache_read_tokens, cache_creation_tokens)
                 else:
-                    # If cost provided by API/OpenClaw, we estimate savings for consistent reporting
                     cost_val = cost
                     _, savings = calculate_cost(model, input_tokens, output_tokens, cache_read_tokens, cache_creation_tokens)
 
@@ -146,69 +142,36 @@ def parse_openclaw_session(file_path: str, date: str = None) -> List[Dict]:
                     })
 
     except Exception as e:
-        print(f"Error reading {file_path}: {e}")
+        pass
 
     return usage_records
 
 
-def load_config(config_path: str = "config/config.yaml") -> Dict:
-    """Load optional configuration"""
-    base_dir = os.path.dirname(os.path.dirname(__file__))
-    paths_to_try = [
-        config_path,
-        os.path.join(base_dir, config_path),
-        os.path.expanduser("~/.llm-cost-monitor/config.yaml"),
-    ]
-
-    for path in paths_to_try:
-        if os.path.exists(path):
-            with open(path, 'r') as f:
-                return yaml.safe_load(f) or {}
-
-    return {}
-
-
 def fetch_openclow_usage(date: str = None, storage_path: str = "~/.llm-cost-monitor", force_full: bool = False) -> int:
-    """Fetch usage from OpenClaw sessions (no config needed!)"""
+    """Fetch usage from OpenClaw sessions"""
     store = UsageStore(storage_path)
 
-    # If date is specified, clear it first to avoid double counting
     if date and not force_full:
         store.clear_records(date=date, source="session")
     elif force_full:
-        print("Force full scan: clearing all session records first")
         store.clear_records(source="session")
 
-    # Find all session files
     session_files = find_session_files()
-
     if not session_files:
-        print("No OpenClaw session files found")
         return 0
 
-    print(f"Found {len(session_files)} session files")
-
     total_records = 0
-
     for file_path in session_files:
         records = parse_openclaw_session(file_path, date)
-
         for record in records:
-            # Use file path as api_key hash for OpenClaw sessions
-            api_key = os.path.basename(os.path.dirname(os.path.dirname(file_path)))
-            
-            # Determine app from path (openclaw or clawdbot)
-            if ".openclaw" in file_path:
-                app = "openclaw"
-            elif ".clawdbot" in file_path:
-                app = "clawdbot"
-            else:
-                app = "openclaw"
+            # Use the agent directory name as the unique source identifier
+            source_id = os.path.basename(os.path.dirname(os.path.dirname(file_path)))
+            app = "openclaw" if ".openclaw" in file_path else "clawdbot"
 
             store.add_usage(
                 date=record["date"],
                 provider=record["provider"],
-                api_key=api_key,
+                source_id=source_id,
                 model=record["model"],
                 app=app,
                 source="session",
@@ -221,7 +184,6 @@ def fetch_openclow_usage(date: str = None, storage_path: str = "~/.llm-cost-moni
             )
             total_records += 1
 
-    print(f"Processed {total_records} usage records from OpenClaw")
     return total_records
 
 
@@ -231,14 +193,10 @@ def main():
     parser.add_argument("--today", action="store_true", help="Fetch today's usage")
     parser.add_argument("--yesterday", action="store_true", help="Fetch yesterday's usage")
     parser.add_argument("--last-days", type=int, help="Fetch last N days")
-    parser.add_argument("--full", action="store_true", help="Full scan of all historical sessions")
-    parser.add_argument("--openclaw-only", action="store_true", help="Only read OpenClaw sessions (no external APIs)")
-    parser.add_argument("--config", type=str, help="Config file path")
-    parser.add_argument("--dry-run", action="store_true", help="Don't save to database")
+    parser.add_argument("--full", action="store_true", help="Full scan")
 
     args = parser.parse_args()
 
-    # Determine date(s)
     dates = []
     today = datetime.now()
 
@@ -248,43 +206,20 @@ def main():
         dates.append((today - timedelta(days=1)).strftime("%Y-%m-%d"))
     elif args.last_days:
         for i in range(args.last_days):
-            date = (today - timedelta(days=i+1)).strftime("%Y-%m-%d")
-            dates.append(date)
+            dates.append((today - timedelta(days=i+1)).strftime("%Y-%m-%d"))
     elif args.date:
         dates.append(args.date)
     else:
-        # Default to today
         dates.append(today.strftime("%Y-%m-%d"))
 
-    # Load optional config
-    config = {}
-    if args.config:
-        config = load_config(args.config)
-    elif os.path.exists("config/config.yaml"):
-        config = load_config("config/config.yaml")
-    elif os.path.exists(os.path.expanduser("~/.llm-cost-monitor/config.yaml")):
-        config = load_config(os.path.expanduser("~/.llm-cost-monitor/config.yaml"))
-
-    storage_path = config.get("storage", {}).get("path", "~/.llm-cost-monitor")
+    # Workspace handling
+    storage_path = os.environ.get("OPENCLAW_WORKSPACE", "~/.llm-cost-monitor")
 
     if args.full:
-        print("\n🚀 Performing FULL SCAN of all sessions...")
         fetch_openclow_usage(date=None, storage_path=storage_path, force_full=True)
     else:
-        # Fetch for specific dates (idempotent)
         for date in dates:
-            print(f"\n{'='*50}")
-            print(f"Fetching usage for {date}")
-            print('='*50)
-
-            if args.openclaw_only or not config.get("providers"):
-                # Default: just OpenClaw sessions
-                fetch_openclow_usage(date, storage_path)
-            else:
-                # TODO: Add external API fetching when config is provided
-                fetch_openclow_usage(date, storage_path)
-                print("\n⚠️ External API fetching not yet implemented")
-                print("Config detected but only OpenClaw sessions are being read")
+            fetch_openclow_usage(date, storage_path)
 
 
 if __name__ == "__main__":

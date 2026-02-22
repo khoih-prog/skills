@@ -4,6 +4,7 @@ SQLite storage for LLM Cost Monitor
 import json
 import os
 import sqlite3
+import hashlib
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -17,17 +18,25 @@ class UsageStore:
         self._init_db()
 
     def _init_db(self):
-        """Initialize database schema"""
+        """Initialize database schema and handle migrations"""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
-        # Usage records table
+        # Check if we need to migrate api_key_hash to source_id_hash
+        cursor.execute("PRAGMA table_info(usage_records)")
+        columns = [row[1] for row in cursor.fetchall()]
+        
+        if 'api_key_hash' in columns and 'source_id_hash' not in columns:
+            print("Migrating database: api_key_hash -> source_id_hash")
+            cursor.execute("ALTER TABLE usage_records RENAME COLUMN api_key_hash TO source_id_hash")
+
+        # Usage records table (Safe create if not exists)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS usage_records (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 date TEXT NOT NULL,
                 provider TEXT NOT NULL,
-                api_key_hash TEXT NOT NULL,
+                source_id_hash TEXT NOT NULL,
                 model TEXT NOT NULL,
                 app TEXT DEFAULT 'openclaw',
                 source TEXT DEFAULT 'session',
@@ -38,7 +47,7 @@ class UsageStore:
                 cost REAL DEFAULT 0,
                 savings REAL DEFAULT 0,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(date, provider, api_key_hash, model, app, source)
+                UNIQUE(date, provider, source_id_hash, model, app, source)
             )
         """)
 
@@ -55,7 +64,7 @@ class UsageStore:
         self,
         date: str,
         provider: str,
-        api_key: str,
+        source_id: str,
         model: str,
         app: str = "openclaw",
         source: str = "session",
@@ -67,20 +76,22 @@ class UsageStore:
         savings: float = 0.0,
         incremental: bool = True
     ):
-        """Add or update usage record"""
-        key_hash = self._hash_key(api_key)
+        """
+        Add or update usage record
+        source_id is typically a local session identifier (e.g., directory name), NOT a credential.
+        """
+        id_hash = self._hash_source_id(source_id)
 
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
         if incremental:
-            # Add to existing (default behavior)
             cursor.execute("""
                 INSERT INTO usage_records
-                (date, provider, api_key_hash, model, app, source, input_tokens, output_tokens,
+                (date, provider, source_id_hash, model, app, source, input_tokens, output_tokens,
                  cache_read_tokens, cache_creation_tokens, cost, savings)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(date, provider, api_key_hash, model, app, source)
+                ON CONFLICT(date, provider, source_id_hash, model, app, source)
                 DO UPDATE SET
                     input_tokens = usage_records.input_tokens + excluded.input_tokens,
                     output_tokens = usage_records.output_tokens + excluded.output_tokens,
@@ -88,16 +99,15 @@ class UsageStore:
                     cache_creation_tokens = usage_records.cache_creation_tokens + excluded.cache_creation_tokens,
                     cost = usage_records.cost + excluded.cost,
                     savings = usage_records.savings + excluded.savings
-            """, (date, provider, key_hash, model, app, source, input_tokens, output_tokens,
+            """, (date, provider, id_hash, model, app, source, input_tokens, output_tokens,
                   cache_read_tokens, cache_creation_tokens, cost, savings))
         else:
-            # Overwrite (for full syncs where we aggregate everything first)
             cursor.execute("""
                 INSERT INTO usage_records
-                (date, provider, api_key_hash, model, app, source, input_tokens, output_tokens,
+                (date, provider, source_id_hash, model, app, source, input_tokens, output_tokens,
                  cache_read_tokens, cache_creation_tokens, cost, savings)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(date, provider, api_key_hash, model, app, source)
+                ON CONFLICT(date, provider, source_id_hash, model, app, source)
                 DO UPDATE SET
                     input_tokens = excluded.input_tokens,
                     output_tokens = excluded.output_tokens,
@@ -105,7 +115,7 @@ class UsageStore:
                     cache_creation_tokens = excluded.cache_creation_tokens,
                     cost = excluded.cost,
                     savings = excluded.savings
-            """, (date, provider, key_hash, model, app, source, input_tokens, output_tokens,
+            """, (date, provider, id_hash, model, app, source, input_tokens, output_tokens,
                   cache_read_tokens, cache_creation_tokens, cost, savings))
 
         conn.commit()
@@ -170,64 +180,6 @@ class UsageStore:
         conn.close()
 
         return [dict(row) for row in rows]
-
-    def get_by_app(
-        self,
-        start_date: str,
-        end_date: str,
-        provider: Optional[str] = None
-    ) -> Dict[str, float]:
-        """Get cost breakdown by app"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        query = """
-            SELECT app, SUM(cost) as cost
-            FROM usage_records
-            WHERE date >= ? AND date <= ?
-        """
-        params = [start_date, end_date]
-
-        if provider:
-            query += " AND provider = ?"
-            params.append(provider)
-
-        query += " GROUP BY app ORDER BY cost DESC"
-
-        cursor.execute(query, params)
-        rows = cursor.fetchall()
-        conn.close()
-
-        return {row[0]: row[1] for row in rows}
-
-    def get_by_source(
-        self,
-        start_date: str,
-        end_date: str,
-        provider: Optional[str] = None
-    ) -> Dict[str, float]:
-        """Get cost breakdown by source"""
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-
-        query = """
-            SELECT source, SUM(cost) as cost
-            FROM usage_records
-            WHERE date >= ? AND date <= ?
-        """
-        params = [start_date, end_date]
-
-        if provider:
-            query += " AND provider = ?"
-            params.append(provider)
-
-        query += " GROUP BY source ORDER BY cost DESC"
-
-        cursor.execute(query, params)
-        rows = cursor.fetchall()
-        conn.close()
-
-        return {row[0]: row[1] for row in rows}
 
     def get_total_cost(
         self,
@@ -345,12 +297,8 @@ class UsageStore:
                 "total_cost": row["total_cost"] or 0
             }
         return {
-            "input_tokens": 0,
-            "output_tokens": 0,
-            "cache_read_tokens": 0,
-            "cache_creation_tokens": 0,
-            "total_tokens": 0,
-            "total_cost": 0
+            "input_tokens": 0, "output_tokens": 0, "cache_read_tokens": 0,
+            "cache_creation_tokens": 0, "total_tokens": 0, "total_cost": 0
         }
 
     def get_daily_summary(
@@ -389,18 +337,15 @@ class UsageStore:
         return [dict(row) for row in rows]
 
     @staticmethod
-    def _hash_key(api_key: str) -> str:
-        """Hash API key for storage"""
-        import hashlib
-        return hashlib.sha256(api_key.encode()).hexdigest()[:16]
+    def _hash_source_id(source_id: str) -> str:
+        """
+        Hashes the local source identifier (e.g., session directory name) 
+        using SHA-256 to ensure data uniqueness and idempotent syncing.
+        This is NOT a credential or API key.
+        """
+        return hashlib.sha256(source_id.encode()).hexdigest()[:16]
 
 
 def get_store() -> UsageStore:
     """Get default usage store instance"""
     return UsageStore()
-
-
-if __name__ == "__main__":
-    # Test
-    store = UsageStore("~/.llm-cost-monitor-test")
-    print(f"Database initialized at: {store.db_path}")

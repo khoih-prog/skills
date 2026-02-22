@@ -77,40 +77,54 @@ def generate_image(start_date: str = None, end_date: str = None, output_path: st
     hti.size = (1200, 1000) 
     hti.screenshot(url=str(html_path), save_as=raw_png_path.name)
     
+    # Verify raw image was created
+    if not raw_png_path.exists() or raw_png_path.stat().st_size < 100:
+        print(f"Error: Failed to generate raw image at {raw_png_path}")
+        return None
+
     # Smart crop: detect content bounds
-    img = Image.open(raw_png_path)
-    w, h = img.size
-    data = img.load()
-    bg = data[0, 0]  # Background color from top-left
+    try:
+        img = Image.open(raw_png_path)
+        w, h = img.size
+        data = img.load()
+        bg = data[0, 0]  # Background color from top-left
+        
+        # Find content bounds
+        # Use a slightly lower threshold to catch subtle text/borders at the bottom
+        threshold = 5
+        top, bottom, left, right = h, 0, w, 0
+        for y in range(h):
+            for x in range(w):
+                p = data[x, y]
+                if abs(p[0]-bg[0]) > threshold or abs(p[1]-bg[1]) > threshold or abs(p[2]-bg[2]) > threshold:
+                    top, bottom = min(top, y), max(bottom, y)
+                    left, right = min(left, x), max(right, x)
+        
+        # Crop with generous padding to ensure rounded corners and shadows are visible
+        padding_x = 40
+        padding_y = 50
+        left = max(0, left - padding_x)
+        top = max(0, top - padding_y)
+        right = min(w, right + padding_x)
+        bottom = min(h, bottom + padding_y)
+        
+        cropped = img.crop((left, top, right, bottom))
+        
+        # Save to final path
+        cropped.save(final_output_path)
+    except Exception as e:
+        print(f"Error during image processing: {e}")
+        return None
+    finally:
+        # Cleanup temp files
+        if html_path.exists(): html_path.unlink()
+        if raw_png_path.exists(): raw_png_path.unlink()
     
-    # Find content bounds
-    # Use a slightly lower threshold to catch subtle text/borders at the bottom
-    threshold = 5
-    top, bottom, left, right = h, 0, w, 0
-    for y in range(h):
-        for x in range(w):
-            p = data[x, y]
-            if abs(p[0]-bg[0]) > threshold or abs(p[1]-bg[1]) > threshold or abs(p[2]-bg[2]) > threshold:
-                top, bottom = min(top, y), max(bottom, y)
-                left, right = min(left, x), max(right, x)
-    
-    # Crop with generous padding to ensure rounded corners and shadows are visible
-    padding_x = 40
-    padding_y = 50
-    left = max(0, left - padding_x)
-    top = max(0, top - padding_y)
-    right = min(w, right + padding_x)
-    bottom = min(h, bottom + padding_y)
-    
-    cropped = img.crop((left, top, right, bottom))
-    
-    # Save to final path
-    cropped.save(final_output_path)
-    
-    # Cleanup temp files
-    if html_path.exists(): html_path.unlink()
-    if raw_png_path.exists(): raw_png_path.unlink()
-    
+    # Final validation
+    if not final_output_path.exists() or final_output_path.stat().st_size < 100:
+        print(f"Error: Final image missing or invalid at {final_output_path}")
+        return None
+
     final_w = right - left
     final_h = bottom - top
     print(f"Generated: {final_w}x{final_h} -> {final_output_path}")
@@ -152,7 +166,9 @@ def main():
     # Change to script directory
     os.chdir(Path(__file__).parent)
     
-    generate_image(start, end, args.output)
+    res = generate_image(start, end, args.output)
+    if not res:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

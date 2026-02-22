@@ -16,20 +16,6 @@ from store import UsageStore
 from calc_cost import get_pricing
 
 
-def load_config(config_path: str = "config/config.yaml") -> Dict:
-    """Load configuration"""
-    paths_to_try = [
-        config_path,
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), config_path),
-        os.path.expanduser("~/.llm-cost-monitor/config.yaml"),
-    ]
-    for path in paths_to_try:
-        if os.path.exists(path):
-            with open(path, 'r') as f:
-                return yaml.safe_load(f)
-    return {"providers": {}, "budget": {}, "storage": {}}
-
-
 def get_date_range(period: str) -> tuple:
     """Get start and end dates for a period"""
     today = datetime.now()
@@ -73,10 +59,9 @@ def calc_cache_savings(tokens_summary: dict) -> dict:
         return {"read_savings": 0, "write_cost": 0, "total_savings": 0}
     
     # Estimate: without cache, would pay full input price
-    # With cache read at 90% discount, savings = cache_read * 90% of average input price
     avg_input_price = 3.0 / 1_000_000  # Rough average $3/1M
     read_savings = cache_read * avg_input_price * 0.9
-    write_cost = cache_write * avg_input_price * 1.25  # Cache write is 125% of regular
+    write_cost = cache_write * avg_input_price * 1.25
     
     return {
         "read_savings": read_savings,
@@ -85,11 +70,9 @@ def calc_cache_savings(tokens_summary: dict) -> dict:
     }
 
 
-def print_report(period: str, config: Dict):
+def print_report(period: str, storage_path: str = "~/.llm-cost-monitor"):
     """Print usage report in text format"""
-    storage_path = config.get("storage", {}).get("path", "~/.llm-cost-monitor")
     store = UsageStore(storage_path)
-    
     start_date, end_date = get_date_range(period)
     
     # Get data
@@ -97,21 +80,20 @@ def print_report(period: str, config: Dict):
     by_provider = store.get_cost_by_provider(start_date, end_date)
     by_model = store.get_cost_by_model(start_date, end_date)
     tokens_summary = store.get_tokens_summary(start_date, end_date)
-    budget_limit = config.get("budget", {}).get("monthly_limit", 0)
     
     # Cache savings
     cache_savings = calc_cache_savings(tokens_summary)
     
     date_label = {"today": "Today", "yesterday": "Yesterday", "week": "This Week", "month": "This Month"}.get(period, period)
     
-    print(f"\n💰 LLM Cost Report - {date_label}")
+    print(f"\n📊 LLM Cost Report - {date_label}")
     print("=" * 50)
     print(f"Period: {start_date} to {end_date}")
     print(f"\nTotal Cost: {fmt_cost(total_cost)}")
     print(f"Total Tokens: {fmt_tokens(tokens_summary['total_tokens'])}")
     
     # Token breakdown
-    print(f"\n📊 Token Breakdown:")
+    print(f"\n📈 Token Breakdown:")
     print(f"   Input:  {fmt_tokens(tokens_summary['input_tokens'])}")
     print(f"   Output: {fmt_tokens(tokens_summary['output_tokens'])}")
     
@@ -122,23 +104,17 @@ def print_report(period: str, config: Dict):
     
     # By provider
     if by_provider:
-        print(f"\n📊 By Provider:")
+        print(f"\n🏢 By Provider:")
         for provider, cost in sorted(by_provider.items(), key=lambda x: x[1], reverse=True):
             pct = (cost / total_cost * 100) if total_cost > 0 else 0
             print(f"  • {provider}: {fmt_cost(cost)} ({pct:.0f}%)")
     
     # By model
     if by_model:
-        print(f"\n📈 By Model (Top 10):")
+        print(f"\n🤖 By Model (Top 10):")
         for model, cost in sorted(by_model.items(), key=lambda x: x[1], reverse=True)[:10]:
             pct = (cost / total_cost * 100) if total_cost > 0 else 0
             print(f"  • {model}: {fmt_cost(cost)} ({pct:.0f}%)")
-    
-    # Budget
-    if budget_limit > 0:
-        pct = (total_cost / budget_limit * 100) if budget_limit > 0 else 0
-        status = "✅" if pct < 80 else "⚠️" if pct < 100 else "🔴"
-        print(f"\n🎯 Budget: {fmt_cost(total_cost)} / {fmt_cost(budget_limit)} ({pct:.0f}%) {status}")
     
     # Unknown models
     unknown = [m for m in by_model.keys() if get_pricing(m) is None]
@@ -148,11 +124,9 @@ def print_report(period: str, config: Dict):
     print()
 
 
-def print_json(period: str, config: Dict):
+def print_json(period: str, storage_path: str = "~/.llm-cost-monitor"):
     """Print report as JSON"""
-    storage_path = config.get("storage", {}).get("path", "~/.llm-cost-monitor")
     store = UsageStore(storage_path)
-    
     start_date, end_date = get_date_range(period)
     
     total_cost = store.get_total_cost(start_date, end_date)
@@ -162,6 +136,7 @@ def print_json(period: str, config: Dict):
     cache_savings = calc_cache_savings(tokens_summary)
     
     output = {
+        "status": "success",
         "period": period,
         "start_date": start_date,
         "end_date": end_date,
@@ -182,14 +157,6 @@ def print_json(period: str, config: Dict):
         "by_model": {k: round(v, 4) for k, v in by_model.items()}
     }
     
-    budget_limit = config.get("budget", {}).get("monthly_limit", 0)
-    if budget_limit > 0:
-        output["budget"] = {
-            "limit": budget_limit,
-            "used": round(total_cost, 4),
-            "percentage": round(total_cost / budget_limit * 100, 1)
-        }
-    
     print(json.dumps(output, indent=2, ensure_ascii=False))
 
 
@@ -199,15 +166,16 @@ def main():
                        default="today", help="Report period")
     parser.add_argument("--json", action="store_true", help="Output as JSON")
     parser.add_argument("--text", action="store_true", help="Output as text (default)")
-    parser.add_argument("--config", type=str, default="config/config.yaml", help="Config file path")
     
     args = parser.parse_args()
-    config = load_config(args.config)
+    
+    # Workspace handling
+    workspace = os.environ.get("OPENCLAW_WORKSPACE", "~/.llm-cost-monitor")
     
     if args.json:
-        print_json(args.period, config)
+        print_json(args.period, workspace)
     else:
-        print_report(args.period, config)
+        print_report(args.period, workspace)
 
 
 if __name__ == "__main__":
