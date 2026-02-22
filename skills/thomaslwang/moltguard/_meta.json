@@ -1,13 +1,18 @@
 {
   "owner": "thomaslwang",
   "slug": "moltguard",
-  "displayName": "MoltGuard - OpenClaw Security",
+  "displayName": "OpenGuardrails - Security Guard",
   "latest": {
-    "version": "6.0.2",
-    "publishedAt": 1770989110667,
-    "commit": "https://github.com/openclaw/skills/commit/6d6e9a6ade25cbadc13517a8f97e5c997f46e6ec"
+    "version": "6.5.16",
+    "publishedAt": 1771775449414,
+    "commit": null
   },
   "history": [
+    {
+      "version": "6.0.2",
+      "publishedAt": 1770989110667,
+      "commit": "https://github.com/openclaw/skills/commit/6d6e9a6ade25cbadc13517a8f97e5c997f46e6ec"
+    },
     {
       "version": "5.0.2",
       "publishedAt": 1770912190963,
