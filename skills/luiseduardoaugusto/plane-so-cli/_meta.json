@@ -3,9 +3,15 @@
   "slug": "plane-so-cli",
   "displayName": "Plane.so CLI",
   "latest": {
-    "version": "1.1.0",
-    "publishedAt": 1771614261868,
-    "commit": "https://github.com/openclaw/skills/commit/a326eb0ccd8114499d82366b2766fc9fa1bc4023"
+    "version": "1.2.0",
+    "publishedAt": 1771722315796,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.0",
+      "publishedAt": 1771614261868,
+      "commit": "https://github.com/openclaw/skills/commit/a326eb0ccd8114499d82366b2766fc9fa1bc4023"
+    }
+  ]
 }

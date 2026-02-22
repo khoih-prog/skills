@@ -1,8 +1,9 @@
 ---
 name: plane-so-cli
-description: "Manage Plane.so projects and work items using a zero-dependency Python CLI. List projects, create/update/assign issues, add comments, search workspace."
+description: "Manage Plane.so projects and work items using a zero-dependency Python CLI. List projects, create/update/assign issues, add comments, search workspace. The plane-so-cli binary is bundled in scripts/."
 license: MIT
 compatibility: Requires Python 3.8+ and internet access to reach the Plane.so API.
+homepage: https://github.com/luiseduardoaugusto/plane-so-cli
 metadata: {"openclaw": {"requires": {"env": ["PLANE_API_KEY", "PLANE_WORKSPACE"], "bins": ["python3"]}, "primaryEnv": "PLANE_API_KEY", "emoji": "✈️", "homepage": "https://github.com/luiseduardoaugusto/plane-so-cli"}}
 ---
 
@@ -10,7 +11,7 @@ metadata: {"openclaw": {"requires": {"env": ["PLANE_API_KEY", "PLANE_WORKSPACE"]
 
 Interact with [Plane.so](https://plane.so) project management via a clean, auditable Python CLI.
 
-**Zero dependencies** — uses only Python 3.8+ stdlib.
+**Zero dependencies** — uses only Python 3.8+ stdlib. The `plane-so-cli` executable is bundled in `scripts/plane-so-cli` and available on PATH after installation.
 
 ## Setup
 
@@ -87,14 +88,14 @@ plane-so-cli projects list -f json
 
 ## Security & Privacy
 
-This skill communicates **only** with the Plane.so API. No data is sent anywhere else.
+This skill communicates **only** with the Plane.so API. The API host is hardcoded to `api.plane.so` and cannot be overridden.
 
 | Endpoint | Data sent | Purpose |
 |----------|-----------|---------|
 | `https://api.plane.so/api/v1/*` | API key (header), project/issue data (body) | All Plane.so operations |
 
-- Your `PLANE_API_KEY` is sent as an `X-API-Key` header exclusively to `api.plane.so`
-- The `PLANE_BASE_URL` variable can override the API host. Do **not** set it to untrusted domains
+- Your `PLANE_API_KEY` is sent as an `X-API-Key` header exclusively to `https://api.plane.so`
+- The API host is hardcoded — no environment variable can redirect requests to another domain
 - No data is cached, logged, or stored locally
 - No telemetry or analytics are collected
-- Source code: [github.com/luiseduardoaugusto/plane-so-cli](https://github.com/luiseduardoaugusto/plane-so-cli)
+- The full source code is auditable at [github.com/luiseduardoaugusto/plane-so-cli](https://github.com/luiseduardoaugusto/plane-so-cli) and bundled in `scripts/plane-so-cli`
