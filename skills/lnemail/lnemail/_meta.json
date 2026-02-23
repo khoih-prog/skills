@@ -3,9 +3,15 @@
   "slug": "lnemail",
   "displayName": "LNemail",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1771688756218,
-    "commit": "https://github.com/openclaw/skills/commit/839ed4686e10aea616302dbee1458b892bffc48a"
+    "version": "1.0.1",
+    "publishedAt": 1771881284274,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1771688756218,
+      "commit": "https://github.com/openclaw/skills/commit/839ed4686e10aea616302dbee1458b892bffc48a"
+    }
+  ]
 }

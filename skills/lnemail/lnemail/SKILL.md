@@ -47,12 +47,7 @@ curl -X GET https://lnemail.net/api/v1/payment/PAYMENT_HASH
 # }
 ```
 
-Pay the `lightning_invoice` using any Lightning wallet (e.g., Alby CLI):
-
-```bash
-npx @getalby/cli -c ~/.alby-cli/connection-secret.key pay-invoice \
-  -i "lnbc10u1pj..."
-```
+Pay the BOLT11 `lightning_invoice` using any Bitcoin Lightning Network wallet (e.g., Alby CLI).
 
 ### 3. Retrieve Credentials
 
