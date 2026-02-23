@@ -1,0 +1,11 @@
+{
+  "owner": "mekedron",
+  "slug": "wolt",
+  "displayName": "wolt-cli",
+  "latest": {
+    "version": "0.5.4",
+    "publishedAt": 1771621938301,
+    "commit": null
+  },
+  "history": []
+}
