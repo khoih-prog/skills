@@ -3,9 +3,15 @@
   "slug": "activity-analyzer",
   "displayName": "activity-analyzer",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1771682493544,
-    "commit": "https://github.com/openclaw/skills/commit/590dcba4f8863719f0dd945e5251f4e52c7ab8df"
+    "version": "1.0.1",
+    "publishedAt": 1771863660601,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1771682493544,
+      "commit": "https://github.com/openclaw/skills/commit/590dcba4f8863719f0dd945e5251f4e52c7ab8df"
+    }
+  ]
 }
