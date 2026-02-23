@@ -95,8 +95,8 @@ All API errors follow a consistent JSON structure designed for Agentic Commerce 
 | `INVALID_REQUEST` | 400 | Missing or malformed field | Check `details.field` for which field is wrong; fix and retry |
 | `INVALID_EMAIL` | 400 | Bad email format | Ask user for a valid email |
 | `INVALID_SHIPPING` | 400 | Shipping address issue | Check `details.field`; common issue: wrong `countryCode` format (must be 2-letter ISO) |
-| `UNSUPPORTED_CHAIN` | 400 | Chain not supported | Call `GET /chains` and pick a valid chain |
-| `UNSUPPORTED_TOKEN` | 400 | Token not available on chain | Call `GET /chains` and pick a valid token for the chosen chain |
+| `UNSUPPORTED_CHAIN` | 400 | Chain not supported | Call `GET /payment-methods` and pick a valid chain from response `chains` |
+| `UNSUPPORTED_TOKEN` | 400 | Token not available on chain | Call `GET /payment-methods` and pick a valid token for the chosen chain from response `chains` |
 | `UNSUPPORTED_COUNTRY` | 400 | Cannot ship to country | Check `details.supportedCountries`; ask user for an alternate address |
 
 **Example — missing field:**
@@ -178,9 +178,9 @@ Agents should implement this general pattern for all API calls. **Security overr
 | Mistake | Result | Fix |
 |---------|--------|-----|
 | Using example/placeholder product IDs | `PRODUCT_NOT_FOUND` | Always get IDs from search or product detail API |
-| Using `line1` instead of `address1` | `INVALID_REQUEST` | Use exact field names: `address1`, `stateCode`, `zip`, `countryCode` |
+| Using `line1` instead of `address1` | `INVALID_REQUEST` | Use exact field names: `address1`, `stateCode`, `postalCode`, `countryCode` |
 | Using `state` instead of `stateCode` | `INVALID_REQUEST` | Use `stateCode` |
-| Using `postalCode` instead of `zip` | `INVALID_REQUEST` | Use `zip` |
+| Using `zip` instead of `postalCode` | `INVALID_REQUEST` | Use `postalCode` |
 | Using `country` instead of `countryCode` | `INVALID_REQUEST` | Use `countryCode` (2-letter ISO) |
 | Using 3-letter country code | `INVALID_SHIPPING` | Use 2-letter ISO 3166-1 alpha-2 |
 | Putting `chain`/`token` at top level | `INVALID_REQUEST` | Nest inside `payment: { chain, token }` |

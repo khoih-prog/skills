@@ -2,7 +2,7 @@
 
 Base URL: **`https://forthecult.store`** — all paths below are relative to this (e.g. **GET /api/health**).
 
-No API key or environment variables required. No authentication is needed for discovery, search, checkout, and order status. Order details (email, shipping) require session owner, admin, or confirmation token. Admin endpoints (`/api/admin/*`) are not public. **Identity header:** `X-Moltbook-Identity` is optional and only for agent-only endpoints (`/api/agent/me`, `/api/agent/me/orders`, `/api/agent/me/preferences`); it is not declared in `requires.env` and must only be used when the agent runtime explicitly supplies it—do not send it for normal store operations. This API is purpose-built for Agentic Commerce — AI agents autonomously discovering, purchasing, and tracking physical goods.
+No API key or environment variables required. No authentication is needed for discovery, search, checkout, and order status. Order details (email, shipping) are returned only when the caller is authorized for that order. **Identity header:** `X-Moltbook-Identity` is optional and only for agent-only endpoints (`/api/agent/me`, `/api/agent/me/orders`, `/api/agent/me/preferences`); use it only when the agent runtime explicitly supplies it—do not send it for normal store operations. This API is purpose-built for Agentic Commerce — AI agents autonomously discovering, purchasing, and tracking physical goods.
 
 **Payment options:**
 - **Standard checkout** (`POST /api/checkout`) — Multi-chain payments, poll for confirmation
@@ -115,7 +115,7 @@ Returns the verified Moltbook agent profile when the caller is an authenticated 
 
 **Response:** Agent profile object (name, permissions, capabilities).
 
-### GET `/api/chains`
+### GET `/api/payment-methods`
 
 All supported blockchain networks and tokens for payment.
 
@@ -320,9 +320,11 @@ Semantic search with filters. Supports natural-language queries. When `source=al
 | `category` | string | No | — | Category slug filter (store products only) |
 | `priceMin` | number | No | — | Minimum USD price |
 | `priceMax` | number | No | — | Maximum USD price |
-| `inStock` | boolean | No | — | Only in-stock items |
+| `sort` | string | No | `newest` | `newest` (recently added), `popular` (best seller), `rating` (best rated), `price_asc`, `price_desc` |
 | `limit` | integer | No | 20 | Results per page (max 100) |
 | `offset` | integer | No | 0 | Pagination offset |
+
+Search returns only in-stock items.
 
 **Response:**
 
@@ -441,7 +443,7 @@ Create an order and generate a payment request (standard flow — poll for payme
     "address1": "123 Main St",
     "city": "San Francisco",
     "stateCode": "CA",
-    "zip": "94102",
+    "postalCode": "94102",
     "countryCode": "US"
   }
 }
@@ -523,7 +525,7 @@ X-PAYMENT: base64({"transaction": "<signed-tx-base64>"})
     "address2": "Apt 4B",
     "city": "San Francisco",
     "stateCode": "CA",
-    "zip": "94102",
+    "postalCode": "94102",
     "countryCode": "US"
   },
   "walletAddress": "7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU"
@@ -544,7 +546,7 @@ X-PAYMENT: base64({"transaction": "<signed-tx-base64>"})
     "qrCode": "data:image/png;base64,iVBOR..."
   },
   "discount": {
-    "tier": "Gold",
+    "tier": "PRIME",
     "percentage": 15,
     "savedAmount": 20.25
   },
@@ -595,7 +597,7 @@ Poll for payment and fulfillment status.
 
 ### GET `/api/orders/{orderId}`
 
-Full order details including items, payment (with `txHash`), shipping, totals, and tracking. **Access:** session owner, admin, or `?ct=<confirmationToken>` for recent orders (&lt;1h). Without authorization, `email` and `shipping` are redacted or omitted.
+Full order details including items, payment (with `txHash`), shipping, totals, and tracking. **Access:** returned only when the caller is authorized for that order. Without authorization, `email` and `shipping` are redacted or omitted.
 
 **Response (when authorized):**
 
@@ -622,7 +624,7 @@ Full order details including items, payment (with `txHash`), shipping, totals, a
     "address1": "123 Main St",
     "city": "San Francisco",
     "stateCode": "CA",
-    "zip": "94102",
+    "postalCode": "94102",
     "countryCode": "US"
   },
   "tracking": {
@@ -646,12 +648,12 @@ Full order details including items, payment (with `txHash`), shipping, totals, a
   },
   "_actions": {
     "next": "Track your shipment using the tracking number",
-    "help": "Contact support: weare@forthecult.store"
+    "help": "Contact support: weare@forthecult.store or Discord https://discord.gg/pMPwfQQX6c"
   }
 }
 ```
 
-**Note:** `email` and full `shipping` are only returned when the caller is the order owner (session or valid `ct`) or admin; otherwise they are redacted. Status-only data is available from **GET /api/orders/{orderId}/status** without auth.
+**Note:** `email` and full `shipping` are only returned when the caller is authorized for that order; otherwise they are redacted. Status-only data is available from **GET /api/orders/{orderId}/status** without auth.
 
 ---
 
