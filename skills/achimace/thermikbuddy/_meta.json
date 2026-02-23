@@ -3,9 +3,15 @@
   "slug": "thermikbuddy",
   "displayName": "ThermikBuddy",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1771626247018,
-    "commit": "https://github.com/openclaw/skills/commit/1b668063189b335aafe37c8b0e6853e5697ff026"
+    "version": "1.0.1",
+    "publishedAt": 1771863758659,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1771626247018,
+      "commit": "https://github.com/openclaw/skills/commit/1b668063189b335aafe37c8b0e6853e5697ff026"
+    }
+  ]
 }
