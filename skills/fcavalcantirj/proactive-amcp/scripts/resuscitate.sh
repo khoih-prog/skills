@@ -153,9 +153,9 @@ else:
   fi
 
   local summary_file="$HOME/.amcp/open-problems-summary.md"
-  if [ -f "$SCRIPT_DIR/generate-problem-summary.py" ]; then
+  if [ -x "$SCRIPT_DIR/diagnose.sh" ]; then
     log "Generating open problem summary..."
-    python3 "$SCRIPT_DIR/generate-problem-summary.py" --output "$summary_file" 2>&1 | tee -a "$RECOVERY_LOG" || true
+    "$SCRIPT_DIR/diagnose.sh" summary --output "$summary_file" 2>&1 | tee -a "$RECOVERY_LOG" || true
     if [ -f "$summary_file" ] && [ -s "$summary_file" ]; then
       log "Open problems written to $summary_file"
     fi
@@ -216,10 +216,10 @@ record_attempt() {
 
 # Trigger smart checkpoint after successful recovery (capture fresh state)
 post_recovery_checkpoint() {
-  local trigger_script="$SCRIPT_DIR/smart-checkpoint-trigger.sh"
-  if [ -x "$trigger_script" ]; then
+  local checkpoint_script="$SCRIPT_DIR/checkpoint.sh"
+  if [ -x "$checkpoint_script" ]; then
     log "Creating post-recovery checkpoint..."
-    "$trigger_script" --trigger recovery --quiet 2>/dev/null || true
+    "$checkpoint_script" --trigger recovery --quiet 2>/dev/null || true
   fi
 }
 
@@ -409,18 +409,18 @@ try_fix_config() {
     return 0
   fi
 
-  log "Attempting: fix config via try-fix-config.sh (3-tier)"
+  log "Attempting: fix config via config.sh fix (3-tier)"
 
   # Delegate to standalone config fix script (Tier A: backup, Tier B: doctor, Tier C: minimal)
-  if [ -x "$SCRIPT_DIR/try-fix-config.sh" ]; then
-    if "$SCRIPT_DIR/try-fix-config.sh" 2>&1 | tee -a "$RECOVERY_LOG"; then
+  if [ -x "$SCRIPT_DIR/config.sh" ]; then
+    if "$SCRIPT_DIR/config.sh" fix 2>&1 | tee -a "$RECOVERY_LOG"; then
       log "Config fix succeeded"
       return 0
     fi
     log "Standalone config fix exhausted all tiers"
   else
-    log "try-fix-config.sh not found, falling back to inline backup restore"
-    # Inline fallback: simple backup restore (in case try-fix-config.sh missing)
+    log "config.sh not found, falling back to inline backup restore"
+    # Inline fallback: simple backup restore (in case config.sh fix missing)
     local backup_dir="$HOME/.amcp/config-backups"
     if [ -d "$backup_dir" ]; then
       local latest_backup
