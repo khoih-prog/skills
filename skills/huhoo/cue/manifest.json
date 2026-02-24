@@ -1,0 +1,14 @@
+{
+  "name": "cue",
+  "version": "1.0.0",
+  "description": "AI-powered financial research assistant with multi-user support and intelligent monitoring",
+  "author": "cuecue",
+  "license": "MIT",
+  "homepage": "https://cuecue.cn",
+  "repository": "https://github.com/cuecue/openclaw-skill-cue",
+  "keywords": ["finance", "research", "ai", "monitoring", "investment"],
+  "openclaw": {
+    "minVersion": "0.5.0",
+    "skills": ["cue"]
+  }
+}
