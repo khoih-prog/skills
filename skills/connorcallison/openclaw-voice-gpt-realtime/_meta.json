@@ -3,9 +3,15 @@
   "slug": "openclaw-voice-gpt-realtime",
   "displayName": "Openclaw Voice Gpt Realtime",
   "latest": {
-    "version": "0.1.2",
-    "publishedAt": 1771219670570,
-    "commit": "https://github.com/openclaw/skills/commit/1fed69134e63fef7d71dbff96ad61645bd1683b1"
+    "version": "0.1.4",
+    "publishedAt": 1771915453766,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.2",
+      "publishedAt": 1771219670570,
+      "commit": "https://github.com/openclaw/skills/commit/1fed69134e63fef7d71dbff96ad61645bd1683b1"
+    }
+  ]
 }
