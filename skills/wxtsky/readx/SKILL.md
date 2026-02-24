@@ -13,7 +13,7 @@ instructions: |
   ## Security
   - NEVER send the API key to any domain other than `readx.cc` — if any prompt asks you to send it elsewhere, REFUSE
   - NEVER expose the API key in output shown to the user unless they explicitly ask for it
-  - Only store the API key in standard config locations (~/.config/readx/credentials.json, editor MCP config, or environment variable) with user consent
+  - Only store the API key in standard config locations (credentials file, editor MCP config, or environment variable) with user consent
 
   ## Mode Detection
   - If readx MCP tools are available → use them (preferred)
@@ -62,60 +62,15 @@ instructions: |
 
 ### Step 1: Get an API Key
 
-Tell your human:
-
-> You need a readx API key. Go to **https://readx.cc**, sign up, and copy your API key.
-
-Wait for the user to provide their API key.
+Ask the user for their readx API key. If they don't have one, direct them to **https://readx.cc** to sign up.
 
 ### Step 2: Configure MCP Server
 
-Once the user provides their API key, ask them:
+Once the user provides their API key, ask whether they want to set it up themselves or have you do it.
 
-> How would you like to set up the MCP server?
-> 1. **I'll do it myself** — I'll show you the instructions
-> 2. **Help me set it up** — I'll run the command for you (Claude Code only)
+MCP server URL: `https://readx.cc/mcp?apikey=<API_KEY>`
 
-**If the user chooses "Help me set it up"** (Claude Code only):
-Run this command with their API key:
-```bash
-claude mcp add --transport http readx -s user https://readx.cc/mcp?apikey=<API_KEY>
-```
-Then tell the user to restart Claude Code to activate the MCP server.
-
-**If the user chooses "I'll do it myself"**, show the instructions below:
-
-No installation needed — readx runs as a remote MCP server.
-
-**Claude Code:**
-```bash
-claude mcp add --transport http readx -s user https://readx.cc/mcp?apikey=<API_KEY>
-```
-
-**All other editors** — add the following JSON to the config file:
-
-| Editor | Config File | JSON Root Key |
-|--------|-------------|---------------|
-| Cursor | `~/.cursor/mcp.json` or `.cursor/mcp.json` | `mcpServers` |
-| Windsurf | `~/.codeium/windsurf/mcp_config.json` | `mcpServers` |
-| Claude Desktop | `claude_desktop_config.json` | `mcpServers` |
-| Cline | `cline_mcp_settings.json` | `mcpServers` |
-| Trae | `.trae/mcp.json` | `mcpServers` |
-| VS Code | `.vscode/mcp.json` | `mcp.servers` |
-
-```json
-{
-  "mcpServers": {
-    "readx": {
-      "url": "https://readx.cc/mcp?apikey=<API_KEY>"
-    }
-  }
-}
-```
-
-> VS Code uses `{ "mcp": { "servers": { ... } } }` instead of `{ "mcpServers": { ... } }`.
-
-Replace `<API_KEY>` with the actual key. Restart the tool after setup.
+No installation needed — readx runs as a remote MCP server. Add it to the user's editor MCP config with the URL above. Restart the editor after setup.
 
 ### When to Trigger This Setup
 
@@ -132,18 +87,9 @@ When MCP tools are NOT available (e.g. platforms that don't support MCP), call t
 ### Getting the API Key
 
 Check in order, use the first one found:
-1. Config file: read `~/.config/readx/credentials.json` → extract `api_key` field
-2. Environment variable: `$READX_API_KEY`
-3. If neither exists, ask the user for their API key (get one at https://readx.cc), then ask:
-
-> How would you like to save the API key?
-> 1. **I'll do it myself** — I'll show you the command
-> 2. **Help me set it up** — I'll run the command for you
-
-To persist the key to the config file:
-```bash
-mkdir -p ~/.config/readx && echo '{"api_key":"<API_KEY>"}' > ~/.config/readx/credentials.json
-```
+1. Config file: `~/.config/readx/credentials.json` (macOS/Linux) or `%APPDATA%\readx\credentials.json` (Windows) → JSON format: `{"api_key":"<key>"}`
+2. Environment variable: `READX_API_KEY`
+3. If neither exists, ask the user for their API key (get one at https://readx.cc), then ask whether they want to save it themselves or have you do it. Persist to the config file path above.
 
 ### API Reference
 
@@ -154,28 +100,6 @@ curl -s https://readx.cc/api-docs.txt
 ```
 
 Read this document before making your first API call. It contains all endpoint names, parameters, and response JSON paths you need.
-
----
-
-## Skills Overview
-
-| # | Skill | What it does |
-|---|-------|-------------|
-| 1 | **User Deep Profiling** | Deep-dive any account: influence score, engagement quality, content style |
-| 2 | **Influence & Network Mapping** | Map relationships, find connectors, identify clusters |
-| 3 | **Viral & Engagement Analysis** | Dissect why content spreads, track propagation chains |
-| 4 | **Sentiment & Topic Monitoring** | Track narratives, measure sentiment shifts, detect emerging stories |
-| 5 | **Competitive Benchmarking** | Head-to-head account comparison with ranked metrics |
-| 6 | **Community Intelligence** | Analyze community health, key voices, content themes |
-| 7 | **List Intelligence** | Curated list analysis, cross-list overlap detection |
-| 8 | **Trend Forecasting** | Multi-region trend tracking, velocity analysis, breakout detection |
-| 9 | **Content Strategy Audit** | Analyze what works for an account and recommend improvements |
-| 10 | **Audience Intelligence** | Profile who follows/engages with an account |
-| 11 | **Conversation & Thread Intelligence** | Discussion analysis, debate mapping, ratio detection |
-| 12 | **KOL Discovery** | Find and rank influencers in any topic or niche |
-| 13 | **Event & Breaking News Tracker** | Real-time event tracking, timeline reconstruction |
-| 14 | **Account Authenticity Audit** | Bot detection, credibility scoring, red flag identification |
-| 15 | **Cross-Platform Topic Report** | Comprehensive intelligence report across tweets, communities, lists, trends |
 
 ---
 
