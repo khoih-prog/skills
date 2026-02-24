@@ -12,7 +12,7 @@ metadata:
             {
               "id": "uv",
               "kind": "uv",
-              "package": "amplifier-app-openclaw @ git+https://github.com/microsoft/amplifier-app-openclaw@main",
+              "package": "amplifier-app-openclaw @ git+https://github.com/microsoft/amplifier-app-openclaw@v1.0.4",
               "bins": ["amplifier-openclaw"],
               "label": "Install Amplifier OpenClaw integration (uv)",
             },
@@ -59,23 +59,16 @@ exec command:"amplifier-openclaw run --model anthropic/claude-sonnet-4-20250514 
 # Gemini — fast, large context
 exec command:"amplifier-openclaw run --model gemini/gemini-2.5-flash 'Quick analysis' --bundle foundation" background:true timeout:300
 
-# Any model OpenClaw has configured works automatically
+# Any model works
 exec command:"amplifier-openclaw run --model xai/grok-3 'Research task'" background:true timeout:600
 ```
 
-**Important:** Always pass `--model` matching your current OpenClaw model (from the Runtime line in your system prompt, e.g. `model=anthropic/claude-opus-4-6`). This ensures Amplifier uses the same provider and doesn't need separate API keys.
+**Tip:** If OpenClaw is using a specific model, pass it through with `--model` so Amplifier uses the same one.
 
-### Provider Routing
+### Model Support
 
-The `--model` flag auto-routes to the best provider:
+The `--model` flag accepts any model identifier (e.g. `anthropic/claude-sonnet-4-20250514`, `openai/gpt-4o`, `gemini/gemini-2.5-flash`). The CLI automatically routes to the appropriate provider.
 
-| Model | Provider | Features |
-|---|---|---|
-| `anthropic/claude-*` | provider-anthropic | Thinking, caching, 1M context, tool repair |
-| `openai/gpt-4o*`, `openai/o3*` | provider-openai | Responses API, reasoning |
-| Everything else | provider-litellm | 100+ providers via env vars |
-
-No separate API keys needed — Amplifier inherits whatever OpenClaw has configured.
 
 ### Bundles
 
@@ -152,11 +145,5 @@ Report costs only when asked or when notable (>$1).
 If not already installed:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/microsoft/amplifier-app-openclaw/main/install.sh | bash
-```
-
-Or manually:
-
-```bash
-uv tool install "amplifier-app-openclaw @ git+https://github.com/microsoft/amplifier-app-openclaw@main"
+uv tool install "amplifier-app-openclaw @ git+https://github.com/microsoft/amplifier-app-openclaw@v1.0.4"
 ```

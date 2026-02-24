@@ -1,11 +1,17 @@
 {
   "owner": "bkrabach",
   "slug": "amplifier-openclaw",
-  "displayName": "Amplifier OpenClaw",
+  "displayName": "Amplifier",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1771899669234,
-    "commit": "https://github.com/openclaw/skills/commit/19f4d437b733aeefb269563e24f92a6ef99d565e"
+    "version": "1.0.5",
+    "publishedAt": 1771941912438,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1771899669234,
+      "commit": "https://github.com/openclaw/skills/commit/19f4d437b733aeefb269563e24f92a6ef99d565e"
+    }
+  ]
 }
