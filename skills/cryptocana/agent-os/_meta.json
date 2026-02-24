@@ -1,0 +1,11 @@
+{
+  "owner": "cryptocana",
+  "slug": "agent-os",
+  "displayName": "Agent Os",
+  "latest": {
+    "version": "0.1.0",
+    "publishedAt": 1771951490308,
+    "commit": null
+  },
+  "history": []
+}
