@@ -1,0 +1,11 @@
+{
+  "owner": "adambrainai",
+  "slug": "payspawn",
+  "displayName": "PaySpawn — On-Chain Spending Limits for AI Agents",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1771902022532,
+    "commit": null
+  },
+  "history": []
+}
