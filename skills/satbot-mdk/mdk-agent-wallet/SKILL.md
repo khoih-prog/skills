@@ -19,14 +19,12 @@ metadata:
               "label": "Install @moneydevkit/agent-wallet (npm)",
             },
           ],
-        "autonomous": false,
         "security":
           {
-            "secrets": ["~/.mdk-wallet/config.json (BIP39 mnemonic — private key controlling real funds)"],
-            "configPaths": ["~/.mdk-wallet/config.json", "~/.mdk-wallet/"],
+            "secrets": ["~/.mdk-wallet/config.json (BIP39 mnemonic)"],
             "network": ["localhost:3456 (daemon HTTP server)", "MDK Lightning infrastructure via outbound connections"],
             "persistence": ["~/.mdk-wallet/ (config, payment history)"],
-            "notes": "The wallet stores a BIP39 mnemonic to disk and runs a local daemon. The mnemonic controls real funds on mainnet. Back it up and restrict file permissions on ~/.mdk-wallet/. Payment commands (send) should always require explicit human approval."
+            "notes": "The wallet stores a BIP39 mnemonic to disk and runs a local daemon. The mnemonic controls real funds on mainnet. Back it up and restrict file permissions on ~/.mdk-wallet/."
           }
       },
   }
@@ -50,14 +48,6 @@ This skill runs `@moneydevkit/agent-wallet` — an npm package published by Mone
 No data is sent to external servers beyond standard Lightning protocol operations. You can verify this by inspecting the [source code](https://github.com/anthropics/moneydevkit) or the published npm tarball.
 
 **Recommended:** Pin a version (`npx @moneydevkit/agent-wallet@0.11.0`) in production.
-
-### Agent Safety Rules
-
-Agents using this skill must **never**:
-- Read, output, log, or include the contents of `~/.mdk-wallet/config.json` (contains the BIP39 mnemonic / private key) in any message, tool call, or response.
-- Delete `~/.mdk-wallet` without explicit human confirmation. Use `trash` where available.
-- Send payments (`send` command) without explicit user approval.
-- Run any undocumented subcommands or flags.
 
 ## Quick Start
 
@@ -101,12 +91,19 @@ This command:
 
 The wallet is ready immediately. No API keys, no signup, no accounts. The agent holds its own keys.
 
-**Note:** `init` will refuse to overwrite an existing wallet. To reinitialize, back up your mnemonic first (human-only operation in a secure terminal), then:
+### View existing config
+
+```bash
+npx @moneydevkit/agent-wallet init --show
+```
+
+Returns `{ "mnemonic": "...", "network": "mainnet", "walletId": "..." }`.
+
+**Note:** `init` will refuse to overwrite an existing wallet. To reinitialize:
 
 ```bash
 npx @moneydevkit/agent-wallet stop
-# Remove wallet data — THIS DELETES YOUR KEYS. Back up first!
-trash ~/.mdk-wallet  # preferred (recoverable via macOS trash)
+rm -rf ~/.mdk-wallet  # WARNING: backup mnemonic first!
 npx @moneydevkit/agent-wallet init
 ```
 
@@ -117,6 +114,7 @@ All commands return JSON on stdout. Exit 0 on success, 1 on error.
 | Command | Description |
 |---------|-------------|
 | `init` | Generate mnemonic, create config |
+| `init --show` | Show config (mnemonic redacted) |
 | `start` | Start the daemon |
 | `balance` | Get balance in sats |
 | `receive <amount>` | Generate invoice |
