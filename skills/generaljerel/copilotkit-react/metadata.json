@@ -1,0 +1,12 @@
+{
+  "version": "1.0.0",
+  "organization": "CopilotKit",
+  "date": "February 2026",
+  "abstract": "Best practices for building agentic React applications with CopilotKit. Contains 25 rules across 6 categories covering provider configuration, agent hooks, tool rendering, state management, chat UI, and suggestions. Each rule includes incorrect vs correct code examples grounded in the CopilotKit v2 React SDK.",
+  "references": [
+    "https://docs.copilotkit.ai",
+    "https://github.com/CopilotKit/CopilotKit",
+    "https://docs.copilotkit.ai/reference/hooks",
+    "https://docs.copilotkit.ai/reference/components"
+  ]
+}
