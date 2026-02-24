@@ -1,0 +1,11 @@
+{
+  "owner": "homeofe",
+  "slug": "openclaw-docker",
+  "displayName": "Docker",
+  "latest": {
+    "version": "0.1.1",
+    "publishedAt": 1771857309214,
+    "commit": null
+  },
+  "history": []
+}
