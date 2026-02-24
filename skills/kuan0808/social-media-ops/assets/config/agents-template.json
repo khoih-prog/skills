@@ -1,0 +1,101 @@
+{
+  "agents": {
+    "defaults": {
+      "model": { "primary": "anthropic/claude-sonnet-4-5-20250514" },
+      "compaction": { "mode": "safeguard" },
+      "maxConcurrent": 4,
+      "subagents": { "maxConcurrent": 8 }
+    },
+    "list": [
+      {
+        "id": "leader",
+        "default": true,
+        "name": "Leader",
+        "workspace": "{{BASE_DIR}}/workspace",
+        "model": { "primary": "{{LEADER_MODEL}}", "fallbacks": ["{{FALLBACK_MODEL}}"] },
+        "identity": { "name": "{{BOT_NAME}}", "emoji": "{{BOT_EMOJI}}" },
+        "tools": { "deny": ["exec", "browser"] }
+      },
+      {
+        "id": "researcher",
+        "name": "Researcher",
+        "workspace": "{{BASE_DIR}}/workspace-researcher",
+        "model": { "primary": "{{RESEARCHER_MODEL}}", "fallbacks": ["{{FALLBACK_MODEL}}"] },
+        "tools": { "deny": ["exec", "browser"] }
+      },
+      {
+        "id": "content",
+        "name": "Content",
+        "workspace": "{{BASE_DIR}}/workspace-content",
+        "model": { "primary": "{{CONTENT_MODEL}}", "fallbacks": ["{{FALLBACK_MODEL}}"] },
+        "tools": { "deny": ["exec", "apply_patch", "browser"] }
+      },
+      {
+        "id": "designer",
+        "name": "Designer",
+        "workspace": "{{BASE_DIR}}/workspace-designer",
+        "model": { "primary": "{{DESIGNER_MODEL}}", "fallbacks": ["{{FALLBACK_MODEL}}"] },
+        "tools": { "deny": ["exec", "apply_patch", "browser"] }
+      },
+      {
+        "id": "operator",
+        "name": "Operator",
+        "workspace": "{{BASE_DIR}}/workspace-operator",
+        "model": { "primary": "{{OPERATOR_MODEL}}", "fallbacks": ["{{FALLBACK_MODEL}}"] },
+        "tools": { "deny": ["exec", "edit", "apply_patch"] }
+      },
+      {
+        "id": "engineer",
+        "name": "Engineer",
+        "workspace": "{{BASE_DIR}}/workspace-engineer",
+        "model": { "primary": "{{ENGINEER_MODEL}}", "fallbacks": ["{{FALLBACK_MODEL}}"] },
+        "tools": { "deny": ["browser"] }
+      },
+      {
+        "id": "reviewer",
+        "name": "Reviewer",
+        "workspace": "{{BASE_DIR}}/workspace-reviewer",
+        "model": { "primary": "{{REVIEWER_MODEL}}", "fallbacks": ["{{FALLBACK_MODEL}}"] },
+        "sandbox": { "mode": "non-main", "scope": "session" },
+        "tools": { "deny": ["exec", "edit", "apply_patch", "write", "browser"] }
+      }
+    ]
+  },
+  "tools": {
+    "agentToAgent": {
+      "enabled": true,
+      "allow": ["leader", "researcher", "content", "designer", "operator", "engineer", "reviewer"]
+    },
+    "sessions": {
+      "visibility": "all"
+    }
+  },
+  "session": {
+    "agentToAgent": {
+      "maxPingPongTurns": 3
+    }
+  },
+  "memory": {
+    "backend": "qmd",
+    "qmd": {
+      "includeDefaultMemory": true,
+      "paths": [
+        { "path": "memory", "name": "daily-notes", "pattern": "**/*.md" },
+        { "path": "skills", "name": "agent-skills", "pattern": "**/*.md" },
+        { "path": "shared", "name": "shared-knowledge", "pattern": "**/*.md" }
+      ],
+      "update": { "interval": "5m" }
+    }
+  },
+  "hooks": {
+    "internal": {
+      "enabled": true,
+      "entries": {
+        "boot-md": { "enabled": true },
+        "bootstrap-extra-files": { "enabled": true },
+        "command-logger": { "enabled": true },
+        "session-memory": { "enabled": true }
+      }
+    }
+  }
+}

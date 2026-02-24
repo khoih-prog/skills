@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "jobs": [
+    {
+      "id": "daily-memory-review",
+      "name": "daily-memory-review",
+      "description": "Leader reviews daily notes and updates long-term memory",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 20 * * *"
+      },
+      "sessionTarget": "leader",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Memory maintenance: Review today's memory file. Identify significant events, lessons, or insights worth keeping long-term. Update MEMORY.md. Remove stale entries. Deliver summary to Operations topic if noteworthy.",
+        "timeoutSeconds": 120
+      },
+      "delivery": {
+        "mode": "channel",
+        "channel": "{{OPERATIONS_CHANNEL}}"
+      }
+    },
+    {
+      "id": "weekly-kb-review",
+      "name": "weekly-kb-review",
+      "description": "Leader reviews knowledge base and agent performance weekly",
+      "enabled": true,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 20 * * 0"
+      },
+      "sessionTarget": "leader",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Weekly review: 1) Check shared/ files for outdated information. 2) Review agent performance from this week. 3) Check for stale PENDING APPROVAL items. 4) Update MEMORY.md with weekly summary. 5) Flag knowledge gaps. Deliver report to Operations topic.",
+        "timeoutSeconds": 180
+      },
+      "delivery": {
+        "mode": "channel",
+        "channel": "{{OPERATIONS_CHANNEL}}"
+      }
+    }
+  ]
+}
