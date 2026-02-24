@@ -57,10 +57,47 @@ def calc_day_totals(log):
         totals['meal_count'] += 1
     return totals
 
+def enrich_items_from_db(items):
+    """用food_db为每个食材补充营养数据"""
+    try:
+        from food_db import FOODS
+    except ImportError:
+        return items
+    
+    for item in items:
+        if item.get('calories'):
+            continue  # 已有营养数据，跳过
+        name = item.get('name', '')
+        amount = item.get('amount_g', 100)
+        
+        # 在FOODS字典里模糊匹配
+        matched_name = None
+        matched_data = None
+        for food_name, food_data in FOODS.items():
+            if food_name in name or name in food_name:
+                matched_name = food_name
+                matched_data = food_data
+                break
+            if food_data.get('en', '').lower() in name.lower() and food_data.get('en'):
+                matched_name = food_name
+                matched_data = food_data
+                break
+        
+        if matched_data:
+            ratio = amount / 100.0
+            item['calories'] = round(matched_data['calories'] * ratio)
+            item['protein_g'] = round(matched_data['protein'] * ratio, 1)
+            item['carbs_g'] = round(matched_data['carbs'] * ratio, 1)
+            item['fat_g'] = round(matched_data['fat'] * ratio, 1)
+            item['matched_food'] = matched_name
+    
+    return items
+
 def cmd_add(args):
     log = load_log()
     
     items = json.loads(args.items) if args.items else []
+    items = enrich_items_from_db(items)
     
     meal = {
         'type': args.meal,

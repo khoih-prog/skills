@@ -61,6 +61,34 @@ FOODS = {
     "牛奶": {"en": "milk", "calories": 42, "protein": 3.4, "carbs": 5, "fat": 1},
     "奶酪": {"en": "cheese", "calories": 402, "protein": 25, "carbs": 1.3, "fat": 33},
     
+    # 更多蔬菜
+    "花菜": {"en": "cauliflower", "calories": 25, "protein": 1.9, "carbs": 5, "fat": 0.3},
+    "蒜薹": {"en": "garlic sprouts", "calories": 45, "protein": 2, "carbs": 9.5, "fat": 0.4},
+    "红椒": {"en": "red pepper", "calories": 31, "protein": 1, "carbs": 6, "fat": 0.3},
+    "青椒": {"en": "green pepper", "calories": 20, "protein": 0.9, "carbs": 4.6, "fat": 0.2},
+    "茄子": {"en": "eggplant", "calories": 25, "protein": 1, "carbs": 6, "fat": 0.2},
+    "土豆": {"en": "potato", "calories": 77, "protein": 2, "carbs": 17, "fat": 0.1},
+    "豆角": {"en": "green beans", "calories": 31, "protein": 1.8, "carbs": 7, "fat": 0.1},
+    "莴笋": {"en": "lettuce stem", "calories": 14, "protein": 0.6, "carbs": 2.8, "fat": 0.1},
+    "蘑菇": {"en": "mushroom", "calories": 22, "protein": 3.1, "carbs": 3.3, "fat": 0.3},
+    "木耳": {"en": "wood ear", "calories": 21, "protein": 0.5, "carbs": 5, "fat": 0.2},
+    
+    # 更多肉类/加工肉
+    "腊肉": {"en": "cured pork", "calories": 498, "protein": 12, "carbs": 3, "fat": 50},
+    "五花肉": {"en": "pork belly", "calories": 518, "protein": 9, "carbs": 0, "fat": 53},
+    "排骨": {"en": "pork ribs", "calories": 264, "protein": 18, "carbs": 0, "fat": 21},
+    "鸭肉": {"en": "duck", "calories": 240, "protein": 16, "carbs": 0, "fat": 20},
+    "羊肉": {"en": "lamb", "calories": 294, "protein": 25, "carbs": 0, "fat": 21},
+    "香肠": {"en": "sausage", "calories": 301, "protein": 12, "carbs": 2, "fat": 27},
+    
+    # 淡水鱼
+    "鲈鱼": {"en": "sea bass", "calories": 97, "protein": 18, "carbs": 0, "fat": 2},
+    "草鱼": {"en": "grass carp", "calories": 113, "protein": 16, "carbs": 0, "fat": 5.2},
+    "鲫鱼": {"en": "crucian carp", "calories": 108, "protein": 17, "carbs": 0, "fat": 4.2},
+    "带鱼": {"en": "hairtail", "calories": 127, "protein": 18, "carbs": 0, "fat": 5.6},
+    "鳜鱼": {"en": "mandarin fish", "calories": 117, "protein": 20, "carbs": 0, "fat": 4},
+    "藜蒿": {"en": "artemisia", "calories": 31, "protein": 3.6, "carbs": 4, "fat": 0.5},
+    
     # 零食/其他
     "坚果混合": {"en": "mixed nuts", "calories": 607, "protein": 20, "carbs": 21, "fat": 54},
     "黑巧克力": {"en": "dark chocolate", "calories": 546, "protein": 5, "carbs": 60, "fat": 31},
