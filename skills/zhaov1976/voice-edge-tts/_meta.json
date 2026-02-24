@@ -1,0 +1,11 @@
+{
+  "owner": "zhaov1976",
+  "slug": "voice-edge-tts",
+  "displayName": "Voice (Edge TTS)",
+  "latest": {
+    "version": "1.10.0",
+    "publishedAt": 1771867509121,
+    "commit": null
+  },
+  "history": []
+}
