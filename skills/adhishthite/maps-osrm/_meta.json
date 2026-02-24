@@ -1,0 +1,11 @@
+{
+  "owner": "adhishthite",
+  "slug": "maps-osrm",
+  "displayName": "OSRM Maps Skill",
+  "latest": {
+    "version": "1.0.3",
+    "publishedAt": 1771829962808,
+    "commit": null
+  },
+  "history": []
+}
