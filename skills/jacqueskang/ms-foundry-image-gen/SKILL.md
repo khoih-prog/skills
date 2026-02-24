@@ -41,11 +41,11 @@ jq -n --arg prompt "$PROMPT" '{prompt:$prompt, n:1, size:"1024x1024", output_for
     --url "$url" \
     -H 'Content-Type: application/json' \
     -H "api-key: ${FOUNDRY_API_KEY}" \
-    --data-binary @- -o generation_result.json
-
+    --data-binary @- -o /tmp/generation_result.json
+  
 # Stream base64 payload to avoid storing large values in shell variables
-jq -r '.data[0].b64_json' generation_result.json | base64 --decode > generated_image.png
-echo "Image saved to: generated_image.png"
+jq -r '.data[0].b64_json' /tmp/generation_result.json | base64 --decode > /tmp/generated_image.png
+echo "Image saved to: /tmp/generated_image.png"
 ```
 
 Options
