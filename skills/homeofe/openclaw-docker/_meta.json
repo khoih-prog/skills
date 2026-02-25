@@ -1,11 +1,17 @@
 {
   "owner": "homeofe",
   "slug": "openclaw-docker",
-  "displayName": "Docker",
+  "displayName": "OpenClaw Docker",
   "latest": {
-    "version": "0.1.1",
-    "publishedAt": 1771857309214,
-    "commit": "https://github.com/openclaw/skills/commit/e65d3312f904b12f6eeaaa13a529a1c343b2ec56"
+    "version": "0.1.2",
+    "publishedAt": 1771953505835,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.1",
+      "publishedAt": 1771857309214,
+      "commit": "https://github.com/openclaw/skills/commit/e65d3312f904b12f6eeaaa13a529a1c343b2ec56"
+    }
+  ]
 }
