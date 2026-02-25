@@ -34,7 +34,7 @@ No fingerprint trick fixes a bad IP. Proxy first, fingerprint second.
 | Provider | GET | POST | KYC | Price/GB | Notes |
 |----------|-----|------|-----|---------|-------|
 | **Decodo** ✅ PRIMARY | ✅ | ✅ | Email only | ~$3 | Romania endpoint `ro.decodo.com:13001` |
-| Bright Data | ✅ | ❌* | ID required | ~$5 | *POST blocked without KYC verification |
+| [Bright Data](https://get.brightdata.com/4ihj1kk8jt0v) | ✅ | ❌* | ID required | ~$5 | *POST blocked without KYC verification |
 | 2captcha proxy | ✅ | ✅ | None | $5 | IP whitelist auth, no rotating credentials |
 | IPRoyal | ✅ | ✅ | Strict KYC | ~$4 | Requires ID document |
 
@@ -55,7 +55,7 @@ export HB_PROXY_PASS=password
 ### Proxy format reference
 ```
 Decodo:      http://USER:PASS@ro.decodo.com:13001          (Romania, no KYC)
-Bright Data: http://USER-session-SID:PASS@brd.superproxy.io:33335
+[Bright Data](https://get.brightdata.com/4ihj1kk8jt0v): http://USER-session-SID:PASS@brd.superproxy.io:33335
 IPRoyal:     http://USER:PASS_country-ro_session-SID_lifetime-30m@geo.iproyal.com:12321
 ```
 
