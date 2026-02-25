@@ -1,0 +1,11 @@
+{
+  "owner": "kjetilvaa",
+  "slug": "reef",
+  "displayName": "Reef Protocol",
+  "latest": {
+    "version": "0.2.15",
+    "publishedAt": 1771931970722,
+    "commit": null
+  },
+  "history": []
+}
