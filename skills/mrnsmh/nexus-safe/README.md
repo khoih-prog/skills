@@ -1,21 +1,22 @@
-# Skill: Nexus-Safe (V1.4) - AI-Orchestrated SRE
+# Skill: Nexus-Safe (V1.3.0)
 
-This skill turns the Agent into an autonomous Site Reliability Engineer. It provides raw system access, but the decision-making logic is driven by the Agent's reasoning.
+Autonomous local System Reliability Agent for OpenClaw.
 
-## 🧠 AI Integration
-The Agent should consult `AGENT_BRAIN.md` to learn the diagnostic protocols. This ensures that restarts are notProcedural, but **Logical**.
+## 🛡️ Privacy & Security Policy
+- **Runtime Privacy**: Strictly 100% local. No metrics, logs, or system data ever leave your server. No outbound network calls are performed by the script.
+- **Setup Notice**: An internet connection is required **only during initial setup** to install the `psutil` dependency via `pip`.
+- **Safe-by-default**: Recovery actions are locked until explicitly enabled.
 
-## 🛡️ Security Policies
-- **Logs-First**: The `restart` command is blocked unless `logs` were read in the last 5 minutes.
-- **Allowlist**: Only services in `NEXUS_SAFE_ALLOWED_DOCKER/PM2` can be touched.
-- **Rate Limiting**: Hard-coded max restarts per hour.
+## 📋 Capabilities
+- **/nexus-safe status** : Real-time system health (CPU, RAM, Disk, Load).
+- **/nexus-safe logs <service>** : Diagnostic log retrieval (Docker/PM2).
+- **/nexus-safe recover <service>** : Policy-controlled service restart.
 
-## 🚀 Usage
-- **/nexus-safe status** : Get system vitals.
-- **/nexus-safe logs <service>** : Required step before any recovery.
-- **/nexus-safe recover <service>** : Trigger a restart after diagnostic.
+## ⚙️ Logic & Enforcement
+- **Allowlist Required**: Restarts only work for services in `NEXUS_SAFE_ALLOWED_DOCKER/PM2`.
+- **Logs-First Policy**: The tool blocks recovery if logs haven't been reviewed within the last 5 minutes.
+- **Rate Limiting**: Sliding window protection (Max 3 restarts per hour).
 
-## ⚙️ Environment Configuration
-- `NEXUS_SAFE_ALLOW_RESTARTS`: "true"
-- `NEXUS_SAFE_ALLOWED_DOCKER`: "container1,container2"
-- `NEXUS_SAFE_ALLOWED_PM2`: "app1"
+## 🚀 Installation
+1. `pip install psutil`
+2. Ensure `docker` and `pm2` are installed and in your PATH.
