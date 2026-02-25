@@ -1,8 +1,13 @@
 ---
 name: aiops-agent
 description: AI驱动的智能运维系统，实现主动预警、智能诊断和自动化治理
-homepage: https://www.cnblogs.com/Jame-mei
-metadata: { "openclaw": { "emoji": "🤖", "author": { "name": "James Mei", "email": "meijinmeng@126.com" } } }
+author: James Mei
+contact:
+  email: meijinmeng@126.com
+  blog: https://www.cnblogs.com/Jame-mei
+metadata:
+  openclaw:
+    emoji: 🤖
 ---
 
 # AIOps Agent
