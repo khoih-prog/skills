@@ -4,18 +4,21 @@
 
 set -euo pipefail
 
+# 忽略 SIGPIPE (当 head 提前退出时)
+trap '' PIPE
+
 show_usage() {
     cat << EOF
-用法: spotlight-search.sh <directory> <query> [--limit N]
+Usage: spotlight-search.sh <directory> <query> [--limit N]
 
-参数:
-  <directory>  要搜索的目录路径
-  <query>      搜索关键词
-  --limit N    返回最多 N 个结果（默认 20）
+Arguments:
+  <directory>  Directory path to search
+  <query>      Search query
+  --limit N    Maximum number of results (default: 20)
 
-示例:
-  spotlight-search.sh ~/Documents "项目计划"
-  spotlight-search.sh ~/research/璐璐研究 "留日" --limit 10
+Examples:
+  spotlight-search.sh ~/Documents "project plan"
+  spotlight-search.sh ~/research "machine learning" --limit 10
 EOF
 }
 
@@ -38,41 +41,41 @@ while [ $# -gt 0 ]; do
             shift 2
             ;;
         *)
-            echo "未知参数: $1" >&2
+            echo "Unknown argument: $1" >&2
             show_usage
             exit 1
             ;;
     esac
 done
 
-# 检查目录是否存在
+# Check if directory exists
 if [ ! -d "$DIRECTORY" ]; then
-    echo "错误: 目录不存在: $DIRECTORY" >&2
+    echo "Error: Directory not found: $DIRECTORY" >&2
     exit 1
 fi
 
-# 展开路径（处理 ~ 等）
+# Expand path (handle ~ etc)
 DIRECTORY=$(cd "$DIRECTORY" && pwd)
 
-# 使用 mdfind 搜索
-# -onlyin: 限制搜索范围
-# 2>/dev/null: 忽略错误信息
-echo "🔍 在 $DIRECTORY 中搜索: $QUERY"
+# Search using mdfind
+# -onlyin: limit search scope
+# 2>/dev/null: ignore error messages
+echo "🔍 Searching in $DIRECTORY for: $QUERY"
 echo ""
 
 results=$(mdfind -onlyin "$DIRECTORY" "$QUERY" 2>/dev/null | head -n "$LIMIT")
 
 if [ -z "$results" ]; then
-    echo "❌ 未找到匹配结果"
+    echo "❌ No results found"
     exit 0
 fi
 
-# 统计结果数量
+# Count results
 count=$(echo "$results" | wc -l | tr -d ' ')
-echo "✅ 找到 $count 个结果（最多显示 $LIMIT 个）："
+echo "✅ Found $count results (showing up to $LIMIT):"
 echo ""
 
-# 输出结果
+# Output results
 echo "$results" | while IFS= read -r file; do
     # 获取文件类型
     ext="${file##*.}"

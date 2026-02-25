@@ -24,14 +24,9 @@ scripts/spotlight-search.sh <directory> <query> [--limit N]
 **Examples:**
 
 ```bash
-# Search for "machine learning" in Documents
 scripts/spotlight-search.sh ~/Documents "machine learning"
-
-# Search research papers with limit
 scripts/spotlight-search.sh ~/research "neural networks" --limit 10
-
-# Search Chinese/Japanese content
-scripts/spotlight-search.sh ~/璐璐研究 "留日" --limit 20
+scripts/spotlight-search.sh ~/Downloads "meeting notes" --limit 5
 ```
 
 ## Search Features
@@ -44,9 +39,9 @@ scripts/spotlight-search.sh ~/璐璐研究 "留日" --limit 20
 ## Output Format
 
 ```
-🔍 在 /path/to/directory 中搜索: query
+🔍 Searching in /path/to/directory for: query
 
-✅ 找到 N 个结果（最多显示 M 个）：
+✅ Found N results (showing up to M):
 
 📄 /full/path/to/file.pdf [pdf, 2.3M]
 📄 /full/path/to/document.txt [txt, 45K]
