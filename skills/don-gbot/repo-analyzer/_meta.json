@@ -3,9 +3,15 @@
   "slug": "repo-analyzer",
   "displayName": "Repo Analyzer",
   "latest": {
-    "version": "1.1.1",
-    "publishedAt": 1771711710538,
-    "commit": "https://github.com/openclaw/skills/commit/a3e3653878af01cc0076b319023cfc7f918671d4"
+    "version": "1.2.0",
+    "publishedAt": 1771986450622,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.1.1",
+      "publishedAt": 1771711710538,
+      "commit": "https://github.com/openclaw/skills/commit/a3e3653878af01cc0076b319023cfc7f918671d4"
+    }
+  ]
 }

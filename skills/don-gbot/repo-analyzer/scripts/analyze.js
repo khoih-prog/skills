@@ -2196,6 +2196,29 @@ async function analyzeRepo(owner, repo) {
     'api.coingecko.com': 'Market Data', 'api.coinmarketcap.com': 'Market Data', 'min-api.cryptocompare.com': 'Market Data', 'api.hyperliquid.xyz': 'Market Data', 'api.binance.com': 'Market Data', 'api.bybit.com': 'Market Data',
     'reddit.com': 'Social', 'www.reddit.com': 'Social', 'api.twitter.com': 'Social', 'x.com': 'Social',
     'polymarket.com': 'Prediction Market', 'gamma-api.polymarket.com': 'Prediction Market',
+    // DeFi / Launchpads / DEX
+    'api.dexscreener.com': 'DEX Data', 'dexscreener.com': 'DEX Data',
+    'api.dextools.io': 'DEX Data', 'api.geckoterminal.com': 'DEX Data',
+    'api.defined.fi': 'DEX Data', 'api.birdeye.so': 'DEX Data',
+    'quote-api.jup.ag': 'DEX', 'api.jup.ag': 'DEX', 'jupiter.ag': 'DEX',
+    'api.uniswap.org': 'DEX', 'api.1inch.dev': 'DEX', 'api.0x.org': 'DEX',
+    'api.raydium.io': 'DEX', 'api.orca.so': 'DEX',
+    'api2.virtuals.io': 'Launchpad', 'virtuals.io': 'Launchpad',
+    'www.clanker.world': 'Launchpad', 'clanker.world': 'Launchpad',
+    'api.bankr.bot': 'Launchpad', 'bankr.bot': 'Launchpad',
+    'pump.fun': 'Launchpad', 'frontend-api.pump.fun': 'Launchpad',
+    'app.doppler.lol': 'Launchpad', 'doppler.lol': 'Launchpad',
+    'flaunch.gg': 'Launchpad',
+    // Social / Data
+    'api.fxtwitter.com': 'Social', 'fxtwitter.com': 'Social', 'vxtwitter.com': 'Social',
+    'nitter.net': 'Social', 'api.telegram.org': 'Social',
+    'agdp.io': 'Agent Platform',
+    // Odds / Sports
+    'api.the-odds-api.com': 'Odds Data', 'api.odds-api.io': 'Odds Data',
+    'site.api.espn.com': 'Sports Data', 'site.web.api.espn.com': 'Sports Data',
+    'stats.nba.com': 'Sports Data', 'www.nba.com': 'Sports Data',
+    // Funding / Donation (in deps/README, not suspicious)
+    'www.patreon.com': 'Funding', 'opencollective.com': 'Funding', 'paypal.me': 'Funding', 'ko-fi.com': 'Funding', 'buymeacoffee.com': 'Funding',
     'localhost': 'Local', '127.0.0.1': 'Local', '0.0.0.0': 'Local',
   };
   const allCodeFiles = files.filter(f => /\.(js|ts|py|sh|rb|go|rs|java|sol|move|toml|json|yaml|yml)$/i.test(f) && !f.includes('node_modules') && !f.includes('vendor'));
@@ -2609,7 +2632,7 @@ async function analyzeRepo(owner, repo) {
   else if (gpgSigned > humanCommits * 0.5) commitScore += 3;
   if (commitsPerDay > 50 && contribs.length <= 1) { commitScore -= 8; results.flags.push(`🔴 ${Math.round(commitsPerDay)} commits/day from single author — likely fabricated history or code dump`); }
   else if (commitsPerDay > 20 && contribs.length <= 1) { commitScore -= 5; results.flags.push(`Suspicious: ${Math.round(commitsPerDay)} commits/day from single author`); }
-  else if (commitsPerDay > 5) { commitScore -= 2; results.warnings.push('Unusually high commit frequency'); }
+  else if (commitsPerDay > 5 && (results.meta?.age || 0) > 7) { commitScore -= 2; results.warnings.push('Unusually high commit frequency'); }
   scores.commits = Math.max(0, Math.min(20, commitScore));
 
   // Contributors (0-15)
@@ -2617,7 +2640,13 @@ async function analyzeRepo(owner, repo) {
   if (contribs.length >= 5) contribScore += 4;
   else if (contribs.length >= 2) contribScore += 2;
   if (busFactor >= 2) contribScore += 3;
-  if (suspiciousContribs.length > 0) { contribScore -= 4; results.flags.push(`${suspiciousContribs.length} suspicious contributor account(s)`); }
+  if (suspiciousContribs.length > 0) {
+    // Scale penalty by repo quality signals — new accounts with good hygiene are less suspicious
+    const hygieneSignals = [hasTests, hasCI, hasLicense, hasSecurityPolicy, hasContributing, hasDocs].filter(Boolean).length;
+    const suspPenalty = hygieneSignals >= 4 ? 1 : hygieneSignals >= 2 ? 2 : 4;
+    contribScore -= suspPenalty;
+    results.flags.push(`${suspiciousContribs.length} suspicious contributor account(s)`);
+  }
   scores.contributors = Math.max(0, Math.min(15, contribScore));
 
   // Code quality (0-25)
@@ -2763,12 +2792,17 @@ async function analyzeRepo(owner, repo) {
   // Hard caps for fundamentally untrustworthy repos
   const repoAgeDays = results.meta?.age || 0;
   const stars = results.meta?.stars || 0;
+  // Hard caps for new repos, softened by hygiene signals
+  const hygieneCount = [hasTests, hasCI, hasLicense, hasSecurityPolicy, hasContributing, hasDocs, hasChangelog].filter(Boolean).length;
   if (repoAgeDays <= 7 && stars === 0) {
-    results.trustScore = Math.min(results.trustScore, 40);
+    const cap = hygieneCount >= 5 ? 60 : hygieneCount >= 3 ? 50 : 40;
+    results.trustScore = Math.min(results.trustScore, cap);
     if (!results.warnings.includes('Brand new repo (<7 days) with zero stars — score capped'))
       results.warnings.push('Brand new repo (<7 days) with zero stars — score capped');
   } else if (repoAgeDays <= 7 && stars < 10) {
-    results.trustScore = Math.min(results.trustScore, 55);
+    const safetyPassed = agentSafety.verdict === 'PASS';
+    const cap = (hygieneCount >= 5 && safetyPassed) ? 80 : hygieneCount >= 5 ? 70 : hygieneCount >= 3 ? 60 : 55;
+    results.trustScore = Math.min(results.trustScore, cap);
   }
 
   results.scores = scores;

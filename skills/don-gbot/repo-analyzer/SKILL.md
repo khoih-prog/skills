@@ -16,7 +16,7 @@ compatibility: >
   Zero external dependencies. Works on Linux/macOS. Handles rate limits with automatic retry and backoff (waits for reset if ≤60s, retries 5xx once).
 metadata:
   author: DaDefiDon
-  version: 1.1.0
+  version: 1.2.0
   category: security-analysis
   tags: [github, trust-score, due-diligence, crypto, defi, audit]
 ---
