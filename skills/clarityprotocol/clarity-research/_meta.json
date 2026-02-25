@@ -1,0 +1,11 @@
+{
+  "owner": "clarityprotocol",
+  "slug": "clarity-research",
+  "displayName": "Clarity Research",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772055683384,
+    "commit": null
+  },
+  "history": []
+}
