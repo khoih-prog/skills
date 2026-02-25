@@ -1,0 +1,11 @@
+{
+  "owner": "clarityprotocol",
+  "slug": "clarity-clinical",
+  "displayName": "Clarity Clinical",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772051512630,
+    "commit": null
+  },
+  "history": []
+}
