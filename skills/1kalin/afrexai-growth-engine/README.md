@@ -1,19 +1,17 @@
-# 📈 AfrexAI Growth Engine
+# Growth Engineering Mastery 🚀
 
-The complete growth system for startups and scaling businesses — from North Star definition through viral loops, experimentation frameworks, and scaling playbooks.
+Complete growth system for startups and scaling companies. From zero users to exponential growth through systematic experimentation, viral mechanics, and data-driven optimization.
 
 ## What This Skill Does
 
-Turns your AI agent into a growth strategist that can:
+Turns your AI agent into a growth engineering partner that can:
 
-- **Define your North Star Metric** with quality test scoring
-- **Audit your AARRR funnel** and find the bottleneck
-- **Design growth loops** (content, viral, paid, sales) with templates
-- **Run experiments** with proper statistical rigor and ICE prioritization
-- **Score growth health** (0-100) across 5 dimensions weekly
-- **Diagnose stalled metrics** with root cause analysis and fixes
-- **Build referral programs** with fraud prevention and timing rules
-- **Plan pricing for growth** — the highest-ROI lever (1% price increase = 11% profit increase)
+- **Diagnose** your growth health across 8 dimensions with a scored audit
+- **Design experiments** using ICE scoring and rigorous A/B testing methodology
+- **Optimize every funnel stage** — acquisition, activation, retention, revenue, referral
+- **Engineer virality** — K-factor optimization, referral program design, growth loops
+- **Scale channels** — 12 channel playbooks with evaluation matrices and scaling criteria
+- **Track metrics** — NSM framework, cohort analysis, weekly growth reviews
 
 ## Install
 
@@ -23,49 +21,47 @@ clawhub install afrexai-growth-engine
 
 ## Quick Start
 
-After installing, try these commands with your agent:
-
 ```
-"Audit my growth"
-"Score my growth health"
-"Design a growth loop for my SaaS"
-"Plan an experiment for activation rate"
-"What should I focus on?"
+"Run a growth audit on my SaaS product"
+"Help me design a referral program"
+"Score this experiment idea: adding social proof to pricing page"
+"Analyze my signup-to-activation funnel"
+"Build a growth loop for my marketplace"
 ```
 
 ## What's Inside
 
-- **North Star Metric** selection guide with quality test (score 0-25)
-- **Growth model YAML** — input-output formula mapping
-- **Channel scoring matrix** with ICE framework
-- **Activation framework** — aha moment discovery + optimization checklist
-- **Retention analysis** — cohort diagnosis + habit loop design template
-- **4 growth loops** with full playbooks (content, viral, paid, sales)
-- **Experiment engine** — YAML template, statistical significance tables, velocity benchmarks
-- **Weekly dashboard YAML** — complete metrics tracking
-- **Stage-specific playbooks** — pre-PMF, early growth, growth, scale
-- **Advanced tactics** — PLG, network effects, expansion revenue, pricing as growth lever
-- **10 growth killers** — common mistakes with diagnostic table
-- **Edge cases** — B2B vs B2C, marketplace, international, developer tools, zero-budget
+| Section | What You Get |
+|---------|-------------|
+| Growth Audit | 8-dimension health scorecard + PMF validation gate |
+| North Star Metric | Selection framework + examples by business type |
+| Experimentation Engine | ICE scoring, experiment templates, statistical rigor rules |
+| AARRR Funnel | Stage-by-stage playbooks with benchmarks |
+| Viral Mechanics | K-factor optimization, 5 virality types, referral program template |
+| Growth Loops | 6 self-reinforcing loop templates |
+| CRO Playbook | Conversion benchmarks, landing page checklist, high-impact experiments |
+| Retention System | Lifecycle emails, churn prediction, re-engagement sequences |
+| Scaling Framework | Channel saturation criteria, international expansion checklist |
+| Growth Team | Team structures, meeting cadences, hiring guide |
+| Analytics Setup | Full tech stack recommendations, UTM conventions, event tracking plan |
 
 ## ⚡ Level Up
 
-Want the full business context for your vertical? Our **AI Agent Context Packs** ($47) give your agent deep industry knowledge:
+This free skill gives you the growth methodology. For industry-specific growth playbooks with vertical-targeted experiments, channel recommendations, and conversion benchmarks:
 
-- **SaaS Context Pack** — metrics, pricing, PLG playbooks
-- **Fintech Context Pack** — compliance + growth in regulated markets
-- **Ecommerce Context Pack** — conversion, retention, LTV optimization
-- **Professional Services Context Pack** — pipeline, proposals, expansion revenue
+**[AfrexAI Context Packs — $47](https://afrexai-cto.github.io/context-packs/)**
 
-👉 [Browse all 10 vertical packs](https://afrexai-cto.github.io/context-packs/)
+Available for: SaaS, Fintech, Healthcare, Legal, Construction, Ecommerce, Real Estate, Recruitment, Manufacturing, Professional Services.
 
 ## 🔗 More Free Skills by AfrexAI
 
-- [afrexai-lead-hunter](https://clawhub.com/skills/afrexai-lead-hunter) — ICP definition, prospecting, outreach sequences
-- [afrexai-sales-playbook](https://clawhub.com/skills/afrexai-sales-playbook) — Full B2B sales system (MEDDPICC + scripts)
-- [afrexai-pricing-strategy](https://clawhub.com/skills/afrexai-pricing-strategy) — Van Westendorp, tier design, price increases
-- [afrexai-customer-success](https://clawhub.com/skills/afrexai-customer-success) — Health scoring, retention, expansion revenue
-- [afrexai-seo-content-engine](https://clawhub.com/skills/afrexai-seo-content-engine) — Keyword research, content frameworks, on-page SEO
+- `afrexai-seo-content-engine` — SEO content strategy and optimization
+- `afrexai-social-media-engine` — Multi-platform social media system
+- `afrexai-sales-playbook` — Complete B2B sales methodology
+- `afrexai-customer-success` — Retention and expansion revenue
+- `afrexai-brand-strategy` — Brand positioning and GTM
+
+Browse all: [AfrexAI on ClawHub](https://clawhub.com)
 
 ---
 
