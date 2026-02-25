@@ -3,11 +3,16 @@
   "slug": "adguard-home",
   "displayName": "Adguard Home",
   "latest": {
-    "version": "1.2.0",
-    "publishedAt": 1771943826135,
-    "commit": "https://github.com/openclaw/skills/commit/c02764b2f3e178f99f7bf28c87a57325096084a1"
+    "version": "1.2.5",
+    "publishedAt": 1772032814351,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.2.0",
+      "publishedAt": 1771943826135,
+      "commit": "https://github.com/openclaw/skills/commit/c02764b2f3e178f99f7bf28c87a57325096084a1"
+    },
     {
       "version": "1.1.2",
       "publishedAt": 1771866665864,

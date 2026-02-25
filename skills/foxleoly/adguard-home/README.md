@@ -33,24 +33,31 @@ cp -r skills/adguard-home ~/.openclaw/workspace/skills/
 
 ## Configuration
 
-Create `~/.openclaw/workspace/adguard-instances.json`:
+### 🔒 Security Best Practices
 
-```json
-{
-  "instances": {
-    "dns1": {
-      "url": "http://192.168.145.249:1080",
-      "username": "admin",
-      "password": "your-password"
-    },
-    "dns2": {
-      "url": "http://192.168.145.96:3000",
-      "username": "admin",
-      "password": "your-password"
-    }
-  }
-}
+**⚠️ Important:** Never store plaintext credentials in files. Always use secure credential injection.
+
+#### Option 1: Environment Variables (Recommended)
+
+```bash
+export ADGUARD_URL="http://192.168.145.249:1080"
+export ADGUARD_USERNAME="admin"
+export ADGUARD_PASSWORD="your-secure-password"
 ```
+
+Add to your shell profile (`~/.bashrc`, `~/.zshrc`) for persistence.
+
+#### Option 2: 1Password CLI (Most Secure)
+
+```bash
+export ADGUARD_URL=$(op read "op://vault/AdGuard/url")
+export ADGUARD_USERNAME=$(op read "op://vault/AdGuard/username")
+export ADGUARD_PASSWORD=$(op read "op://vault/AdGuard/password")
+```
+
+**❌ Deprecated: File-based Config**
+
+Previous versions allowed creating `adguard-instances.json` with credentials. **This is no longer recommended** due to the risk of accidental commits and plaintext storage. Migrate to environment variables or 1Password.
 
 ## Usage
 
@@ -95,9 +102,7 @@ Create `~/.openclaw/workspace/adguard-instances.json`:
 
 ## Version
 
-**v1.2.0** - 🔒 Security Hardening (Fixed command injection, native HTTP client, input validation)
-
-**v1.1.1** - Support default and custom workspace paths
+**v1.2.2** - Removed file-based credential storage, env vars and 1Password only
 
 ## Author
 

@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 
 /**
- * AdGuard Home Skill - Secure Version
+ * AdGuard Home Skill - Secure Version v1.2.2
  * 🛡️ Query AdGuard Home instances for DNS statistics and configuration
  * 
  * Security improvements:
  * - Replaced execSync/curl with native HTTPS requests
  * - Input validation and sanitization
  * - No command injection vulnerabilities
- * - Secure credential handling
+ * - Environment variables only (no file-based credentials)
+ * - v1.2.2: Removed adguard-instances.json support
  */
 
 import fs from 'fs';
@@ -70,52 +71,25 @@ function validateUrl(urlStr) {
 
 // ============ Configuration Loading ============
 
-function findConfigPath() {
-  // Priority 1: Environment variable
-  if (process.env.OPENCLAW_WORKSPACE) {
-    const envPath = path.join(process.env.OPENCLAW_WORKSPACE, 'adguard-instances.json');
-    if (fs.existsSync(envPath)) {
-      return envPath;
-    }
-  }
-  
-  // Priority 2: Default OpenClaw workspace
-  const defaultPath = path.join(process.env.HOME, '.openclaw', 'workspace', 'adguard-instances.json');
-  if (fs.existsSync(defaultPath)) {
-    return defaultPath;
-  }
-  
-  // Priority 3: Custom OpenClaw workspace
-  const homeDir = process.env.HOME;
-  try {
-    const dirs = fs.readdirSync(homeDir);
-    for (const dir of dirs) {
-      if (dir.startsWith('.openclaw-') && dir !== '.openclaw') {
-        const customPath = path.join(homeDir, dir, 'workspace', 'adguard-instances.json');
-        if (fs.existsSync(customPath)) {
-          return customPath;
-        }
+/**
+ * Load configuration from environment variables (secure method only)
+ */
+function loadFromEnv() {
+  if (process.env.ADGUARD_URL && process.env.ADGUARD_USERNAME && process.env.ADGUARD_PASSWORD) {
+    return {
+      default: {
+        url: process.env.ADGUARD_URL,
+        username: process.env.ADGUARD_USERNAME,
+        password: process.env.ADGUARD_PASSWORD
       }
-    }
-  } catch (e) {
-    // Ignore
+    };
   }
-  
   return null;
 }
 
-const configPath = findConfigPath();
-let instances = {};
-
-if (configPath && fs.existsSync(configPath)) {
-  try {
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    instances = config.instances || {};
-  } catch (e) {
-    console.error('❌ Error loading AdGuard instances config:', e.message);
-    process.exit(1);
-  }
-}
+// Load configuration from environment variables only
+// File-based config (adguard-instances.json) was removed in v1.2.2 for security
+let instances = loadFromEnv() || {};
 
 // ============ HTTP Client (Secure, No execSync) ============
 
@@ -225,20 +199,16 @@ async function main() {
   if (!instanceName || !instances[instanceName]) {
     if (Object.keys(instances).length === 0) {
       console.error('❌ No AdGuard instances configured.');
-      console.error('📁 Create adguard-instances.json in one of:');
-      console.error('   1. $OPENCLAW_WORKSPACE/adguard-instances.json');
-      console.error('   2. ~/.openclaw/workspace/adguard-instances.json (default)');
-      console.error('   3. ~/.openclaw-*/workspace/adguard-instances.json');
-      console.error('\n📝 Example:');
-      console.error(JSON.stringify({
-        instances: {
-          dns1: {
-            url: 'http://192.168.1.1:80',
-            username: 'admin',
-            password: 'your-password'
-          }
-        }
-      }, null, 2));
+      console.error('\n🔒 Secure Configuration (Required):');
+      console.error('\nOption 1: Environment Variables');
+      console.error('  export ADGUARD_URL="http://192.168.1.1:80"');
+      console.error('  export ADGUARD_USERNAME="admin"');
+      console.error('  export ADGUARD_PASSWORD="your-password"');
+      console.error('\nOption 2: 1Password CLI (Recommended)');
+      console.error('  export ADGUARD_URL=$(op read "op://vault/AdGuard/url")');
+      console.error('  export ADGUARD_USERNAME=$(op read "op://vault/AdGuard/username")');
+      console.error('  export ADGUARD_PASSWORD=$(op read "op://vault/AdGuard/password")');
+      console.error('\n⚠️  File-based config (adguard-instances.json) was removed in v1.2.2 for security.');
     } else {
       console.error('❌ Instance not found:', instanceName || '(none specified)');
       console.error('📋 Available:', Object.keys(instances).join(', '));
