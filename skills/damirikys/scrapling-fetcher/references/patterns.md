@@ -106,11 +106,12 @@ python3 scrape.py https://example.com -q
 
 ## MCP Server Setup
 
-Start the built-in MCP server for AI-native scraping:
+> ⚠️ The MCP server starts a local HTTP service. Only use in trusted environments.
+
 ```bash
 scrapling mcp
 # or
 python3 -m scrapling.mcp
 ```
 
-Add to OpenClaw MCP config (mcporter) to get scraping as a native tool.
+Add to OpenClaw MCP config (mcporter) to get scraping as a native tool. Confirm with user before starting.
