@@ -1,0 +1,11 @@
+{
+  "owner": "mohdalhashemi98-hue",
+  "slug": "mh-openai-whisper",
+  "displayName": "MH openai-whisper",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1771990992516,
+    "commit": null
+  },
+  "history": []
+}
