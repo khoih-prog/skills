@@ -1,0 +1,11 @@
+{
+  "owner": "qsobad",
+  "slug": "ssh-vault",
+  "displayName": "SSH Vault",
+  "latest": {
+    "version": "1.0.2",
+    "publishedAt": 1771907106552,
+    "commit": null
+  },
+  "history": []
+}
