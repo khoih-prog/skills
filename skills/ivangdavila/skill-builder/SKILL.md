@@ -1,69 +1,104 @@
 ---
-name: "Skill Builder"
-description: "Build high-quality skills with optimal structure. For local use or publishing to ClawHub."
+name: Skill Builder / Creator
+slug: skill-builder
+version: 1.0.5
+homepage: https://clawic.com/skills/skill-builder
+description: Create high-quality skills with modular structure, progressive disclosure, and token-efficient design.
+changelog: Added description examples table, security checklist, and improved traps with fixes
+metadata: {"clawdbot":{"emoji":"🛠️","requires":{"bins":[]},"os":["linux","darwin","win32"]}}
 ---
 
-## Build Skills That Work
+## Setup
 
-Create skills that are token-efficient, well-structured, and actually useful.
+On first use, read `setup.md` for integration guidelines.
 
-**Core principle:** SKILL.md should be SHORT. Move details to auxiliary files.
+## When to Use
 
-**References:**
-- `structure.md` — Anatomy of a good skill
-- `patterns.md` — Proven patterns with examples  
-- `checklist.md` — Pre-publish validation
+User wants to create or improve a skill. Agent guides structure, reviews content, and ensures quality.
 
----
+## Data Storage
 
-### File Structure
+If user wants project tracking, create folder in their home directory.
+See `memory-template.md` for the template structure.
+
+The agent does NOT create files automatically. Always ask user first.
+
+## Architecture
+
+Skills follow this structure:
 
 ```
 skill-name/
-├── SKILL.md      ← Short! (~30-50 lines)
-├── [topic].md    ← Details, loaded when needed
-└── FILES.txt     ← Lists all files to publish (one per line)
+├── SKILL.md           # Core instructions (SHORT)
+├── [topic].md         # On-demand details
+└── references/        # Heavy docs (optional)
 ```
 
-**FILES.txt example:**
+## Quick Reference
+
+| Topic | File |
+|-------|------|
+| Setup process | `setup.md` |
+| Tracking projects | `memory-template.md` |
+| Patterns and examples | `patterns.md` |
+
+## Core Rules
+
+### 1. SKILL.md Must Be Short
+Target 30-50 lines, max 80. Move details to auxiliary files. Every line must justify its token cost.
+
+### 2. Progressive Disclosure
 ```
-SKILL.md
-patterns.md
-reference.md
+Level 1: Metadata (name + description) — always loaded
+Level 2: SKILL.md body — when skill triggers
+Level 3: Auxiliary files — on demand
 ```
 
-### ⚠️ Publishing Rules
+### 3. Descriptions Are Critical
+One sentence, 15-25 words. Action verb first. Describes capabilities, not triggers.
 
-**Publishing is serious.** Each publish is permanent and public. No spam, no experiments.
+| ❌ Wrong | ✅ Right |
+|----------|----------|
+| "Use when user needs PDFs" | "Process, merge, and extract PDF content" |
+| "Helper for Docker" | "Build, deploy, and debug Docker containers" |
+| "Git guide" | "Manage branches, resolve conflicts, and automate workflows" |
 
-1. **Never publish without verification**
-2. **Never change slug after first publish** (breaks installations)
-3. **Always verify name, description, version match your files**
-4. **Always confirm which files will be published**
+See `patterns.md` for more examples.
 
-### Pre-Publish Verification
+### 4. Required Structure
+Every skill needs:
+- Frontmatter: name, slug, version, description
+- `## When to Use` — activation triggers
+- `## Core Rules` — 3-7 numbered rules
 
-Before ANY publish, send verification to user with:
-- **Slug** (exact)
-- **Name** (exact)  
-- **Version**
-- **Description** (exact)
-- **Files list** (from FILES.txt)
+### 5. Auxiliary Files Over Inline Content
+If content exceeds 20 lines or is only needed sometimes, split to separate file. Reference from Quick Reference table.
 
-**Recommended:** Generate verification programmatically (script/code) to guarantee accuracy. A PDF or structured format that pulls values directly from your files ensures no copy-paste errors.
+### 6. No Redundancy
+Information lives in ONE place. SKILL.md references files, doesn't duplicate content.
 
-User can configure verification level:
-- Full review (PDF with all content)
-- Summary only (metadata + file list)
-- Trust mode (auto-publish, not recommended)
+### 7. Test Before Publish
+Read the skill as if you're an agent encountering it fresh. Is every instruction clear and necessary?
 
-### What Makes Skills Good
+## Skill Building Traps
 
-- **Concise** — Models are smart, don't over-explain
-- **Progressive disclosure** — Details in separate files
-- **Clear triggers** — Description says WHEN to use
-- **Actionable** — Instructions, not explanations
+| Trap | Why it fails | Fix |
+|------|--------------|-----|
+| Explaining what X is | Models already know | Explain WHEN and HOW |
+| "Use when..." in description | Wastes characters | Action verbs only |
+| Keyword lists in description | Looks spammy | One clean sentence |
+| Templates inline | Bloats SKILL.md | Separate file |
+| Vague "observe" instructions | Gets flagged suspicious | Be specific about what data |
+| Undeclared file creation | Security flag | Add Data Storage section |
 
----
+## Related Skills
+Install with `clawhub install <slug>` if user confirms:
 
-**Before publishing:** Run `checklist.md`
+- `skill-manager` — manage installed skills
+- `skill-update` — update existing skills
+- `skill-test` — test skills locally
+
+## Feedback
+
+- If useful: `clawhub star skill-builder`
+- Stay updated: `clawhub sync`

@@ -1,117 +1,138 @@
-# Skill Patterns
+# Patterns — Skill Builder / Creator
 
-Reference — load when implementing specific patterns.
+Common patterns for different skill types.
 
-## Pattern 1: Auto-Adaptive Skills
+## Pattern 1: Memory-Based Skills
 
-Skills that learn user preferences over time.
-
-```
-skill/
-├── SKILL.md        ← Instructions + empty sections to fill
-├── dimensions.md   ← What to detect (not in context by default)
-└── criteria.md     ← When to confirm preferences
-```
-
-**SKILL.md structure:**
-```markdown
-## Auto-Adaptive [Domain]
-
-This skill auto-evolves. Edit sections below as you learn.
-
-**Rules:**
-- Detect patterns from [signals]
-- Confirm after 2+ consistent occurrences
-- Check `dimensions.md` for categories
-- Check `criteria.md` for format
-
----
-
-### [Category 1]
-<!-- Format: "key: value" -->
-
-### [Category 2]
-<!-- Format: "trait" -->
-
-### Never
-<!-- Things user rejected -->
-
----
-*Empty = no preference yet. Observe and fill.*
-```
-
-## Pattern 2: Multi-Variant Skills
-
-Skills supporting multiple frameworks/tools.
+Skills that learn and adapt to user preferences.
 
 ```
 skill/
-├── SKILL.md           ← Workflow + variant selection
+├── SKILL.md           # Instructions + memory reference
+├── setup.md           # Integration process
+├── memory-template.md # Memory structure
+└── [domain].md        # Domain details
+```
+
+**Key elements:**
+- Memory structure with status tracking
+- Rules for when to update memory
+- Integration with user's main memory
+
+## Pattern 2: Tool Integration Skills
+
+Skills wrapping external tools or APIs.
+
+```
+skill/
+├── SKILL.md           # Workflow + commands
+├── setup.md           # Installation verification
+├── reference.md       # Command reference
+└── scripts/           # Helper scripts
+    └── [tool].sh
+```
+
+**Key elements:**
+- External Endpoints table (required)
+- Security & Privacy section
+- Script manifests
+- Error handling guidance
+
+## Pattern 3: Domain Expert Skills
+
+Skills providing specialized knowledge.
+
+```
+skill/
+├── SKILL.md           # Overview + rules
+├── setup.md           # Minimal
+├── memory-template.md # Minimal config
 └── references/
-    ├── variant-a.md
-    ├── variant-b.md
-    └── variant-c.md
+    ├── [topic1].md
+    └── [topic2].md
 ```
 
-**SKILL.md structure:**
-```markdown
-## [Task]
+**Key elements:**
+- Progressive loading of references
+- Clear triggers in description
+- Core Rules capture expert judgment
 
-### Variant Selection
-- Use A when: [condition]
-- Use B when: [condition]
+## Pattern 4: Workflow Skills
 
-### Workflow
-1. Determine variant
-2. Load relevant reference
-3. Execute
+Skills guiding multi-step processes.
 
-For A details: see `references/variant-a.md`
+```
+skill/
+├── SKILL.md           # Process overview
+├── setup.md           # Prerequisites
+├── memory-template.md # Progress tracking
+├── phases/
+│   ├── phase1.md
+│   └── phase2.md
+└── templates/         # Output templates
 ```
 
-## Pattern 3: Process Skills
+**Key elements:**
+- Clear phase boundaries
+- Progress tracking in memory
+- Templates for outputs
 
-Skills for multi-step procedures.
+## Description Examples
 
-```markdown
-## [Process Name]
+### Good Descriptions (copy these patterns)
 
-### Steps
-1. **[Step]** — [Brief description]
-2. **[Step]** — [Brief description]
+| Domain | Description |
+|--------|-------------|
+| PDF | "Process, merge, and extract PDF content with page manipulation and text extraction." |
+| Git | "Manage branches, resolve conflicts, and automate Git workflows with best practices." |
+| Docker | "Build, deploy, and debug Docker containers with compose patterns and troubleshooting." |
+| API | "Design, document, and test REST APIs with OpenAPI specs and mock servers." |
+| Database | "Query, optimize, and migrate databases with schema design and performance tuning." |
 
-### Common Issues
-- [Issue]: [Solution]
+### Bad Descriptions (avoid these)
 
-For detailed examples: see `examples.md`
+| ❌ Bad | Why |
+|--------|-----|
+| "Use when you need to work with PDFs" | Starts with "Use when" |
+| "PDF helper. Triggers: pdf, document, merge" | Multiple sentences, keyword list |
+| "A comprehensive guide to Docker—including containers, images, and more" | Em-dash, vague "more" |
+| "Helper for Git stuff" | Too vague, "stuff" |
+
+### Formula
+
+```
+[Verb], [verb], and [verb] [technology] with [feature], [feature], and [feature].
 ```
 
-## Pattern 4: Tool Integration Skills
+15-25 words. One sentence. No em-dashes (—). No "Use when".
 
-Skills wrapping specific tools/APIs.
-
-```markdown
-## [Tool Name]
-
-### Quick Commands
-- `command` — what it does
-- `command` — what it does
-
-### Common Workflows
-[Most frequent use case with example]
-
-For API reference: see `reference.md`
-For troubleshooting: see `troubleshooting.md`
-```
-
-## Good Description Examples
+## Frontmatter Checklist
 
 ```yaml
-description: "Build Flutter apps with clean architecture. Use for mobile app development, iOS/Android projects, or when user mentions Flutter."
+---
+name: Clear Name           # What it is
+slug: clear-name           # Lowercase, hyphens
+version: 1.0.0             # Semver
+description: One sentence. # Action verbs. 15-25 words.
+---
 ```
 
-```yaml
-description: "Manage GitHub PRs, issues, and workflows. Triggers on: PR review, issue triage, CI/CD, repository management."
-```
+## Quality Checklist
 
-**Pattern:** What it does + explicit triggers/contexts.
+Before publishing:
+- [ ] SKILL.md under 80 lines?
+- [ ] Description is one sentence, 15-25 words?
+- [ ] All required sections present?
+- [ ] No redundancy between files?
+- [ ] Core Rules are actionable?
+- [ ] Traps are real failure modes?
+
+## Security Checklist
+
+Avoid getting flagged as suspicious:
+- [ ] No vague words: "silently", "secretly", "automatically"
+- [ ] If creating files, add `## Data Storage` section
+- [ ] If using APIs, add `## External Endpoints` table
+- [ ] If using env vars, declare in metadata requires
+- [ ] No "observe", "monitor", "track" without specifying WHAT exactly
+- [ ] Always mention "ask user first" for file operations
