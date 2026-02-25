@@ -1,0 +1,11 @@
+{
+  "owner": "kenera",
+  "slug": "weather-zh",
+  "displayName": "中国城市天气Weather In China",
+  "latest": {
+    "version": "0.1.3",
+    "publishedAt": 1772005327443,
+    "commit": null
+  },
+  "history": []
+}
