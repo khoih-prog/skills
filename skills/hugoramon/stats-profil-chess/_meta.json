@@ -1,0 +1,11 @@
+{
+  "owner": "hugoramon",
+  "slug": "stats-profil-chess",
+  "displayName": "The skill for chess player",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1771920840625,
+    "commit": null
+  },
+  "history": []
+}
