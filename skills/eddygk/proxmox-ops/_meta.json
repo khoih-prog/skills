@@ -3,9 +3,15 @@
   "slug": "proxmox-ops",
   "displayName": "Proxmox Ops",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1771945446635,
-    "commit": "https://github.com/openclaw/skills/commit/b786fd75d8b040ed4a2c4b14c5fa1fc7f432250d"
+    "version": "1.1.0",
+    "publishedAt": 1771950612660,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1771945446635,
+      "commit": "https://github.com/openclaw/skills/commit/b786fd75d8b040ed4a2c4b14c5fa1fc7f432250d"
+    }
+  ]
 }
