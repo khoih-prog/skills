@@ -3,9 +3,15 @@
   "slug": "namecom-registrar",
   "displayName": "name.com registrar",
   "latest": {
-    "version": "0.0.12",
-    "publishedAt": 1771871394317,
-    "commit": "https://github.com/openclaw/skills/commit/9b7b5cf10dcdcc63417c3229d727b628f6b76e15"
+    "version": "0.0.13",
+    "publishedAt": 1771901311484,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.0.12",
+      "publishedAt": 1771871394317,
+      "commit": "https://github.com/openclaw/skills/commit/9b7b5cf10dcdcc63417c3229d727b628f6b76e15"
+    }
+  ]
 }
