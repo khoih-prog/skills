@@ -2,31 +2,32 @@
 
 /**
  * Crash Fixer - Full Autonomous Loop
- * Fetches crashes → Deduplicates → Analyzes with Codex 5.3 High → Creates PRs
+ * All config via environment variables - no hardcoded values
  */
 
-// API key and URL for crash reporter - MUST be set via env vars
+const REQUIRED_ENV = [
+  'CRASH_REPORTER_API_KEY',
+  'CRASH_REPORTER_URL', 
+  'GH_TOKEN',
+  'TARGET_REPO'
+];
+
+// Validate env vars
+for (const env of REQUIRED_ENV) {
+  if (!process.env[env]) {
+    console.error(`[crash-fixer] Missing required env: ${env}`);
+    process.exit(1);
+  }
+}
+
 const API_KEY = process.env.CRASH_REPORTER_API_KEY;
 const CRASH_API = process.env.CRASH_REPORTER_URL;
 const GH_TOKEN = process.env.GH_TOKEN;
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
-if (!API_KEY || !CRASH_API) {
-  console.error("[crash-fixer] CRASH_REPORTER_API_KEY and CRASH_REPORTER_URL must be set");
-  process.exit(1);
-}
-
-if (!GH_TOKEN) {
-  console.error("[crash-fixer] GH_TOKEN must be set");
-  process.exit(1);
-}
-
-if (!OPENAI_API_KEY) {
-  console.error("[crash-fixer] OPENAI_API_KEY must be set");
-  process.exit(1);
-}
-const REPO_OWNER = "Ryce";
-const REPO_NAME = "buddybuilder";
+// Use MiniMax for AI analysis (available in OpenClaw)
+const AI_MODEL = "minimax-portal/MiniMax-M2.5";
+const TARGET_REPO = process.env.TARGET_REPO; // "owner/repo"
+const [REPO_OWNER, REPO_NAME] = TARGET_REPO.split('/');
 
 // Simple hash for fingerprinting
 function fingerprint(crash) {
@@ -52,9 +53,6 @@ for (let i = 0; i < args.length; i++) {
   if (args[i] === "--dry-run") dryRun = true;
 }
 
-/**
- * Fetch new crashes from D1
- */
 async function fetchNewCrashes() {
   const res = await fetch(`${CRASH_API}/crashes?status=new&limit=50`, {
     headers: { "X-API-Key": API_KEY }
@@ -62,25 +60,19 @@ async function fetchNewCrashes() {
   
   const crashes = await res.json();
   
-  // Filter by time and exclude feedback
   const since = Math.floor(Date.now() / 1000) - (hours * 3600);
   return crashes
     .filter(c => c.timestamp >= since && c.error_name !== "FEEDBACK")
     .slice(0, limit);
 }
 
-/**
- * Check if crash was already fixed
- */
 async function isAlreadyFixed(crash) {
-  const fp = fingerprint(crash);
   const res = await fetch(`${CRASH_API}/crashes?limit=100`, {
     headers: { "X-API-Key": API_KEY }
   });
   
   const all = await res.json();
   
-  // Find crashes with same fingerprint that have been fixed
   const matches = all.filter(c => 
     c.error_name === crash.error_name && 
     ((c.message || "").substring(0, 100) === (crash.message || "").substring(0, 100)) &&
@@ -90,9 +82,6 @@ async function isAlreadyFixed(crash) {
   return matches.length > 0 && matches[0].id !== crash.id;
 }
 
-/**
- * Mark crash as being fixed
- */
 async function markFixing(crashId, notes) {
   await fetch(`${CRASH_API}/crashes/${crashId}`, {
     method: 'PATCH',
@@ -104,9 +93,6 @@ async function markFixing(crashId, notes) {
   });
 }
 
-/**
- * Mark crash as fixed with PR URL
- */
 async function markFixed(crashId, prUrl, commitSha) {
   await fetch(`${CRASH_API}/crashes/${crashId}`, {
     method: 'PATCH',
@@ -122,18 +108,13 @@ async function markFixed(crashId, prUrl, commitSha) {
   });
 }
 
-/**
- * Analyze crash with Codex 5.3 High
- */
-async function analyzeCrash(crash, ghToken) {
-  // Extract useful info from crash
+async function analyzeCrash(crash) {
   const stackTrace = crash.stack_trace || "";
   const message = crash.message || "";
   const errorName = crash.error_name || "UnknownError";
   
-  // Try to find relevant code
   const keywords = extractKeywords(errorName, stackTrace);
-  const codeContext = await searchCodebase(keywords, ghToken);
+  const codeContext = await searchCodebase(keywords);
   
   const prompt = `You are an expert iOS Swift developer. Analyze this crash and fix it.
 
@@ -145,42 +126,42 @@ async function analyzeCrash(crash, ghToken) {
 - **User ID:** ${crash.user_id || "(anonymous)"}
 - **Device:** ${crash.device_info || "unknown"}
 
-## Stack Trace (if available)
+## Stack Trace
 \`\`\`
 ${stackTrace}
 \`\`\`
 
 ## Code from Repository
-${codeContext || "No relevant code found - search the codebase yourself"}
+${codeContext || "No relevant code found"}
 
 ## Your Task
 1. Analyze the stack trace to find the root cause
-2. Search the codebase for relevant files using the error name and stack trace
+2. Search the codebase for relevant files
 3. Identify the exact fix needed
 4. Write the complete fixed code
 
 ## Response Format
-Respond with ONLY a JSON object (no other text):
+Respond with ONLY JSON:
 {
-  "root_cause": "2-3 sentence explanation of what went wrong",
-  "file_path": "full path to file that needs fixing",
-  "fix_code": "complete replacement code for the broken function/class",
-  "search_terms": ["term1", "term2", "term3"] // for finding the file
+  "root_cause": "2-3 sentence explanation",
+  "file_path": "full path to file that needs fixing", 
+  "fix_code": "complete replacement code",
+  "search_terms": ["term1", "term2"]
 }
 
-If you cannot fix this, respond with:
+If you cannot fix:
 {"cannot_fix": true, "reason": "why"}`;
 
-  console.log(`[crash-fixer] Analyzing with Codex 5.3 High...`);
+  console.log(`[crash-fixer] Analyzing with MiniMax M2.5...`);
   
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+  const res = await fetch("https://api.minimax.chat/v1/text/chatcompletion_v2", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
+      "Authorization": `Bearer ${process.env.ZAI_API_KEY}`
     },
     body: JSON.stringify({
-      model: "o3-high",  // Codex 5.3 High
+      model: "MiniMax-M2.5",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.2,
       max_tokens: 8000
@@ -190,9 +171,7 @@ If you cannot fix this, respond with:
   const data = await res.json();
   const content = data.choices?.[0]?.message?.content || "";
   
-  // Parse JSON response
   try {
-    // Extract JSON from response (might have markdown wrapping)
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0]);
@@ -206,16 +185,13 @@ If you cannot fix this, respond with:
 function extractKeywords(errorName, stackTrace) {
   const keywords = [];
   
-  // Add parts of error name
   errorName.split(/(?=[A-Z])/).forEach(k => {
     if (k.length > 2) keywords.push(k);
   });
   
-  // Extract from stack trace
   if (stackTrace) {
     const lines = stackTrace.split('\n').slice(0, 10);
     for (const line of lines) {
-      // Match file paths and class names
       const matches = line.match(/(\w+)\./g);
       if (matches) {
         matches.forEach(m => {
@@ -231,20 +207,19 @@ function extractKeywords(errorName, stackTrace) {
   return [...new Set(keywords)].slice(0, 8);
 }
 
-async function searchCodebase(keywords, ghToken) {
+async function searchCodebase(keywords) {
   if (!keywords?.length) return null;
   
   console.log(`[crash-fixer] Searching codebase for: ${keywords.join(', ')}`);
   
-  // Search via GitHub API
-  const query = keywords.join(' ') + ` repo:${REPO_OWNER}/${REPO_NAME} language:swift`;
+  const query = keywords.join(' ') + ` repo:${TARGET_REPO} language:swift`;
   
   try {
     const res = await fetch(
       `https://api.github.com/search/code?q=${encodeURIComponent(query)}&per_page=3`,
       {
         headers: {
-          "Authorization": `Bearer ${ghToken}`,
+          "Authorization": `Bearer ${GH_TOKEN}`,
           "Accept": "application/vnd.github+json"
         }
       }
@@ -255,12 +230,11 @@ async function searchCodebase(keywords, ghToken) {
     const data = await res.json();
     if (!data.items?.length) return null;
     
-    // Get content of top results
     const contexts = [];
     for (const file of data.items.slice(0, 2)) {
       const fileRes = await fetch(file.url, {
         headers: {
-          "Authorization": `Bearer ${ghToken}`,
+          "Authorization": `Bearer ${GH_TOKEN}`,
           "Accept": "application/vnd.github.v3.raw"
         }
       });
@@ -278,33 +252,30 @@ async function searchCodebase(keywords, ghToken) {
   }
 }
 
-/**
- * Create fix branch and PR
- */
-async function createFixPR(crash, fix, ghToken) {
+async function createFixPR(crash, fix) {
   const branchName = `fix/crash-${crash.id}-${fix.file_path?.split('/')?.pop()?.replace('.swift', '') || 'unknown'}`.substring(0, 50);
   const commitMsg = `fix: ${crash.error_name} - ${fix.root_cause?.substring(0, 50) || 'crash fix'}`;
   
   // Get default branch
-  const repoRes = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}`, {
-    headers: { "Authorization": `Bearer ${ghToken}` }
+  const repoRes = await fetch(`https://api.github.com/repos/${TARGET_REPO}`, {
+    headers: { "Authorization": `Bearer ${GH_TOKEN}` }
   });
   const repo = await repoRes.json();
   const baseBranch = repo.default_branch;
   
   // Get base branch SHA
-  const refRes = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/git/ref/heads/${baseBranch}`, {
-    headers: { "Authorization": `Bearer ${ghToken}` }
+  const refRes = await fetch(`https://api.github.com/repos/${TARGET_REPO}/git/ref/heads/${baseBranch}`, {
+    headers: { "Authorization": `Bearer ${GH_TOKEN}` }
   });
   const refData = await refRes.json();
   const baseSha = refData.object.sha;
   
   // Create branch
   console.log(`[crash-fixer] Creating branch: ${branchName}`);
-  await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/git/refs`, {
+  await fetch(`https://api.github.com/repos/${TARGET_REPO}/git/refs`, {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${ghToken}`,
+      "Authorization": `Bearer ${GH_TOKEN}`,
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
@@ -313,13 +284,13 @@ async function createFixPR(crash, fix, ghToken) {
     })
   });
   
-  // Get file content to modify
+  // Get file content
   let existingContent = "";
   let sha = null;
   
   try {
-    const fileRes = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${fix.file_path}?ref=${branchName}`, {
-      headers: { "Authorization": `Bearer ${ghToken}` }
+    const fileRes = await fetch(`https://api.github.com/repos/${TARGET_REPO}/contents/${fix.file_path}?ref=${branchName}`, {
+      headers: { "Authorization": `Bearer ${GH_TOKEN}` }
     });
     
     if (fileRes.ok) {
@@ -330,19 +301,18 @@ async function createFixPR(crash, fix, ghToken) {
       }
     }
   } catch (e) {
-    // File might not exist, that's ok
+    // File might not exist
   }
   
-  // Apply fix (simplified - in reality would need smart patch logic)
   const newContent = fix.fix_code || existingContent;
   
   // Commit the change
   console.log(`[crash-fixer] Committing fix to ${fix.file_path}`);
   
-  const commitRes = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${fix.file_path}`, {
+  const commitRes = await fetch(`https://api.github.com/repos/${TARGET_REPO}/contents/${fix.file_path}`, {
     method: "PUT",
     headers: {
-      "Authorization": `Bearer ${ghToken}`,
+      "Authorization": `Bearer ${GH_TOKEN}`,
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
@@ -359,10 +329,10 @@ async function createFixPR(crash, fix, ghToken) {
   // Create PR
   console.log(`[crash-fixer] Creating PR...`);
   
-  const prRes = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/pulls`, {
+  const prRes = await fetch(`https://api.github.com/repos/${TARGET_REPO}/pulls`, {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${ghToken}`,
+      "Authorization": `Bearer ${GH_TOKEN}`,
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
@@ -399,17 +369,11 @@ ${fix.fix_code || "(see commit)"}
   };
 }
 
-/**
- * Main loop
- */
 async function main() {
   console.log(`[crash-fixer] Starting crash-fixer loop...`);
+  console.log(`[crash-fixer] Target repo: ${TARGET_REPO}`);
   console.log(`[crash-fixer] Hours: ${hours}, Limit: ${limit}, Dry-run: ${dryRun}`);
   
-  const ghToken = GH_TOKEN;
-  const openaiKey = OPENAI_API_KEY;
-  
-  // Step 1: Fetch new crashes
   console.log(`[crash-fixer] Fetching new crashes...`);
   const crashes = await fetchNewCrashes();
   console.log(`[crash-fixer] Found ${crashes.length} new crash(es)`);
@@ -423,11 +387,9 @@ async function main() {
   let skipped = 0;
   let fixed = 0;
   
-  // Step 2: Process each crash
   for (const crash of crashes) {
     console.log(`\n[crash-fixer] === Processing crash #${crash.id}: ${crash.error_name} ===`);
     
-    // Deduplication check
     const alreadyFixed = await isAlreadyFixed(crash);
     if (alreadyFixed) {
       console.log(`[crash-fixer] Skipping #${crash.id} - already fixed previously`);
@@ -435,11 +397,9 @@ async function main() {
       continue;
     }
     
-    // Mark as being fixed
     await markFixing(crash.id, "Processing...");
     
-    // Analyze with Codex
-    const fix = await analyzeCrash(crash, ghToken);
+    const fix = await analyzeCrash(crash);
     
     if (fix.cannot_fix) {
       console.log(`[crash-fixer] Cannot fix #${crash.id}: ${fix.reason}`);
@@ -453,17 +413,13 @@ async function main() {
     
     if (dryRun) {
       console.log(`[crash-fixer] DRY-RUN: Would fix ${fix.file_path}`);
-      console.log(`[crash-fixer] Fix:\n${fix.fix_code?.substring(0, 500)}...`);
       processed++;
       continue;
     }
     
-    // Create PR
     try {
-      const result = await createFixPR(crash, fix, ghToken);
+      const result = await createFixPR(crash, fix);
       console.log(`[crash-fixer] PR created: ${result.prUrl}`);
-      
-      // Mark as fixed
       await markFixed(crash.id, result.prUrl, result.commitSha);
       fixed++;
     } catch (e) {
