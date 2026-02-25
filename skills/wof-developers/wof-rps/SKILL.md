@@ -2,7 +2,7 @@
 name: wof-rps
 description: Play Rock Paper Scissors on WatchOrFight — on-chain gaming with USDC stakes on Base
 disable-model-invocation: true
-metadata: {"openclaw":{"emoji":"✊","always":false,"os":["darwin","linux"],"requires":{"bins":["node","npx"],"env":["PRIVATE_KEY"]},"primaryEnv":"PRIVATE_KEY","install":[{"id":"rps-mcp","kind":"node","package":"@watchorfight/rps-mcp","version":"^1.3.0","bins":["wof-rps"],"label":"Install WatchOrFight RPS CLI (npm)"}]}}
+metadata: {"openclaw":{"emoji":"✊","always":false,"os":["darwin","linux"],"requires":{"bins":["node","npx"],"env":["PRIVATE_KEY"]},"primaryEnv":"PRIVATE_KEY","install":[{"id":"rps-mcp","kind":"node","package":"@watchorfight/rps-mcp","version":"^1.5.0","bins":["wof-rps"],"label":"Install WatchOrFight RPS CLI (npm)"}]}}
 ---
 
 # WatchOrFight RPS
@@ -58,14 +58,14 @@ npm install -g @watchorfight/rps-mcp
 
 Each round has two phases with 60-second deadlines:
 
-1. **COMMIT** — Both players submit a hashed move via `commit_move`
-2. **REVEAL** — Both players reveal their move via `reveal_move`
+1. **COMMIT** — Both players submit a hashed move (hidden until reveal)
+2. **REVEAL** — Both players reveal their actual move, round resolves
 
 After both reveal, the round resolves. If a player misses a deadline, the opponent can claim a timeout win. Ties replay the round (max 10 total rounds).
 
 ## Tools
 
-### Automatic Play (start here)
+### Auto Play (start here)
 
 #### play_rps
 
@@ -83,38 +83,32 @@ Creates a new match (state: WAITING). After creating, poll with `get_match` unti
 exec wof-rps create_match --entry-fee 1.0
 ```
 
-#### join_and_play
-
-Joins a WAITING match and auto-plays it to completion (random moves). Use `find_open_matches` first to discover available matches.
-
-```bash
-exec wof-rps join_and_play --match-id 5
-```
-
-### Manual Play (strategic control)
+### Strategic Play (choose your moves)
 
 #### join_match
 
-Joins a WAITING match WITHOUT auto-playing. After joining, the match becomes ACTIVE. Then for each round: (1) call `commit_move`, (2) poll `get_round` until phase is Reveal, (3) call `reveal_move`. First to 3 round wins takes the match.
+Joins a WAITING match WITHOUT auto-playing. After joining, the match becomes ACTIVE. Then call `play_round` for each round with your chosen move. First to 3 round wins takes the match.
 
 ```bash
 exec wof-rps join_match --match-id 5
 ```
 
-#### commit_move
+#### play_round
 
-Submit your move for the current round (commit phase). Your choice is hashed so the opponent can't see it. After BOTH players commit, the round moves to REVEAL phase — poll `get_round` to check. 60-second deadline.
+Play one round with your chosen move. Handles the full commit-reveal cycle in a single call: commits your choice, waits for the reveal phase, reveals, and waits for the round to resolve (or claims timeout if opponent is unresponsive). Returns your choice, opponent's choice, round winner, score, and match status.
 
 ```bash
-exec wof-rps commit_move --match-id 5 --choice rock
+exec wof-rps play_round --match-id 5 --choice rock
 ```
 
-#### reveal_move
+### Match Management
 
-Reveal your move after both players committed (reveal phase). The stored secret from `commit_move` is sent automatically. After BOTH reveal, the round resolves. 60-second deadline.
+#### claim_timeout
+
+Claim a timeout win when your opponent fails to commit or reveal within the 60-second deadline. You win the match and the pot. Use `get_round` to check the deadline and opponent status before calling this.
 
 ```bash
-exec wof-rps reveal_move --match-id 5
+exec wof-rps claim_timeout --match-id 5
 ```
 
 ### Discovery & State (read-only)
@@ -129,7 +123,7 @@ exec wof-rps get_balance
 
 #### find_open_matches
 
-List matches in WAITING state you can join. If you find one, use `join_and_play` or `join_match`.
+List matches in WAITING state you can join. If you find one, use `join_match`.
 
 ```bash
 exec wof-rps find_open_matches
@@ -145,7 +139,7 @@ exec wof-rps get_match --match-id 5
 
 #### get_round
 
-Get the current phase and details of a specific round. Shows whether you and your opponent have committed/revealed. Use this during manual play to know when to call `commit_move` or `reveal_move`.
+Get the current phase and details of a specific round. Shows whether you and your opponent have committed/revealed, and the phase deadline.
 
 ```bash
 exec wof-rps get_round --match-id 5 --round 1
@@ -187,9 +181,19 @@ exec wof-rps claim_refund --match-id 5
 
 ### ERC-8004 Identity
 
+#### mint_identity
+
+Create a new ERC-8004 identity token on-chain. Returns your token ID. The registry is permissionless — anyone can mint. Only needed once per wallet.
+
+```bash
+exec wof-rps mint_identity --name "MyAgent"
+```
+
+Optional params: `--description`, `--image` (URL).
+
 #### register_agent
 
-Register your ERC-8004 agent identity on the arena for on-chain reputation tracking. Links your wallet to an ERC-8004 token ID. Only needed once.
+Register your ERC-8004 agent identity on the arena for on-chain reputation tracking. Links your wallet to your ERC-8004 token ID. Only needed once.
 
 ```bash
 exec wof-rps register_agent --agent-id 175
@@ -203,24 +207,19 @@ exec wof-rps register_agent --agent-id 175
 2. `play_rps` — Handles everything: finds/creates a match, USDC approval, commit-reveal rounds, timeouts, and result reporting
 3. `get_leaderboard` — Check your ranking after playing
 
-### Strategic play (per-round control)
+### Strategic play (choose your moves)
 
 1. `get_balance` — Check funds
 2. `find_open_matches` — See what's available
 3. `join_match --match-id N` — Join without auto-play
-4. For each round:
-   a. `get_round --match-id N` — Check phase
-   b. If Commit: `commit_move --match-id N --choice rock|paper|scissors`
-   c. Poll `get_round --match-id N` until phase is Reveal
-   d. `reveal_move --match-id N`
-   e. Poll `get_round --match-id N` until phase is Complete
-5. Repeat until one player wins 3 rounds (best of 5)
+4. `play_round --match-id N --choice rock` — Play one round with your chosen move
+5. Repeat step 4 until match completes (first to 3 round wins)
 
 ### Recovery
 
 - Match stuck in WAITING? → `cancel_match --match-id N` (after 10 min) or `claim_refund --match-id N`
 - Match stuck in ACTIVE? → `claim_refund --match-id N` (after 20 min)
-- Opponent not committing/revealing? → The `play_rps` auto-play handles timeouts automatically. For manual play, check `get_round` for the deadline — if passed, timeout is claimable.
+- Opponent not committing/revealing? → Use `claim_timeout --match-id N` once the 60-second deadline has passed. The `play_rps` auto-play handles this automatically; for manual play, check `get_round` for the deadline first.
 
 ## Game Rules
 
@@ -243,6 +242,7 @@ All commands return JSON to stdout. Progress messages go to stderr. Exit code 0 
 | Insufficient ETH | Fund your wallet with Base ETH (or Base Sepolia ETH from a faucet) |
 | Insufficient USDC | On testnet: [Circle faucet](https://faucet.circle.com/) (select Base Sepolia). On mainnet: exchange or bridge. |
 | Transaction reverted | Check match state with `get_match` — match may have expired or been cancelled |
-| Move already committed | You already committed this round — use `reveal_move` or wait for opponent |
+| Move already committed | You already committed this round — wait for opponent or use `play_round` which handles the full cycle |
 | Match not found | Verify match ID with `find_open_matches` or `get_match` |
-| Opponent timed out | Use `claim_refund` or let `play_rps` handle it automatically |
+| Opponent timed out (60s phase) | Use `claim_timeout` to win the match, or let `play_rps` handle it automatically |
+| Match expired (20 min) | Use `claim_refund` — both players are refunded |
