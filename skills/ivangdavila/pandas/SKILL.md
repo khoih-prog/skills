@@ -1,7 +1,7 @@
 ---
 name: Pandas
 slug: pandas
-version: 1.0.0
+version: 1.0.1
 homepage: https://clawic.com/skills/pandas
 description: Analyze, transform, and clean DataFrames with efficient patterns for filtering, grouping, merging, and pivoting.
 metadata: {"clawdbot":{"emoji":"🐼","requires":{"bins":["python3"]},"os":["linux","darwin","win32"]}}
