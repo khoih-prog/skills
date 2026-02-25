@@ -43,6 +43,7 @@ def request(endpoint, params=None):
             url += "?" + query
     
     req = urllib.request.Request(url)
+    req.add_header("User-Agent", "Python/urllib")
     if API_KEY:
         req.add_header("Authorization", f"Bearer {API_KEY}")
     else:
