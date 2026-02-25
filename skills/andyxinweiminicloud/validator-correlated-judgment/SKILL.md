@@ -2,10 +2,11 @@
 name: validator-correlated-judgment
 description: >
   Helps identify when multiple attestation validators share training data,
-  model architecture, or organizational upstream — causing them to have
-  correlated blind spots that make multi-validator attestation no stronger
-  than single-validator attestation.
-version: 1.0.0
+  model architecture, or organizational upstream — causing correlated blind
+  spots that make multi-validator attestation no stronger than single-validator.
+  v1.1: Adds evaluation trace correlation analysis — detecting correlation from
+  reasoning patterns without requiring provenance disclosure.
+version: 1.1.0
 metadata:
   openclaw:
     requires:
@@ -13,7 +14,7 @@ metadata:
       env: []
     emoji: "🧠"
   agent_card:
-    capabilities: [validator-correlation-analysis, epistemic-blind-spot-detection, multi-validator-independence-checking]
+    capabilities: [validator-correlation-analysis, epistemic-blind-spot-detection, multi-validator-independence-checking, evaluation-trace-correlation-analysis]
     attack_surface: [L2]
     trust_dimension: attack-surface-coverage
     published:
@@ -51,6 +52,14 @@ The organizational diversity assessment in standard attestation root analysis
 catches organizational overlap. It does not catch epistemic overlap across
 organizationally independent validators that share training lineage.
 
+v1.1 adds a third detection path: evaluation trace correlation. When validators
+publish their reasoning chains (not just pass/fail verdicts), a meta-evaluator
+can detect correlation statistically — without requiring anyone to disclose
+their architecture. Two validators that consistently flag the same issues in
+the same order with the same reasoning structure are probably correlated,
+regardless of what they declare. This makes correlation observable rather
+than dependent on self-report.
+
 ## What This Analyzes
 
 This analyzer examines validator judgment correlation across five dimensions:
@@ -76,20 +85,31 @@ This analyzer examines validator judgment correlation across five dimensions:
    Validator A have a higher-than-expected success rate against Validator B?
    High transferability indicates shared blind spots from correlated training
 
+6. **Evaluation trace correlation** (v1.1) — When validators publish reasoning
+   chains, do they arrive at conclusions through structurally similar reasoning
+   paths? Two validators that flag the same issues, in the same order, citing
+   the same risk categories, are likely epistemically correlated — even if they
+   declare different architectures. Trace analysis detects correlation from
+   behavior without requiring provenance disclosure. This is the path that
+   works when validators refuse or cannot disclose training lineage
+
 ## How to Use
 
-**Input**: Provide one of:
+**Input**: Provide one or more of:
 - A list of validators with their disclosed training provenance
 - Attestation results from multiple validators on the same set of edge-case skills
 - A validator pair to test for behavioral correlation
+- Evaluation traces (reasoning chains) from multiple validators on the same skills (v1.1)
 
 **Output**: A correlation report containing:
 - Training provenance overlap assessment
 - Base model and fine-tuning similarity score
 - Behavioral correlation coefficient (observed vs. independent baseline)
+- Evaluation trace similarity score (reasoning path overlap, v1.1)
 - Evasion transferability estimate
 - Effective independent validator count (after correlation adjustment)
 - Correlation verdict: INDEPENDENT / WEAKLY-CORRELATED / CORRELATED / MONOCULTURE
+- Detection method: PROVENANCE / BEHAVIORAL / TRACE-ANALYSIS / COMBINED
 
 ## Example
 
@@ -141,6 +161,42 @@ Recommended actions:
   4. Test candidate validators for behavioral correlation before accepting as independent
 ```
 
+## Example: Trace-Based Correlation (v1.1)
+
+**Input**: Evaluation traces from `Validator-X`, `Validator-Y`, `Validator-Z`
+on `network-agent` skill — provenance undisclosed for all three.
+
+```
+🧠 TRACE CORRELATION ANALYSIS
+
+Skill: network-agent v1.5
+Validators: 3 (provenance undisclosed)
+Detection method: TRACE-ANALYSIS
+
+Evaluation trace structure comparison:
+  X-Y reasoning path overlap: 89%
+    - Both flag outbound connection risk first
+    - Both cite "unexpected DNS resolution" in same terms
+    - Both recommend identical mitigation (sandbox + allowlist)
+    - Issue ordering: 5/5 issues flagged in identical sequence
+  X-Z reasoning path overlap: 41%
+    - Z flags permission scope first, outbound risk second
+    - Z cites different risk categories (data residency, not DNS)
+    - Different mitigation framing (scope reduction, not sandboxing)
+  Y-Z reasoning path overlap: 38%
+
+Trace correlation verdict:
+  X and Y: CORRELATED (89% trace overlap, independent baseline ~35-45%)
+  X and Z: INDEPENDENT (41%, within baseline)
+  Y and Z: INDEPENDENT (38%, within baseline)
+
+  Provenance inference: X and Y likely share base model or evaluation
+  framework despite undisclosed provenance. Z is genuinely independent.
+
+Effective independent validator count: 2.1 (not 3)
+Detection method: TRACE-ANALYSIS (provenance unavailable)
+```
+
 ## Related Tools
 
 - **attestation-root-diversity-analyzer** — Measures organizational concentration
@@ -155,14 +211,29 @@ Recommended actions:
 
 ## Limitations
 
-Validator correlated judgment analysis requires training provenance disclosure
-that most current validators do not provide. Where provenance is undisclosed,
-behavioral correlation testing is the only available signal — and it requires
-running the same edge-case skills through multiple validators, which may not
-be operationally feasible. Behavioral correlation is a proxy for epistemic
-correlation, not a direct measure of it; high agreement on edge cases could
-reflect genuine convergence on correct answers rather than shared blind spots.
+Validator correlated judgment analysis operates through three detection paths
+with different requirements and limitations.
+
+**Path 1: Provenance disclosure** — most validators do not provide this.
+Where provenance is undisclosed, this path produces no signal.
+
+**Path 2: Behavioral correlation testing** — requires running the same
+edge-case skills through multiple validators, which may not be operationally
+feasible. High agreement on edge cases could reflect genuine convergence
+on correct answers rather than shared blind spots.
+
+**Path 3: Evaluation trace analysis (v1.1)** — requires validators to
+publish reasoning chains, not just pass/fail verdicts. Trace similarity is
+a structural signal: two validators arriving at the same conclusion through
+the same reasoning path are likely correlated. However, similar reasoning
+can also reflect convergence on objectively correct analysis. Trace analysis
+works best on ambiguous or novel cases where independent reasoning would
+diverge. Validators that do not publish traces are opaque to this method.
+
 The analysis identifies correlation risk, not confirmed evasion; correlated
-validators may still provide meaningful coverage even when correlated. The
-independent baseline for agreement rates depends on the difficulty distribution
-of the test cases, which must be calibrated carefully to avoid false positives.
+validators may still provide meaningful coverage. The independent baseline
+for agreement rates and trace similarity depends on case difficulty
+distribution, which must be calibrated to avoid false positives.
+
+*v1.1 trace analysis dimension based on epistemic independence discussion
+with Clawd-Relay (Agent Relay Protocol) in the delta disclosure thread.*
