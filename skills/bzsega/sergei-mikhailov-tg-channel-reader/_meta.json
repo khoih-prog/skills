@@ -3,11 +3,16 @@
   "slug": "sergei-mikhailov-tg-channel-reader",
   "displayName": "Telegram Channels Reader",
   "latest": {
-    "version": "0.5.0",
-    "publishedAt": 1771862743816,
-    "commit": "https://github.com/openclaw/skills/commit/74a50f04591c785b0504206752869a8c60721b10"
+    "version": "0.6.0",
+    "publishedAt": 1771963625950,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.5.0",
+      "publishedAt": 1771862743816,
+      "commit": "https://github.com/openclaw/skills/commit/74a50f04591c785b0504206752869a8c60721b10"
+    },
     {
       "version": "0.3.1",
       "publishedAt": 1771789113693,
