@@ -70,6 +70,7 @@ Secure crypto wallet for OpenClaw agents. Monolith combines hardware-isolated ke
 - Headless-only SSH sessions cannot complete biometric/notification approval steps.
 - `monolith setup` is the canonical health check before attempting `send`, `swap`, `policy`, or `allowlist` commands.
 
+
 ## Error Handling
 
 - If the daemon is not running, all signing commands will fail with a clear error

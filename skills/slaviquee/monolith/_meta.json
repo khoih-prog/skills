@@ -3,11 +3,16 @@
   "slug": "monolith",
   "displayName": "Monolith — Crypto Wallet",
   "latest": {
-    "version": "0.1.9",
-    "publishedAt": 1771960328689,
-    "commit": "https://github.com/openclaw/skills/commit/53f32b5f407e5bdedaa31e6a978f1b34db351a66"
+    "version": "0.1.10",
+    "publishedAt": 1772011872265,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.9",
+      "publishedAt": 1771960328689,
+      "commit": "https://github.com/openclaw/skills/commit/53f32b5f407e5bdedaa31e6a978f1b34db351a66"
+    },
     {
       "version": "0.1.6",
       "publishedAt": 1771533708778,
