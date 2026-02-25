@@ -3,9 +3,15 @@
   "slug": "cheat-code",
   "displayName": "Cheat Code",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1771973679091,
-    "commit": "https://github.com/openclaw/skills/commit/82dac8657bcd8e448c565dcb13e93e9de2d59883"
+    "version": "1.0.7",
+    "publishedAt": 1772038547471,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1771973679091,
+      "commit": "https://github.com/openclaw/skills/commit/82dac8657bcd8e448c565dcb13e93e9de2d59883"
+    }
+  ]
 }

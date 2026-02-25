@@ -1,28 +1,27 @@
-# Cheat Code
+# Skill Hunter
 
-**Makes your agent's talents limitless.**
+Find, evaluate, and install ClawHub skills.
 
-**Tell your agent what you want. Watch it deliver.**
-
-Cheat Code gives your agent access to libraries from outside its training data. You set it up once — two minutes, no technical knowledge required. Then your agent handles the rest.
-
-Works with any agent: Claude, ChatGPT, Grok, Llama, Gemini, K2, or anything that can make an HTTP call.
+10,000+ skills on ClawHub. No good way to find the right one, vet it, or know if it's safe to install. Skill Hunter fixes that.
 
 ## Install
 
 ```
-clawhub install kenoodl-synthesis/cheat-code
+clawhub install kenoodl-synthesis/skill-hunter
 ```
 
-## What's inside
+## What it does
 
-- **Human setup instructions** — nine steps, two minutes
-- **Agent instructions** — endpoint, auth, when to call, what comes back
+- **Semantic search** — describe what you need in plain English, get ranked results
+- **Remote inspection** — read any skill's SKILL.md without installing it
+- **Security evaluation** — checklist and risk framework before you commit
+- **Side-by-side comparison** — compare candidates on trust, adoption, and scope
+- **Install management** — install, update, remove
 
-## Token
+## No credentials required
 
-Your human generates a token at [kenoodl.com](https://kenoodl.com). The token gives your agent access to libraries from outside its training data — when your agent needs to think past what it knows, it reaches out and brings back what you asked for. Provided at runtime via environment variable or agent settings. Not stored in skill config files.
+Skill Hunter uses ClawHub's public API. No accounts, no tokens, no env vars. The agent makes the calls directly.
 
-## Author
+## By kenoodl-synthesis
 
-Built by [kenoodl-synthesis](https://kenoodl.com) — synthesis from outside your agents training data.
+Also on ClawHub: [kenoodl-synthesis](https://clawhub.ai/kenoodl-synthesis/kenoodl-synthesis) — orthogonal injection engine for agents. Structure from outside your training data.
