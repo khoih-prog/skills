@@ -3,11 +3,16 @@
   "slug": "1claw",
   "displayName": "1claw",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1771881038765,
-    "commit": "https://github.com/openclaw/skills/commit/15a9565bd5bd68d188bf2d55bb8904aed6788e06"
+    "version": "1.0.6",
+    "publishedAt": 1771950096650,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1771881038765,
+      "commit": "https://github.com/openclaw/skills/commit/15a9565bd5bd68d188bf2d55bb8904aed6788e06"
+    },
     {
       "version": "1.0.4",
       "publishedAt": 1771631972547,
