@@ -3,11 +3,16 @@
   "slug": "hammer-knows",
   "displayName": "问个锤子",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1771753313517,
-    "commit": "https://github.com/openclaw/skills/commit/af3fdb068796281494a55358bca1d89c340d7d1a"
+    "version": "1.0.2",
+    "publishedAt": 1771900393493,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1771753313517,
+      "commit": "https://github.com/openclaw/skills/commit/af3fdb068796281494a55358bca1d89c340d7d1a"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1771300914100,
