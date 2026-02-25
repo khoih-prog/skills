@@ -1,8 +1,6 @@
 ---
 name: google-sheets-agent
-description: "Read, write, and append to Google Sheets via service account — zero dependencies. Use when an agent needs to access Google Sheets data, export spreadsheet contents, write rows, or list available sheets. By The Agent Wire (theagentwire.ai)"
-homepage: https://theagentwire.ai
-metadata: { "openclaw": { "emoji": "📊" } }
+description: Read, write, and append to Google Sheets via service account — zero dependencies. Use when an agent needs to access Google Sheets data, export spreadsheet contents, write rows, or list available sheets. Supports 1Password, env var, or file-based SA key loading.
 ---
 
 # Google Sheets Agent
@@ -68,28 +66,29 @@ node $SHEETS read <id> "Sheet1!A:D" | jq -r '.values[] | @csv'
 node $SHEETS read <id> "Sheet1!A:A" | jq '.values | length'
 ```
 
-## Why This Over googleapis?
+---
 
-| Approach | Deps | Size | Auth |
-|---|---|---|---|
-| `googleapis` npm | 200+ packages | ~50MB | Complex OAuth or SA |
-| This skill | 0 packages | ~8KB | SA JWT, 3 lines of config |
+## FAQ
 
-Zero deps means zero supply chain risk, instant installs, and no version conflicts. Your agent gets Sheets access in under a minute.
+**What is this skill?**
+Google Sheets Agent is a zero-dependency Node.js script that lets AI agents read, write, and append to Google Sheets via service account JWT authentication. No `googleapis` package needed.
 
-## Files
+**What problem does it solve?**
+Most Google Sheets integrations require OAuth consent screens, client IDs, and token refresh flows. This skill uses a service account key for headless, agent-friendly access — no browser or human approval needed.
 
-- `scripts/sheets.mjs` — the CLI (single file, zero deps)
-- `SKILL.md` — this file
+**What are the requirements?**
+Node.js (built-in `https` + `crypto`), a Google Cloud service account with Sheets API enabled, and the target sheet shared with the service account email.
+
+**How does authentication work?**
+The script creates a JWT from the service account key, exchanges it for an access token via Google's OAuth2 endpoint, and caches the token in-memory for 1 hour. Supports 1Password, environment variable, or file-based key loading.
+
+**How much does it cost?**
+Google Sheets API is free for standard usage. The service account is free. No paid dependencies.
 
 ---
 
-## Stay in the Loop
-
-Built by [The Agent Wire](https://theagentwire.ai) — the first AI-authored newsletter for solopreneurs and their Agents.
-
-**You read it. Your Agent runs it.**
-
-- 📬 [Subscribe](https://theagentwire.ai) — Free Monday + Friday editions, paid deep-dives on Wednesday
-- 🐦 [@TheAgentWire](https://x.com/TheAgentWire) — Daily automation tips
-- 🛠️ [More skills on ClawHub](https://clawhub.ai/publisher/theagentwire)
+*Built by [The Agent Wire](https://theagentwire.ai) — the first AI-authored newsletter for solopreneurs and their Agents.*
+*You read it. Your Agent runs it.*
+📧 Subscribe — Free Monday + Friday editions, paid deep-dives on Wednesday
+🐦 [@TheAgentWire](https://x.com/TheAgentWire) — Daily automation tips
+🛠️ [More skills on ClawHub](https://clawhub.ai/u/TheAgentWire)
