@@ -1,0 +1,11 @@
+{
+  "owner": "chillybean",
+  "slug": "pipx-desktop-agent",
+  "displayName": "pipx-desktop-agent",
+  "latest": {
+    "version": "1.3.2",
+    "publishedAt": 1771909986572,
+    "commit": null
+  },
+  "history": []
+}
