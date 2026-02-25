@@ -252,6 +252,18 @@ Pull requests welcome! Please follow existing code style.
 
 ## Changelog
 
+### v1.0.6 (2026-02-22)
+- **Fix axios dependency issues** - Update to latest stable version
+- Upgrade axios from 1.6.0 to 1.13.5
+- Add @types/axios for TypeScript support
+- Resolve runtime axios errors
+
+### v1.0.5 (2026-02-22)
+- **Support multiple geocoding skills** - More generic, flexible approach
+- Add goplaces and naver-local-search examples
+- Allow users to integrate any geocoding service that returns lon,lat
+- Update documentation to be provider-agnostic
+
 ### v1.0.4 (2026-02-21)
 - **Fix TypeScript build** - Add node types to tsconfig.json
 - Resolve TS2580 "Cannot find name 'process'" error

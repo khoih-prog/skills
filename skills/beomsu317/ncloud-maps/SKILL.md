@@ -9,7 +9,7 @@ Query Naver Cloud Maps APIs for intelligent routing (Directions5 + Directions15)
 
 ## Key Feature: Smart Routing
 
-**v1.0.4+** — By default, the skill uses **Directions5** for queries with fewer than 5 waypoints, and automatically switches to **Directions15** when you have 5 or more waypoints. No manual selection needed.
+**v1.0.6+** — By default, the skill uses **Directions5** for queries with fewer than 5 waypoints, and automatically switches to **Directions15** when you have 5 or more waypoints. No manual selection needed.
 
 | Waypoints | API Used | Max Waypoints |
 |-----------|----------|---------------|
@@ -44,6 +44,40 @@ npm install
 ```
 
 ## Usage
+
+### Using with Address-to-Coordinate Skills
+
+ncloud-maps requires coordinates in `longitude,latitude` format. If you have address-based location data, use one of these compatible skills to convert addresses to coordinates:
+
+**Available Options (choose based on your environment):**
+
+| Skill | Provider | Coordinates | Setup Required |
+|-------|----------|-------------|-----------------|
+| `goplaces` | Google Places API | Yes (lon,lat) | `GOOGLE_PLACES_API_KEY` |
+| `naver-local-search` | Naver Local Search | Yes (lon,lat) | `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET` |
+| Custom API | Your choice | Yes (lon,lat) | Your setup |
+
+**Example workflow with goplaces:**
+
+```bash
+# Get coordinates from address
+COORDS=$(goplaces resolve "강남역, 서울" --json | jq -r '.places[0] | "\(.location.longitude),\(.location.latitude)"')
+
+# Use coordinates with ncloud-maps
+npx ts-node scripts/index.ts --start "$COORDS" --goal "127.0049,37.4947"
+```
+
+**Example workflow with naver-local-search:**
+
+```bash
+# Get coordinates from address
+COORDS=$(naver-local-search search "강남역" --format json | jq -r '.[0] | "\(.x),\(.y)"')
+
+# Use coordinates with ncloud-maps
+npx ts-node scripts/index.ts --start "$COORDS" --goal "127.0049,37.4947"
+```
+
+**Or integrate any other geocoding service** that returns `longitude,latitude` coordinates.
 
 ### Smart Routing (Default Behavior)
 
@@ -175,17 +209,22 @@ Fuel types: `gasoline` (default), `highgradegasoline`, `diesel`, `lpg`
 
 ## How It Works
 
-1. **Coordinate Validation**
-   - Input: User provides coordinates in `longitude,latitude` format
+1. **Address Resolution (Optional - any geocoding skill)**
+   - Use any available skill that provides coordinates (goplaces, naver-local-search, etc.)
+   - Extract `longitude,latitude` format from the result
+   - Pass coordinates to ncloud-maps
+
+2. **Coordinate Validation**
+   - Input: Coordinates in `longitude,latitude` format (direct input or from geocoding skill)
    - Validates format and range
    - Returns error if format is invalid
 
-2. **Route Calculation (Directions15 or Directions5)**
+3. **Route Calculation (Directions15 or Directions5)**
    - Coordinates sent to appropriate Directions API
    - Returns distance, duration, tolls, taxi fare, fuel cost
    - **Only for vehicle (car) routes** — not for pedestrian or public transit
 
-3. **Waypoints Support**
+4. **Waypoints Support**
    - Each waypoint must be in `longitude,latitude` format
    - All coordinates sent to Directions API
 
