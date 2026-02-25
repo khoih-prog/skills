@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/24601/surreal-skills/actions/workflows/ci.yml/badge.svg)](https://github.com/24601/surreal-skills/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.0.2-blue.svg)](https://github.com/24601/surreal-skills/releases)
+[![Version](https://img.shields.io/badge/version-1.0.6-blue.svg)](https://github.com/24601/surreal-skills/releases)
 [![skills.sh](https://img.shields.io/badge/skills.sh-surrealdb-purple.svg)](https://skills.sh)
 
 Expert SurrealDB 3 skill for AI coding agents. Complete coverage of SurrealQL, multi-model data modeling, graph traversal, vector search, security, deployment, performance tuning, SDK integration, WASM extensions, and the full SurrealDB ecosystem.
@@ -120,17 +120,57 @@ npx skills add 24601/surreal-skills -a pi -g -y
 npx skills add 24601/surreal-skills -a openclaw -g -y
 ```
 
-### IDE Integrations
+### GitHub Copilot (native agent skills)
+
+Copilot supports the [Agent Skills standard](https://agentskills.io/) natively in VS Code,
+Copilot CLI, and the Copilot coding agent. This skill ships a Copilot-native
+`.github/skills/surrealdb/SKILL.md` that Copilot auto-loads when your prompt
+is SurrealDB-related.
+
+**Option 1 -- Project-level (recommended for teams)**
+
+Copy the entire skill into your project's `.github/skills/` directory:
 
 ```bash
-# GitHub Copilot -- append AGENTS.md to your instructions file
-cat ~/.claude/skills/surrealdb/AGENTS.md >> .github/copilot-instructions.md
+# From the surreal-skills repo
+cp -r .github/skills/surrealdb <your-project>/.github/skills/surrealdb
+cp -r rules/ <your-project>/.github/skills/surrealdb/rules/
+```
 
-# Cursor -- append AGENTS.md to .cursorrules
-cat ~/.claude/skills/surrealdb/AGENTS.md >> .cursorrules
+Copilot discovers this automatically -- no config needed. Type `/surrealdb` in
+chat or let Copilot auto-load it when it detects SurrealQL context.
+
+**Option 2 -- Personal (all projects)**
+
+Clone into `~/.copilot/skills/`:
+
+```bash
+git clone https://github.com/24601/surreal-skills.git ~/.copilot/skills/surrealdb
+```
+
+Or add a custom search location in VS Code settings:
+
+```json
+{
+  "chat.agentSkillsLocations": [
+    "~/.copilot/skills"
+  ]
+}
+```
+
+**Option 3 -- Use `/skills` menu**
+
+Type `/skills` in Copilot chat to open the Configure Skills menu, then browse
+to the cloned `surrealdb` directory.
+
+### Other IDE Integrations
+
+```bash
+# Cursor -- add skill to .cursor/skills/ (same Agent Skills standard)
+cp -r .github/skills/surrealdb <your-project>/.cursor/skills/surrealdb
 
 # Windsurf -- append AGENTS.md to .windsurfrules
-cat ~/.claude/skills/surrealdb/AGENTS.md >> .windsurfrules
+cat AGENTS.md >> .windsurfrules
 
 # Cline / Continue -- reference in your config
 # Add the AGENTS.md path to your system prompt configuration
@@ -148,11 +188,14 @@ uv run ~/.claude/skills/surrealdb/scripts/doctor.py --check
 
 ## Quick Start
 
-```bash
-# Start SurrealDB in-memory for development
-surreal start memory --user root --pass root --bind 0.0.0.0:8000
+> **Credential warning**: Examples below use `root/root` for **local development
+> only**. Never use default credentials against production or shared instances.
 
-# Connect via CLI REPL
+```bash
+# Start SurrealDB in-memory for LOCAL DEVELOPMENT ONLY
+surreal start memory --user root --pass root --bind 127.0.0.1:8000
+
+# Connect via CLI REPL (local dev)
 surreal sql --endpoint http://localhost:8000 --user root --pass root --ns test --db test
 
 # Create records with SurrealQL
@@ -305,23 +348,34 @@ These variables are also recognized by the surreal CLI and official SurrealDB SD
 
 ## Source Provenance
 
-This skill was built on **2026-02-19** from these upstream sources. Use `check_upstream.py`
+This skill was built on **2026-02-22** from these upstream sources. Use `check_upstream.py`
 to detect what changed since this snapshot for incremental updates.
 
 | Repository | Release | SHA | Snapshot Date | Rules Affected |
 |------------|---------|-----|---------------|----------------|
 | [surrealdb/surrealdb](https://github.com/surrealdb/surrealdb) | v3.0.0 | `2e0a61fd4daf` | 2026-02-19 | surrealql, data-modeling, security, performance, deployment, surrealism |
-| [surrealdb/surrealist](https://github.com/surrealdb/surrealist) | v3.7.1 | `c47de27db8d5` | 2026-02-19 | surrealist |
-| [surrealdb/surrealdb.js](https://github.com/surrealdb/surrealdb.js) | v1.3.2 | `d4f8bae88360` | 2026-02-18 | sdks |
-| [surrealdb/surrealdb.js](https://github.com/surrealdb/surrealdb.js) (v2 beta) | v2.0.0-beta.1 | `6383698daccf` | 2026-02-17 | sdks |
+| [surrealdb/surrealist](https://github.com/surrealdb/surrealist) | v3.7.2 | `a87e89e23796` | 2026-02-21 | surrealist |
+| [surrealdb/surrealdb.js](https://github.com/surrealdb/surrealdb.js) | v1.3.2 | `48894dfe70bd` | 2026-02-20 | sdks |
+| [surrealdb/surrealdb.js](https://github.com/surrealdb/surrealdb.js) (v2 beta) | v2.0.0-beta.1 | `48894dfe70bd` | 2026-02-20 | sdks |
 | [surrealdb/surrealdb.py](https://github.com/surrealdb/surrealdb.py) | v1.0.8 | `1ff4470e6ec0` | 2026-02-03 | sdks |
 | [surrealdb/surrealdb.go](https://github.com/surrealdb/surrealdb.go) | v1.3.0 | `89d0f8d1b4c6` | 2026-02-12 | sdks |
 | [surrealdb/surreal-sync](https://github.com/surrealdb/surreal-sync) | v0.3.4 | `8166b2b041b1` | 2026-02-12 | surreal-sync |
 | [surrealdb/surrealfs](https://github.com/surrealdb/surrealfs) | -- | `0008a3a94dbe` | 2026-01-29 | surrealfs |
 
-Documentation: [surrealdb.com/docs](https://surrealdb.com/docs) snapshot 2026-02-19.
+Documentation: [surrealdb.com/docs](https://surrealdb.com/docs) snapshot 2026-02-22.
 
 Machine-readable provenance: [`SOURCES.json`](SOURCES.json).
+
+## Registries
+
+This skill is published to multiple agent skill registries:
+
+| Registry | Install Command |
+|----------|----------------|
+| [skills.sh](https://skills.sh) | `npx skills add 24601/surreal-skills` |
+| [ClawHub](https://clawhub.ai) | `npx clawhub install surrealdb` |
+| [OpenClaw / Clawdbot](https://github.com/openclaw) | `clawhub install surrealdb` |
+| GitHub | `git clone https://github.com/24601/surreal-skills.git` |
 
 ## Contributing
 
@@ -331,7 +385,51 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, code style, and PR
 
 To report a vulnerability, use [GitHub Security Advisories](https://github.com/24601/surreal-skills/security/advisories/new). See [SECURITY.md](SECURITY.md) for details.
 
-This skill contains no obfuscated code, no binary blobs, and no minified scripts. Every file is readable Python or Markdown. Scripts use PEP 723 inline metadata and are executed via `uv run` with explicit dependency declarations.
+This skill declares the following security properties in `SKILL.md` frontmatter:
+
+| Property | Value | Meaning |
+|----------|-------|---------|
+| `no_network` | **false** | Scripts connect to a user-specified SurrealDB endpoint for health checks and schema introspection. No third-party network calls. |
+| `no_credentials` | **false** | Scripts accept `SURREAL_USER`/`SURREAL_PASS` for DB auth. No credentials are stored in the skill itself. |
+| `no_env_write` | true | Scripts do not modify environment variables |
+| `no_file_write` | true | Rules are read-only; scripts write only to stdout/stderr |
+| `no_shell_exec` | false | Scripts invoke `surreal` CLI for health checks |
+| `scripts_auditable` | true | All scripts are readable Python with no obfuscation |
+| `scripts_use_pep723` | true | Dependencies declared inline via PEP 723, no requirements.txt |
+| `no_obfuscated_code` | true | No obfuscated, encoded, or encrypted code |
+| `no_binary_blobs` | true | No compiled binaries or WASM files |
+| `no_minified_scripts` | true | No minified JavaScript or compressed code |
+| `no_curl_pipe_sh` | **false** | Documentation mentions `curl\|sh` as one install option; safer alternatives (brew, Docker) are listed first. The skill itself never executes `curl\|sh`. |
+
+### Required Environment Variables
+
+Declared in `SKILL.md` `requires.env_vars`:
+
+| Variable | Sensitive | Default | Purpose |
+|----------|-----------|---------|---------|
+| `SURREAL_ENDPOINT` | No | `http://localhost:8000` | SurrealDB server URL |
+| `SURREAL_USER` | **Yes** | `root` | Authentication username |
+| `SURREAL_PASS` | **Yes** | `root` | Authentication password |
+| `SURREAL_NS` | No | `test` | Default namespace |
+| `SURREAL_DB` | No | `test` | Default database |
+
+### Required Binaries
+
+Declared in `SKILL.md` `requires.binaries`:
+
+| Binary | Required | Install |
+|--------|----------|---------|
+| `surreal` | Yes | `brew install surrealdb/tap/surreal` |
+| `python3` (>=3.10) | Yes | System package manager |
+| `uv` | Yes | `brew install uv` or `pip install uv` |
+| `docker` | No | Optional for containerized instances |
+
+### Script Safety
+
+- All user-provided table names are validated against `[a-zA-Z_][a-zA-Z0-9_]*` before interpolation into SurrealQL queries (prevents SurrealQL injection)
+- Scripts connect only to the endpoint specified by the user (via env var or CLI flag)
+- No data is sent to third-party services
+- Credential warning labels are present on all `root/root` examples
 
 ## License
 
@@ -341,4 +439,4 @@ This skill contains no obfuscated code, no binary blobs, and no minified scripts
 
 Built for the [SurrealDB](https://surrealdb.com) community. SurrealDB is created and maintained by [SurrealDB Ltd](https://github.com/surrealdb/surrealdb).
 
-Skill framework powered by [skills.sh](https://skills.sh).
+Published on [skills.sh](https://skills.sh), [ClawHub](https://clawhub.ai), and [GitHub](https://github.com/24601/surreal-skills).

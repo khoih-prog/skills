@@ -9,26 +9,34 @@ This document covers installation, deployment patterns, operational tasks, and m
 ### Installation
 
 ```bash
-# macOS (Homebrew)
+# macOS (Homebrew) -- RECOMMENDED
 brew install surrealdb/tap/surreal
 
-# Linux / macOS (install script)
-curl -sSf https://install.surrealdb.com | sh
+# Linux (apt / package manager)
+# See https://surrealdb.com/docs/surrealdb/installation for distro-specific instructions
 
-# Windows (PowerShell)
-iwr https://install.surrealdb.com -useb | iex
+# Docker (no host install required)
+docker pull surrealdb/surrealdb:v3
 
 # Verify installation
 surreal version
 ```
 
+> **Security note**: SurrealDB's website offers a `curl | sh` installer. For
+> auditable installs, prefer your OS package manager (brew, apt, dnf) or Docker.
+> If you must use a remote installer, download the script first, review it, then
+> execute: `curl -sSf https://install.surrealdb.com -o install.sh && less install.sh && sh install.sh`
+
 ### Starting the Server
 
+> **Credential warning**: Examples below use `root/root` for local development.
+> For production, use strong credentials and DEFINE USER with least-privilege access.
+
 ```bash
-# In-memory (data lost on restart, suitable for development)
+# In-memory (data lost on restart, LOCAL DEVELOPMENT ONLY)
 surreal start --log trace --user root --pass root memory
 
-# RocksDB persistent storage
+# RocksDB persistent storage (local dev)
 surreal start --log info --user root --pass root rocksdb:./mydata.db
 
 # SurrealKV persistent storage
@@ -40,8 +48,8 @@ surreal start --log info --user root --pass root surrealkv+versioned:./mydata.db
 # TiKV distributed storage
 surreal start --log info --user root --pass root tikv://pd0:2379
 
-# Custom bind address and port
-surreal start --bind 0.0.0.0:9000 --user root --pass root memory
+# Custom bind address and port (use 127.0.0.1 for local dev, 0.0.0.0 only in containers)
+surreal start --bind 127.0.0.1:9000 --user root --pass root memory
 
 # With TLS
 surreal start --user root --pass root \
@@ -114,20 +122,20 @@ surreal upgrade --path ./mydata.db
 ```bash
 # In-memory
 docker run --rm -p 8000:8000 \
-  surrealdb/surrealdb:v3.0.0 \
+  surrealdb/surrealdb:v3 \
   start --log info --user root --pass root memory
 
 # With persistent volume
 docker run --rm -p 8000:8000 \
   -v $(pwd)/data:/data \
-  surrealdb/surrealdb:v3.0.0 \
+  surrealdb/surrealdb:v3 \
   start --log info --user root --pass root rocksdb:/data/mydb
 ```
 
 ### Dockerfile
 
 ```dockerfile
-FROM surrealdb/surrealdb:v3.0.0
+FROM surrealdb/surrealdb:v3
 
 # Default environment variables
 ENV SURREAL_LOG=info
@@ -151,7 +159,7 @@ version: "3.8"
 
 services:
   surrealdb:
-    image: surrealdb/surrealdb:v3.0.0
+    image: surrealdb/surrealdb:v3
     command: start --log info --user root --pass root surrealkv:/data/db
     ports:
       - "8000:8000"
@@ -235,7 +243,7 @@ services:
       - pd0
 
   surrealdb:
-    image: surrealdb/surrealdb:v3.0.0
+    image: surrealdb/surrealdb:v3
     command: start --log info --user root --pass root tikv://pd0:2379
     ports:
       - "8000:8000"
@@ -325,7 +333,7 @@ spec:
     spec:
       containers:
         - name: surrealdb
-          image: surrealdb/surrealdb:v3.0.0
+          image: surrealdb/surrealdb:v3
           args:
             - start
             - --log
@@ -393,7 +401,7 @@ spec:
     spec:
       containers:
         - name: surrealdb
-          image: surrealdb/surrealdb:v3.0.0
+          image: surrealdb/surrealdb:v3
           args:
             - start
             - --log
@@ -667,7 +675,7 @@ spec:
         spec:
           containers:
             - name: backup
-              image: surrealdb/surrealdb:v3.0.0
+              image: surrealdb/surrealdb:v3
               command:
                 - /bin/sh
                 - -c

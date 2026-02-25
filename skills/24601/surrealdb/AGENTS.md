@@ -34,10 +34,10 @@ uv run {baseDir}/scripts/onboard.py --agent
    uv run {baseDir}/scripts/doctor.py
 
 2. Is surreal CLI installed?
-   NO  -> curl -sSf https://install.surrealdb.com | sh
+   NO  -> brew install surrealdb/tap/surreal (or see https://surrealdb.com/install)
    YES -> Continue
 
-3. Choose storage engine:
+3. Choose storage engine (LOCAL DEV -- use scoped credentials in production):
    Development     -> surreal start memory --user root --pass root
    Single-node     -> surreal start rocksdb://data/mydb.db --user root --pass root
    Time-travel     -> surreal start surrealkv://data/mydb --user root --pass root
@@ -137,10 +137,10 @@ Migration steps:
 # Health check
 uv run {baseDir}/scripts/doctor.py
 
-# Start dev server
-surreal start memory --user root --pass root --bind 0.0.0.0:8000
+# Start dev server (LOCAL DEV ONLY -- use scoped credentials in production)
+surreal start memory --user root --pass root --bind 127.0.0.1:8000
 
-# Connect
+# Connect (local dev)
 surreal sql --endpoint http://localhost:8000 --user root --pass root --ns test --db test
 ```
 
@@ -267,9 +267,9 @@ uv run {baseDir}/scripts/schema.py introspect --endpoint $SURREAL_ENDPOINT
 
 | Requirement | How to Check | How to Fix |
 |-------------|-------------|------------|
-| surreal CLI | `surreal version` | `curl -sSf https://install.surrealdb.com \| sh` |
+| surreal CLI | `surreal version` | `brew install surrealdb/tap/surreal` or see [install docs](https://surrealdb.com/install) |
 | Python 3.10+ | `python3 --version` | Install from python.org or use system package manager |
-| uv runtime | `which uv` | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
+| uv runtime | `which uv` | `brew install uv` or `pip install uv` |
 | SurrealDB server | `uv run {baseDir}/scripts/doctor.py` | `surreal start memory --user root --pass root` |
 
 Environment variables (optional, all have defaults):
@@ -388,7 +388,7 @@ All scripts: **stderr** = human-readable (Rich), **stdout** = JSON.
 
 Common errors:
 
-- **surreal CLI not found**: Install with `curl -sSf https://install.surrealdb.com | sh`
+- **surreal CLI not found**: Install with `brew install surrealdb/tap/surreal` or see https://surrealdb.com/install
 - **Server not reachable**: Start a server with `surreal start memory --user root --pass root`
 - **Authentication failed**: Verify `SURREAL_USER` and `SURREAL_PASS` environment variables
 - **Namespace/database not found**: Create with `DEFINE NAMESPACE ...` / `DEFINE DATABASE ...` or use `USE NS ... DB ...` in SurrealQL
@@ -400,7 +400,7 @@ Common errors:
 | Component | Version |
 |-----------|---------|
 | SurrealDB target | 3.0.0+ |
-| Skill version | 1.0.2 |
+| Skill version | 1.0.6 |
 | SurrealQL compat | SurrealDB 3.x |
 | Python requirement | 3.10+ |
 
@@ -417,14 +417,14 @@ uv run {baseDir}/scripts/check_upstream.py --stale   # only changed repos
 | Repository | Release | SHA (short) | Snapshot Date | Rules Affected |
 |------------|---------|-------------|---------------|----------------|
 | surrealdb/surrealdb | v3.0.0 | `2e0a61fd4daf` | 2026-02-19 | surrealql, data-modeling, security, performance, deployment, surrealism |
-| surrealdb/surrealist | v3.7.1 | `c47de27db8d5` | 2026-02-19 | surrealist |
-| surrealdb/surrealdb.js | v1.3.2 | `d4f8bae88360` | 2026-02-18 | sdks |
-| surrealdb/surrealdb.js (v2 beta) | v2.0.0-beta.1 | `6383698daccf` | 2026-02-17 | sdks |
+| surrealdb/surrealist | v3.7.2 | `a87e89e23796` | 2026-02-21 | surrealist |
+| surrealdb/surrealdb.js | v1.3.2 | `48894dfe70bd` | 2026-02-20 | sdks |
+| surrealdb/surrealdb.js (v2 beta) | v2.0.0-beta.1 | `48894dfe70bd` | 2026-02-20 | sdks |
 | surrealdb/surrealdb.py | v1.0.8 | `1ff4470e6ec0` | 2026-02-03 | sdks |
 | surrealdb/surrealdb.go | v1.3.0 | `89d0f8d1b4c6` | 2026-02-12 | sdks |
 | surrealdb/surreal-sync | v0.3.4 | `8166b2b041b1` | 2026-02-12 | surreal-sync |
 | surrealdb/surrealfs | -- | `0008a3a94dbe` | 2026-01-29 | surrealfs |
 
-Documentation: [surrealdb.com/docs](https://surrealdb.com/docs) snapshot 2026-02-19.
+Documentation: [surrealdb.com/docs](https://surrealdb.com/docs) snapshot 2026-02-22.
 
 Full provenance data: `SOURCES.json` (machine-readable).

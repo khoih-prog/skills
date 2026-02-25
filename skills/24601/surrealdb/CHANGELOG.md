@@ -3,6 +3,96 @@
 All notable changes to this project will be documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.0.6] - 2026-02-24
+
+### Added
+- SurrealDB v3.0.1 patch notes in rules/surrealql.md: duration arithmetic, computed
+  field index prevention, record ID dereference fix, error serialization, GraphQL
+  string enum fix, root user permission fix, parallel index compaction, WASM compat,
+  RouterFactory trait for embedders
+- v3.1.0-alpha tracking notes (main branch: planner tidy-up, test fixtures, code coverage)
+- JS SDK v2.0.0-beta.2 changes: ne (!=) operator, error cause property, createWorker
+  factory for Vite-compatible Web Worker engines, minimum SurrealDB version bump to 2.1.0
+- Python SDK error handling improvements (#233)
+
+### Changed
+- All upstream repos synced to HEAD as of 2026-02-24
+- SOURCES.json: surrealdb release updated v3.0.0 -> v3.0.1, added main_tracking field
+- SOURCES.json: surrealdb.js@beta release updated beta.1 -> beta.2
+- Docker image tags updated from v3.0.0 to v3 (tracks latest v3.x)
+- AGENTS.md: fixed remaining 0.0.0.0 bind address to 127.0.0.1
+- rules/deployment.md: fixed remaining 0.0.0.0 bind to 127.0.0.1 with comment
+- rules/sdks.md: createWasmWorkerEngines example updated for beta.2 createWorker factory
+- rules/sdks.md: added ne operator to Expressions API imports
+
+## [1.0.5] - 2026-02-24
+
+### Added
+- Native GitHub Copilot agent skill support (.github/skills/surrealdb/SKILL.md)
+  - Follows the open Agent Skills standard (agentskills.io)
+  - Auto-loads in VS Code, Copilot CLI, and Copilot coding agent when SurrealDB context detected
+  - Available as `/surrealdb` slash command in Copilot chat
+  - Progressive disclosure: metadata -> instructions -> rule files on demand
+  - Supports project-level (.github/skills/) and personal (~/.copilot/skills/) installation
+  - Includes `argument-hint` for guided slash command usage
+  - References all 12 rule files via relative paths for Copilot resource loading
+  - Quick reference section with SurrealQL essentials for immediate context
+
+### Changed
+- README: replaced "append AGENTS.md to copilot-instructions.md" with native Copilot
+  agent skills instructions (3 install methods: project, personal, /skills menu)
+- README: added Cursor .cursor/skills/ integration (same Agent Skills standard)
+- Upstream sync to 2026-02-24:
+  - surrealdb/surrealdb: +2 commits (error serialization fix, CI fix)
+  - surrealdb/surrealist: +1 commit (strict sandbox option fix)
+  - surrealdb/surrealdb.js: +2 commits (version bumps)
+- SOURCES.json baselines updated to current HEAD SHAs
+
+## [1.0.4] - 2026-02-22
+
+### Security Fixes (addressing OpenClaw/VirusTotal scan findings)
+- SKILL.md frontmatter: changed no_network and no_credentials to false with
+  explanatory notes (scripts DO connect to user-specified endpoints)
+- SKILL.md frontmatter: added requires.binaries declaring surreal, python3, uv, docker
+- SKILL.md frontmatter: added requires.env_vars declaring all SURREAL_* vars
+  with sensitive: true on SURREAL_USER and SURREAL_PASS
+- Replaced all curl|sh install instructions with brew/package manager alternatives
+  in SKILL.md, AGENTS.md, README.md, and rules/deployment.md
+- Added security notes on curl|sh (download-and-review alternative documented)
+- Added credential warnings on all root/root examples across all files
+- Changed bind address from 0.0.0.0 to 127.0.0.1 in quick start examples
+- Added SurrealQL injection prevention: _sanitize_identifier() in schema.py
+  validates table names against [a-zA-Z_][a-zA-Z0-9_]* before query interpolation
+- surrealfs sub-skill: added Security Considerations section covering telemetry
+  opt-out (LOGFIRE_SEND_TO_LOGFIRE=false), HTTP binding, pipe command risks,
+  sandboxing, credential scoping
+- surrealfs sub-skill: added requires.env_vars and security block to frontmatter
+- README: corrected security properties table (no_network=false, no_credentials=false)
+- README: added Required Environment Variables table with sensitivity markers
+- README: added Required Binaries table
+- README: added Script Safety section
+
+## [1.0.3] - 2026-02-22
+
+### Added
+- Nightly upstream freshness check GHA workflow (.github/workflows/upstream-check.yml)
+  - Runs at 06:00 UTC daily, auto-creates/updates GitHub issue when repos drift
+  - Manual trigger via workflow_dispatch
+- ClawHub/OpenClaw publishing (clawhub.ai registry)
+- Security metadata in SKILL.md frontmatter (no_network, no_credentials, scripts_auditable, etc.)
+- Registries section in README with skills.sh, ClawHub, OpenClaw install commands
+- Security properties table in README
+- GitHub topics: openclaw, clawhub, agentskills (replacing lower-value topics)
+- Opened surrealdb/surrealdb#6958 for community resource listing
+
+### Changed
+- Synced upstream sources to latest HEAD (snapshot 2026-02-22):
+  - Surrealist v3.7.1 -> v3.7.2 (migration export fix, misc UI fixes)
+  - surrealdb.js WASM SDK updated to 3.x, WebWorker Vite compatibility fix
+- Updated provenance tables in AGENTS.md, SKILL.md, README.md
+- Updated sub-skills with provenance metadata and corrected upstream CLI syntax
+- Updated repo description and homepage on GitHub
+
 ## [1.0.2] - 2026-02-19
 
 ### Added
