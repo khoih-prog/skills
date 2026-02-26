@@ -1,10 +1,37 @@
 ---
 name: deep-research
-description: Async deep research via Gemini Interactions API (no Gemini CLI dependency). RAG-ground queries on local files (--context), preview costs (--dry-run), structured JSON output, adaptive polling. Universal skill for 30+ AI agents including Claude Code, Amp, Codex, and Gemini CLI.
+description: "Async deep research via Gemini Interactions API (no Gemini CLI dependency). RAG-ground queries on local files (--context), preview costs (--dry-run), structured JSON output, adaptive polling. Universal skill for 30+ AI agents including Claude Code, Amp, Codex, and Gemini CLI."
 license: MIT
-compatibility: Requires uv and one of GOOGLE_API_KEY / GEMINI_API_KEY / GEMINI_DEEP_RESEARCH_API_KEY. Optional env vars for model config: GEMINI_DEEP_RESEARCH_AGENT, GEMINI_DEEP_RESEARCH_MODEL, GEMINI_MODEL. Network access to Google Gemini API. --context uploads local files to ephemeral stores (auto-deleted).
-allowed-tools: Bash(uv:*) Bash(python3:*) Read
-metadata: {"version":"2.0.4","author":"24601","clawdbot":{"emoji":"🔬","category":"research","primaryEnv":"GOOGLE_API_KEY","homepage":"https://github.com/24601/agent-deep-research","requires":{"bins":["uv"],"env":["GOOGLE_API_KEY","GEMINI_API_KEY","GEMINI_DEEP_RESEARCH_API_KEY","GEMINI_DEEP_RESEARCH_AGENT","GEMINI_DEEP_RESEARCH_MODEL","GEMINI_MODEL"]},"install":[{"kind":"uv","label":"uv (Python package runner)","package":"uv"}],"config":{"requiredEnv":["GOOGLE_API_KEY","GEMINI_API_KEY","GEMINI_DEEP_RESEARCH_API_KEY"],"example":"export GOOGLE_API_KEY='your-key-from-aistudio.google.com'"}}}
+compatibility: "Requires uv and one of GOOGLE_API_KEY / GEMINI_API_KEY / GEMINI_DEEP_RESEARCH_API_KEY. Optional env vars for model config: GEMINI_DEEP_RESEARCH_AGENT, GEMINI_DEEP_RESEARCH_MODEL, GEMINI_MODEL. Network access to Google Gemini API. --context uploads local files to ephemeral stores (auto-deleted)."
+allowed-tools: "Bash(uv:*) Bash(python3:*) Read"
+metadata:
+  version: "2.1.2"
+  author: "24601"
+  clawdbot:
+    emoji: "🔬"
+    category: "research"
+    primaryEnv: "GOOGLE_API_KEY"
+    homepage: "https://github.com/24601/agent-deep-research"
+    requires:
+      bins:
+        - "uv"
+      env:
+        - "GOOGLE_API_KEY"
+        - "GEMINI_API_KEY"
+        - "GEMINI_DEEP_RESEARCH_API_KEY"
+        - "GEMINI_DEEP_RESEARCH_AGENT"
+        - "GEMINI_DEEP_RESEARCH_MODEL"
+        - "GEMINI_MODEL"
+    install:
+      - kind: "uv"
+        label: "uv (Python package runner)"
+        package: "uv"
+    config:
+      requiredEnv:
+        - "GOOGLE_API_KEY"
+        - "GEMINI_API_KEY"
+        - "GEMINI_DEEP_RESEARCH_API_KEY"
+      example: "export GOOGLE_API_KEY=your-key-from-aistudio.google.com"
 ---
 
 # Deep Research Skill
@@ -32,7 +59,7 @@ See [AGENTS.md]({baseDir}/AGENTS.md) for the complete structured briefing.
 
 **Credentials**: This skill requires a Google/Gemini API key (one of `GOOGLE_API_KEY`, `GEMINI_API_KEY`, or `GEMINI_DEEP_RESEARCH_API_KEY`). The key is read from environment variables and passed to the `google-genai` SDK. It is never logged, written to files, or transmitted anywhere other than the Google Gemini API.
 
-**File uploads**: The `--context` flag uploads local files to Google's ephemeral file search stores for RAG grounding. Files are filtered by MIME type (binary files are rejected), and the ephemeral store is auto-deleted after research completes unless `--keep-context` is specified. Use `--dry-run` to preview what would be uploaded without sending anything. Only files you explicitly point `--context` at are uploaded -- no automatic scanning of parent directories or home folders.
+**File uploads**: The `--context` flag uploads local files to Google's ephemeral file search stores for RAG grounding. Sensitive files are automatically excluded: `.env*`, `credentials.json`, `secrets.*`, private keys (`.pem`, `.key`), and auth tokens (`.npmrc`, `.pypirc`, `.netrc`). Binary files are rejected by MIME type filtering. Build directories (`node_modules`, `__pycache__`, `.git`, `dist`, `build`) are skipped. The ephemeral store is auto-deleted after research completes unless `--keep-context` is specified. Use `--dry-run` to preview what would be uploaded without sending anything. Only files you explicitly point `--context` at are uploaded -- no automatic scanning of parent directories or home folders.
 
 **Non-interactive mode**: When stdin is not a TTY (agent/CI use), confirmation prompts are automatically skipped. This is by design for agent integration but means an autonomous agent with file system access could trigger uploads. Restrict the paths agents can access, or use `--dry-run` and `--max-cost` guards.
 
@@ -115,6 +142,8 @@ uv run {baseDir}/scripts/research.py start "your research question"
 | `--no-cache` | Skip research cache and force a fresh run |
 
 The `start` subcommand is the default, so `research.py "question"` and `research.py start "question"` are equivalent.
+
+**Important**: When `--output` or `--output-dir` is used, the command blocks until research completes (2-10+ minutes). Do not background it with `&`. Use non-blocking mode (omit `--output`) to get an ID immediately, then poll with `status` and save with `report`.
 
 ### Check Status
 
