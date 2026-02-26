@@ -21,7 +21,7 @@ if [[ "$PROVIDER" == "--cloud" ]]; then
   echo '}'
   echo ""
   echo "Replace YOUR_API_KEY with the key from your dashboard."
-  echo "All 11 tools work identically in cloud mode."
+  echo "All 12 tools work identically in cloud mode."
   exit 0
 fi
 
@@ -65,12 +65,19 @@ case "$PROVIDER" in
 esac
 
 echo ""
-echo "Starting authentication flow..."
-echo "This will open your browser for calendar access consent."
+echo "Starting setup flow..."
+echo "This will guide you through calendar connection and configuration."
 echo ""
 
-# Run the auth flow
-npx -y @temporal-cortex/cortex-mcp@0.4.1 auth "$PROVIDER"
+# Prefer `setup` (interactive guided setup), fall back to `auth` for provider-specific flow
+if npx -y @temporal-cortex/cortex-mcp@0.5.0 setup 2>/dev/null; then
+  : # setup succeeded
+else
+  echo "Falling back to provider-specific auth flow..."
+  echo "This will open your browser for calendar access consent."
+  echo ""
+  npx -y @temporal-cortex/cortex-mcp@0.5.0 auth "$PROVIDER"
+fi
 
 # Verify credentials
 CONFIG_DIR="${HOME}/.config/temporal-cortex"
@@ -83,7 +90,8 @@ if [[ -f "${CONFIG_DIR}/credentials.json" ]]; then
   fi
 
   echo ""
-  echo "Setup complete. All 11 MCP tools are now available:"
+  echo "Setup complete. All 12 MCP tools are now available:"
+  echo "  Layer 0: list_calendars"
   echo "  Layer 1: get_temporal_context, resolve_datetime, convert_timezone,"
   echo "           compute_duration, adjust_timestamp"
   echo "  Layer 2: list_events, find_free_slots, expand_rrule, check_availability"

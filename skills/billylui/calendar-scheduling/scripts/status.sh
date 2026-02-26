@@ -109,7 +109,7 @@ echo ""
 echo "--- Summary ---"
 if [[ -f "$CREDS_FILE" ]] && command -v npx &>/dev/null; then
   echo "  Status: READY"
-  echo "  All 11 MCP tools available"
+  echo "  All 12 MCP tools available"
 elif command -v npx &>/dev/null; then
   echo "  Status: PARTIAL"
   echo "  Layer 1 tools available (temporal context, no calendar access)"

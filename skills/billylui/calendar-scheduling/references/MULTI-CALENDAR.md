@@ -2,9 +2,38 @@
 
 Temporal Cortex supports simultaneous connections to Google Calendar, Microsoft Outlook, and CalDAV (iCloud, Fastmail). All calendars are merged into a unified view.
 
+## Discovering Connected Calendars
+
+Use `list_calendars` as the first step to discover all connected calendars:
+
+```
+list_calendars()
+→ [
+    { id: "google/primary", provider: "google", name: "Personal", label: "Main", primary: true, access_role: "owner" }
+    { id: "google/work", provider: "google", name: "Work Calendar", primary: false, access_role: "writer" }
+    { id: "outlook/AAA123", provider: "outlook", name: "Outlook Calendar", primary: true, access_role: "owner" }
+  ]
+```
+
+Filter by provider if needed: `list_calendars(provider: "google")`.
+
+Use the returned `id` values as `calendar_id` in all subsequent tool calls. This eliminates guessing at calendar IDs.
+
+## Calendar Labels
+
+Labels are user-assigned nicknames for calendars. They help agents and users identify calendars by purpose rather than cryptic IDs:
+
+| Calendar ID | Name (from provider) | Label (user-assigned) |
+|------------|---------------------|----------------------|
+| `google/primary` | "Personal" | "Main" |
+| `google/abc123` | "billy@work.com" | "Work" |
+| `outlook/AAA123` | "Calendar" | "Outlook Work" |
+
+Labels are set during `cortex-mcp setup` or via configuration. When presenting calendars to users, prefer the label (if set) over the raw name.
+
 ## Provider-Prefixed Calendar IDs
 
-When multiple providers are connected, use prefixed IDs to route to the correct provider:
+All calendar IDs returned by `list_calendars` use provider-prefixed format:
 
 | Format | Example | Routes to |
 |--------|---------|-----------|
@@ -13,22 +42,22 @@ When multiple providers are connected, use prefixed IDs to route to the correct 
 | `caldav/<id>` | `"caldav/personal"` | CalDAV (iCloud, Fastmail) |
 | `<id>` (bare) | `"primary"` | Default provider |
 
-Bare IDs (without prefix) route to the default provider configured during setup.
+Bare IDs (without prefix) route to the default provider configured during setup. Prefer using the full provider-prefixed IDs from `list_calendars` for clarity.
 
 CalDAV calendar IDs can contain slashes (e.g., path-style IDs). The router splits on the first `/` only — everything after the prefix slash is the calendar ID.
 
 ## Cross-Calendar Availability
 
-Use `get_availability` with multiple calendar IDs to get a merged view:
+Use `get_availability` with the calendar IDs from `list_calendars` to get a merged view:
 
-```json
-{
-  "start": "2026-03-16T00:00:00-04:00",
-  "end": "2026-03-17T00:00:00-04:00",
-  "calendar_ids": ["google/primary", "outlook/work", "caldav/personal"],
-  "min_free_slot_minutes": 30,
-  "privacy": "full"
-}
+```
+1. list_calendars() → discover connected calendars
+2. get_availability(
+     start: "2026-03-16T00:00:00-04:00",
+     end: "2026-03-17T00:00:00-04:00",
+     calendar_ids: ["google/primary", "outlook/AAA123", "caldav/personal"],
+     privacy: "full"
+   ) → merged free/busy blocks across all calendars
 ```
 
 The server fetches events from all providers in parallel and merges them into unified busy/free blocks.
@@ -72,7 +101,7 @@ CalDAV providers need no environment variables — authentication is interactive
 
 ## Single-Provider Shortcuts
 
-If only one provider is configured, you can use bare calendar IDs:
+If only one provider is configured (visible via `list_calendars`), you can use bare calendar IDs:
 
 ```json
 { "calendar_id": "primary" }

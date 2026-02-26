@@ -3,11 +3,16 @@
   "slug": "calendar-scheduling",
   "displayName": "Calendar Scheduling",
   "latest": {
-    "version": "0.4.1",
-    "publishedAt": 1771844628825,
-    "commit": "https://github.com/openclaw/skills/commit/317499a094f940516ed30bcf178dc543459bf62a"
+    "version": "0.5.0",
+    "publishedAt": 1772089596724,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.4.1",
+      "publishedAt": 1771844628825,
+      "commit": "https://github.com/openclaw/skills/commit/317499a094f940516ed30bcf178dc543459bf62a"
+    },
     {
       "version": "0.3.6",
       "publishedAt": 1771830485035,

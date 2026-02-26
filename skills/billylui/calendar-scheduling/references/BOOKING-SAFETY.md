@@ -77,7 +77,7 @@ This prevents malicious content from being written to calendars via AI agents.
 | `idempotentHint` | `false` | Calling twice creates two events |
 | `openWorldHint` | `true` | Makes external API calls |
 
-All other tools (10/11) are read-only and idempotent — safe to retry without side effects.
+All other tools (11/12) are read-only and idempotent — safe to retry without side effects.
 
 ## Best Practices
 

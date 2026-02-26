@@ -1,11 +1,12 @@
 # Tool Reference
 
-Complete input/output schemas for all 11 MCP tools. All datetime parameters use RFC 3339 format.
+Complete input/output schemas for all 12 MCP tools. All datetime parameters use RFC 3339 format. TOON is the default output format for tools that support it (~40% fewer tokens than JSON).
 
 ## Tool Annotations
 
 | Tool | `readOnlyHint` | `destructiveHint` | `idempotentHint` | `openWorldHint` |
 |------|:-:|:-:|:-:|:-:|
+| `list_calendars` | true | false | true | true |
 | `get_temporal_context` | true | false | true | false |
 | `resolve_datetime` | true | false | true | false |
 | `convert_timezone` | true | false | true | false |
@@ -22,6 +23,19 @@ Layer 1 tools and `expand_rrule` are closed-world (no external API calls). All t
 
 ---
 
+## list_calendars
+
+**Input:**
+
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| `provider` | string | No | Filter by provider: `"google"`, `"outlook"`, `"caldav"` |
+| `format` | string | No | `"toon"` (default) or `"json"` |
+
+**Output:** Array of calendars, each with: `id` (provider-prefixed), `provider`, `name`, `label` (optional, user-assigned), `primary` (boolean), `access_role`
+
+---
+
 ## get_temporal_context
 
 **Input:**
@@ -30,7 +44,7 @@ Layer 1 tools and `expand_rrule` are closed-world (no external API calls). All t
 |-------|------|----------|-------------|
 | `timezone` | string | No | IANA timezone override |
 
-**Output:** `utc`, `local`, `timezone`, `timezone_configured`, `utc_offset`, `dst_active`, `day_of_week`, `iso_week`, `is_weekday`, `day_of_year`, `week_start`
+**Output:** `utc`, `local`, `timezone`, `timezone_configured`, `utc_offset`, `dst_active`, `dst_next_transition`, `dst_next_offset`, `day_of_week`, `iso_week`, `is_weekday`, `day_of_year`, `week_start`
 
 ---
 
@@ -100,7 +114,7 @@ DST-aware: `"+1d"` across spring-forward maintains same wall-clock time.
 | `calendar_id` | string | Yes | Calendar ID (supports provider prefix) |
 | `start` | string | Yes | Range start (RFC 3339) |
 | `end` | string | Yes | Range end (RFC 3339) |
-| `format` | string | No | `"json"` (default) or `"toon"` (~40% fewer tokens) |
+| `format` | string | No | `"toon"` (default, ~40% fewer tokens) or `"json"` |
 
 **Output:** `content`, `format`, `count`
 
@@ -116,6 +130,7 @@ DST-aware: `"+1d"` across spring-forward maintains same wall-clock time.
 | `start` | string | Yes | Window start (RFC 3339) |
 | `end` | string | Yes | Window end (RFC 3339) |
 | `min_duration_minutes` | integer | No | Minimum slot length (default: 30) |
+| `format` | string | No | `"toon"` (default) or `"json"` |
 
 **Output:** `slots` (array of `{start, end, duration_minutes}`), `count`
 
@@ -132,6 +147,7 @@ DST-aware: `"+1d"` across spring-forward maintains same wall-clock time.
 | `timezone` | string | Yes | IANA timezone |
 | `duration_minutes` | integer | No | Instance duration (default: 60) |
 | `count` | integer | No | Max instances to return |
+| `format` | string | No | `"toon"` (default) or `"json"` |
 
 **Output:** `instances` (array of `{start, end}`), `count`
 
@@ -162,6 +178,7 @@ DST-aware: `"+1d"` across spring-forward maintains same wall-clock time.
 | `calendar_ids` | string[] | No | Calendar IDs (default: `["primary"]`) |
 | `min_free_slot_minutes` | integer | No | Min free slot (default: 30) |
 | `privacy` | string | No | `"opaque"` (default) or `"full"` |
+| `format` | string | No | `"toon"` (default) or `"json"` |
 
 **Output:** `busy` (array of `{start, end, source_count}`), `free` (array of `{start, end, duration_minutes}`), `calendars_merged`, `privacy`
 
