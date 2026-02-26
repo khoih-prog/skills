@@ -3,9 +3,15 @@
   "slug": "imessage-voice-reply",
   "displayName": "Imessage Voice Reply",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1771643429904,
-    "commit": "https://github.com/openclaw/skills/commit/9e9244188376ef1ae731db90e41034be47562e36"
+    "version": "1.0.2",
+    "publishedAt": 1772083853604,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1771643429904,
+      "commit": "https://github.com/openclaw/skills/commit/9e9244188376ef1ae731db90e41034be47562e36"
+    }
+  ]
 }

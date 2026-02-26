@@ -6,8 +6,9 @@ On macOS: uses afconvert → CAF/Opus at 48kHz mono (identical to Messages.app f
 On other platforms: uses ffmpeg → MP3 fallback.
 
 Usage:
-    generate_voice_reply.py "text to speak" [output_path]
-    generate_voice_reply.py "text" --voice af_heart --speed 1.15 --lang en-us
+    generate_voice_reply.py --text "text to speak" --output /tmp/voice_reply.caf
+    generate_voice_reply.py --text-file /tmp/text.txt --output /tmp/voice_reply.caf
+    generate_voice_reply.py "text to speak" [output_path]  # backward compat
 
 Stdout line 1: output file path (for piping to other tools).
 Stderr: human-readable status.
@@ -51,12 +52,28 @@ def encode_mp3_ffmpeg(wav_path: str, out_path: str) -> None:
 
 def main():
     parser = argparse.ArgumentParser(description="Generate Kokoro TTS iMessage voice reply")
-    parser.add_argument("text", help="Text to speak")
-    parser.add_argument("output", nargs="?", default=None, help="Output file path")
+    parser.add_argument("text_positional", nargs="?", default=None, help="Text to speak (positional, for backward compat)")
+    parser.add_argument("output_positional", nargs="?", default=None, help="Output path (positional, for backward compat)")
+    parser.add_argument("--text", default=None, help="Text to speak (preferred)")
+    parser.add_argument("--text-file", default=None, help="Path to file containing text to speak (safest for untrusted input)")
+    parser.add_argument("--output", default=None, help="Output file path (preferred)")
     parser.add_argument("--voice", default="af_heart", help="Kokoro voice (default: af_heart)")
     parser.add_argument("--speed", type=float, default=1.15, help="Speed (default: 1.15)")
     parser.add_argument("--lang", default="en-us", help="Language code (default: en-us)")
     args = parser.parse_args()
+
+    # Resolve text: --text-file > --text > positional
+    if args.text_file:
+        with open(args.text_file, "r") as f:
+            args.text = f.read()
+    elif args.text:
+        pass  # already set
+    elif args.text_positional:
+        args.text = args.text_positional
+    else:
+        print("Error: no text provided. Use --text, --text-file, or positional arg.", file=sys.stderr)
+        sys.exit(1)
+    args.output = args.output or args.output_positional
 
     if not args.text.strip():
         print("Error: empty text", file=sys.stderr)

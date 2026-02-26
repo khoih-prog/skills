@@ -1,5 +1,6 @@
 ---
 name: imessage-voice-reply
+version: 1.0.1
 description: Send voice message replies in iMessage using local Kokoro-ONNX TTS. Generates native iMessage voice bubbles (CAF/Opus) that play inline with waveform — not file attachments. Use when receiving a voice message in iMessage and wanting to reply with voice, enabling voice-to-voice iMessage conversations, or sending audio responses. Zero cost — all TTS runs locally. Requires BlueBubbles channel configured in OpenClaw.
 ---
 
@@ -27,14 +28,25 @@ Requires: BlueBubbles channel configured in OpenClaw (`channels.bluebubbles`).
 
 ### Step 1: Generate audio
 
+Write the response text to a temp file, then pass it via `--text-file` to avoid shell injection:
+
 ```bash
-${baseDir}/.venv/bin/python ${baseDir}/scripts/generate_voice_reply.py "Your response text here" /tmp/voice_reply.caf
+echo "Your response text here" > /tmp/voice_text.txt
+${baseDir}/.venv/bin/python ${baseDir}/scripts/generate_voice_reply.py --text-file /tmp/voice_text.txt --output /tmp/voice_reply.caf
+```
+
+Alternatively, pass text directly (ensure proper shell escaping):
+
+```bash
+${baseDir}/.venv/bin/python ${baseDir}/scripts/generate_voice_reply.py --text "Your response text here" --output /tmp/voice_reply.caf
 ```
 
 Options:
 - `--voice af_heart` — Kokoro voice (default: af_heart)
 - `--speed 1.15` — Playback speed (default: 1.15)
 - `--lang en-us` — Language code (default: en-us)
+
+**Security note:** The Python script uses argparse and subprocess.run with list arguments (no shell=True). Input is handled safely within the script. When calling from a shell, prefer `--text-file` for untrusted input to avoid shell metacharacter issues.
 
 ### Step 2: Send via BlueBubbles
 
