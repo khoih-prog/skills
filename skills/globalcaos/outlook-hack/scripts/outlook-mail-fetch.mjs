@@ -19,11 +19,14 @@ const TOKEN_FILE = join(CREDS_DIR, 'outlook-msal.json');
 mkdirSync(CREDS_DIR, { recursive: true });
 mkdirSync(OUTPUT_DIR, { recursive: true });
 
-const CLIENT_ID = '9199bf20-a13f-4107-85dc-02114787ef48';
-const TENANT_ID = 'f00f60b1-b967-4c0b-91ce-eb200dab0604';
+// Read config from credentials file (supports Teams FOCI hack or custom app)
+const credsRaw = existsSync(TOKEN_FILE) ? JSON.parse(readFileSync(TOKEN_FILE, 'utf8')) : {};
+const CLIENT_ID = credsRaw.client_id || '5e3ce6c0-2b1f-4285-8d4b-75ee78787346';
+const TENANT_ID = credsRaw.tenant_id || 'f00f60b1-b967-4c0b-91ce-eb200dab0604';
+const ORIGIN = credsRaw.origin || 'https://teams.cloud.microsoft';
 const TOKEN_URL = `https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/token`;
-const GRAPH = 'https://outlook.office.com/api/v2.0';
-const SCOPE = 'https://outlook.office.com/Mail.ReadWrite offline_access';
+const GRAPH = 'https://graph.microsoft.com/v1.0';
+const SCOPE = credsRaw.scope || 'https://graph.microsoft.com/.default offline_access';
 
 // --- Token Management ---
 
@@ -60,7 +63,7 @@ async function getAccessToken() {
     scope: SCOPE
   });
 
-  const resp = await fetch(TOKEN_URL, { method: 'POST', body, headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+  const resp = await fetch(TOKEN_URL, { method: 'POST', body, headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Origin': ORIGIN } });
   const data = await resp.json();
 
   if (data.error) throw new Error(`Token refresh failed: ${data.error_description || data.error}`);
@@ -102,8 +105,8 @@ async function fetchAllEmails(months) {
   const rawFile = join(OUTPUT_DIR, 'raw-emails.jsonl');
   writeFileSync(rawFile, ''); // truncate
 
-  const select = 'Id,Subject,From,ToRecipients,ReceivedDateTime,HasAttachments,BodyPreview,Body,Importance,IsRead,Categories,ConversationId';
-  let url = `${GRAPH}/me/messages?$filter=ReceivedDateTime ge ${sinceISO}&$orderby=ReceivedDateTime desc&$top=50&$select=${select}`;
+  const select = 'id,subject,from,toRecipients,receivedDateTime,hasAttachments,bodyPreview,body,importance,isRead,categories,conversationId';
+  let url = `${GRAPH}/me/messages?$filter=receivedDateTime ge ${sinceISO}&$orderby=receivedDateTime desc&$top=50&$select=${select}`;
   let page = 0, total = 0;
 
   while (url) {
@@ -115,19 +118,19 @@ async function fetchAllEmails(months) {
 
     for (const m of emails) {
       const line = JSON.stringify({
-        id: m.Id,
-        subject: m.Subject,
-        from: m.From?.EmailAddress?.Address,
-        fromName: m.From?.EmailAddress?.Name,
-        to: (m.ToRecipients || []).map(r => r.EmailAddress?.Address),
-        date: m.ReceivedDateTime,
-        hasAttachments: m.HasAttachments,
-        importance: m.Importance,
-        isRead: m.IsRead,
-        categories: m.Categories,
-        conversationId: m.ConversationId,
-        preview: m.BodyPreview,
-        bodyText: m.Body?.Content ? m.Body.Content.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').replace(/<[^>]*>/g, ' ').replace(/\s{2,}/g, ' ').slice(0, 3000) : null
+        id: m.id,
+        subject: m.subject,
+        from: m.from?.emailAddress?.address,
+        fromName: m.from?.emailAddress?.name,
+        to: (m.toRecipients || []).map(r => r.emailAddress?.address),
+        date: m.receivedDateTime,
+        hasAttachments: m.hasAttachments,
+        importance: m.importance,
+        isRead: m.isRead,
+        categories: m.categories,
+        conversationId: m.conversationId,
+        preview: m.bodyPreview,
+        bodyText: m.body?.content ? m.body.content.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').replace(/<[^>]*>/g, ' ').replace(/\s{2,}/g, ' ').slice(0, 3000) : null
       });
       appendFileSync(rawFile, line + '\n');
     }
@@ -154,17 +157,17 @@ async function fetchAttachmentsIndex() {
 
   for (const email of withAtt) {
     try {
-      const data = await graphGet(`${GRAPH}/me/messages/${email.id}/attachments?$select=Id,Name,ContentType,Size,IsInline`);
+      const data = await graphGet(`${GRAPH}/me/messages/${email.id}/attachments?$select=id,name,contentType,size,isInline`);
       for (const att of (data.value || [])) {
         appendFileSync(attFile, JSON.stringify({
           messageId: email.id,
           subject: email.subject,
           date: email.date,
-          name: att.Name,
-          contentType: att.ContentType,
-          size: att.Size,
-          isInline: att.IsInline,
-          attachmentId: att.Id
+          name: att.name,
+          contentType: att.contentType,
+          size: att.size,
+          isInline: att.isInline,
+          attachmentId: att.id
         }) + '\n');
       }
     } catch (e) {
@@ -257,9 +260,9 @@ try {
     console.log(`✅ Token exchange successful. Access token length: ${at.length}`);
 
   } else if (cmd === '--test') {
-    const data = await graphGet(`${GRAPH}/me/messages?$top=5&$select=Subject,From,ReceivedDateTime,HasAttachments&$orderby=ReceivedDateTime desc`);
+    const data = await graphGet(`${GRAPH}/me/messages?$top=5&$select=subject,from,receivedDateTime,hasAttachments&$orderby=receivedDateTime desc`);
     for (const m of data.value || []) {
-      console.log(`${m.ReceivedDateTime?.slice(0, 16)} | ${m.From?.EmailAddress?.Address} | ${m.Subject}${m.HasAttachments ? ' 📎' : ''}`);
+      console.log(`${m.receivedDateTime?.slice(0, 16)} | ${m.from?.emailAddress?.address} | ${m.subject}${m.hasAttachments ? ' 📎' : ''}`);
     }
 
   } else if (cmd === '--fetch-all') {
