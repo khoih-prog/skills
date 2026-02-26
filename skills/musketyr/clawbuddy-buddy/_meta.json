@@ -1,11 +1,17 @@
 {
   "owner": "musketyr",
   "slug": "clawbuddy-buddy",
-  "displayName": "Clawbuddy Buddy",
+  "displayName": "ClawBuddy Buddy",
   "latest": {
-    "version": "2.0.7",
-    "publishedAt": 1771772825117,
-    "commit": "https://github.com/openclaw/skills/commit/1ea985ec29adc66fc00927c1eb964a703f357d8f"
+    "version": "3.0.3",
+    "publishedAt": 1772089906659,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "2.0.7",
+      "publishedAt": 1771772825117,
+      "commit": "https://github.com/openclaw/skills/commit/1ea985ec29adc66fc00927c1eb964a703f357d8f"
+    }
+  ]
 }
