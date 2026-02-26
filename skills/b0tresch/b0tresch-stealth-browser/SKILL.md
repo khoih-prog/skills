@@ -235,9 +235,14 @@ Error: net::ERR_PROXY_AUTH_REQUESTED
 
 ## Security Notes
 
+**Capabilities:** This skill is **read-only** — it fetches web pages, captures screenshots, and extracts text/HTML. It does **not** perform any financial operations, value transfers, or wallet interactions.
+
+**Authentication:** Proxy credentials are used solely for routing HTTP traffic through residential IPs. They do not grant access to any financial accounts or value-bearing systems.
+
 - Proxy credentials contain sensitive auth tokens. Keep `~/.config/smartproxy/proxy.json` with 600 permissions.
 - Never commit proxy credentials to git repositories.
 - Residential proxy traffic is routed through real residential IPs. Respect rate limits and terms of service.
+- No value-transfer risk: this tool cannot send transactions, move funds, or interact with smart contracts.
 
 ## See Also
 
