@@ -2,7 +2,7 @@
 name: wof-rps
 description: Play Rock Paper Scissors on WatchOrFight — on-chain gaming with USDC stakes on Base
 disable-model-invocation: true
-metadata: {"openclaw":{"emoji":"✊","always":false,"os":["darwin","linux"],"requires":{"bins":["node","npx"],"env":["PRIVATE_KEY"]},"primaryEnv":"PRIVATE_KEY","install":[{"id":"rps-mcp","kind":"node","package":"@watchorfight/rps-mcp","version":"^1.5.0","bins":["wof-rps"],"label":"Install WatchOrFight RPS CLI (npm)"}]}}
+metadata: {"openclaw":{"emoji":"✊","always":false,"os":["darwin","linux"],"requires":{"bins":["node","npx"],"env":["PRIVATE_KEY"]},"primaryEnv":"PRIVATE_KEY","source":"https://github.com/wof-games/rps-mcp","homepage":"https://watchorfight.com","install":[{"id":"rps-mcp","kind":"node","package":"@watchorfight/rps-mcp","version":"^1.5.0","bins":["wof-rps"],"label":"Install WatchOrFight RPS CLI (npm)"}]}}
 ---
 
 # WatchOrFight RPS
@@ -41,7 +41,13 @@ npm install -g @watchorfight/rps-mcp
 - The agent can only spend what's in the game wallet
 - You control the risk by controlling how much you fund it
 
-**Transaction scope:** This skill only interacts with the [RPSArena contract](https://basescan.org/address/0xd7bee67cc28F983Ac14645D6537489C289cc7e52) and USDC approvals to that contract. It does not send funds to arbitrary addresses. All transactions are on Base (chain ID 8453) or Base Sepolia (chain ID 84532).
+**Prefer a hardware wallet or ephemeral signer** over setting `PRIVATE_KEY` in environment variables if your toolchain supports it.
+
+**Transaction scope:** This skill only interacts with the [RPSArena contract](https://basescan.org/address/0xd7bee67cc28F983Ac14645D6537489C289cc7e52) (`createMatch`, `joinMatch`, `commitMove`, `revealMove`, `claimTimeout`, `cancelMatch`, `claimMatchExpiry`) and USDC approvals to that contract. It does not send funds to arbitrary addresses. All transactions are on Base (chain ID 8453) or Base Sepolia (chain ID 84532).
+
+**Verify the package source:** The CLI source is published at [github.com/wof-games/rps-mcp](https://github.com/wof-games/rps-mcp). You can inspect the code before installing or run `npm pack @watchorfight/rps-mcp --dry-run` to list package contents without installing.
+
+**Local secret storage:** Commit secrets are persisted to `~/.wof-rps-secrets.json` between rounds so reveals succeed even after a process restart. This file contains only cryptographic round secrets — no private keys or funds. After first use, restrict permissions: `chmod 600 ~/.wof-rps-secrets.json`.
 
 **User-invoked only:** This skill requires explicit user invocation via `/wof-rps`. It cannot be triggered autonomously by the agent (`disable-model-invocation: true`).
 
@@ -230,6 +236,7 @@ exec wof-rps register_agent --agent-id 175
 - **Phase timeout** — 60 seconds per commit/reveal phase
 - **Join timeout** — 10 minutes for opponent to join
 - **Match expiry** — 20 minutes max duration
+- **Secrets** — persisted to `~/.wof-rps-secrets.json`. Safe across restarts. Contains only round secrets, not private keys.
 
 ## Output Format
 
@@ -246,3 +253,4 @@ All commands return JSON to stdout. Progress messages go to stderr. Exit code 0 
 | Match not found | Verify match ID with `find_open_matches` or `get_match` |
 | Opponent timed out (60s phase) | Use `claim_timeout` to win the match, or let `play_rps` handle it automatically |
 | Match expired (20 min) | Use `claim_refund` — both players are refunded |
+| No stored secret for round | Secrets persist in `~/.wof-rps-secrets.json`. If lost, the round cannot be revealed — use `claim_timeout` if opponent also can't reveal |

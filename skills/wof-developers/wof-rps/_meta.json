@@ -3,11 +3,16 @@
   "slug": "wof-rps",
   "displayName": "WatchOrfight - Rock, Paper, Scissor",
   "latest": {
-    "version": "1.0.3",
-    "publishedAt": 1771951188708,
-    "commit": "https://github.com/openclaw/skills/commit/6f3a6454df52b7001191149e23b1c22fd3961dc8"
+    "version": "1.0.7",
+    "publishedAt": 1772046502053,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.3",
+      "publishedAt": 1771951188708,
+      "commit": "https://github.com/openclaw/skills/commit/6f3a6454df52b7001191149e23b1c22fd3961dc8"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1771601845384,
