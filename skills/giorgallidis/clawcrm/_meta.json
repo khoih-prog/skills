@@ -1,11 +1,17 @@
 {
   "owner": "giorgallidis",
   "slug": "clawcrm",
-  "displayName": "ClawCRM",
+  "displayName": "ClawCRM - Agent-Native CRM",
   "latest": {
-    "version": "0.1.0",
-    "publishedAt": 1771639702744,
-    "commit": "https://github.com/openclaw/skills/commit/738bf1ba303f11073817c0a50ab59ddc42ed84c8"
+    "version": "1.0.6",
+    "publishedAt": 1772068749567,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "0.1.0",
+      "publishedAt": 1771639702744,
+      "commit": "https://github.com/openclaw/skills/commit/738bf1ba303f11073817c0a50ab59ddc42ed84c8"
+    }
+  ]
 }
