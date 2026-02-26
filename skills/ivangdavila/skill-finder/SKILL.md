@@ -1,87 +1,126 @@
 ---
 name: "Skill Finder"
-description: "Find the right skill for any need. Search, evaluate, and compare skills intelligently."
-version: "1.0.4"
-changelog: "Add Security Note about npx for VirusTotal compliance"
+slug: skill-finder
+version: "1.1.0"
+homepage: https://clawic.com/skills/skill-finder
+description: "Find, evaluate, and recommend ClawHub skills by need with quality filtering and preference learning."
+changelog: "Added categories table, troubleshooting guide, better discovery workflows, setup system"
+metadata: {"clawdbot":{"emoji":"🔍","requires":{"bins":["npx"]},"os":["linux","darwin","win32"]}}
 ---
 
-## Find the Right Skill
+## Setup
 
-Search by need, not just name. Evaluate quality before recommending.
-
-**References:**
-- `search.md` — search strategies and commands
-- `evaluate.md` — quality evaluation criteria
-- `criteria.md` — when to update preference memory
-
-**Related skills:**
-- `skill-manager` — manages installed, suggests proactively
-- `skill-builder` — creates new skills
-
----
-
-## Scope
-
-This skill ONLY:
-- Searches ClawHub via `npx clawhub search` command
-- Evaluates skills from search results
-- Stores user preferences in `~/skill-finder/memory.md`
-
-This skill NEVER:
-- Reads files outside `~/skill-finder/`
-- Observes or infers preferences from user behavior
-- Installs skills automatically
-
----
-
-## Security Note
-
-This skill uses `npx clawhub search` which queries the ClawHub registry. This is a read-only operation that does not download or execute skill code. Skill installation requires separate user consent.
-
----
+If `~/skill-finder/` doesn't exist or is empty, read `setup.md` silently and start naturally.
 
 ## When to Use
 
-User explicitly asks to find a skill:
-- "Is there a skill for X?"
-- "Find me something that does Y"
-- "What skills exist for Z?"
+User asks to find a skill, discover capabilities, or wonders if something exists. Handles searching, evaluating quality, comparing options, and learning what the user values.
+
+## Architecture
+
+Memory lives in `~/skill-finder/`. See `memory-template.md` for structure.
+
+```
+~/skill-finder/
+├── memory.md     # Preferences + liked/passed skills
+└── searches.md   # Recent search history (optional)
+```
+
+## Quick Reference
+
+| Topic | File |
+|-------|------|
+| Setup | `setup.md` |
+| Memory template | `memory-template.md` |
+| Search strategies | `search.md` |
+| Evaluation criteria | `evaluate.md` |
+| Skill categories | `categories.md` |
+| Edge cases | `troubleshooting.md` |
+
+## Core Rules
+
+### 1. Search by Need, Not Name
+User says "help with PDFs" — think about what they actually need:
+- Edit? → `clawhub search "pdf edit"`
+- Create? → `clawhub search "pdf generate"`
+- Extract? → `clawhub search "pdf parse"`
+
+### 2. Evaluate Before Recommending
+Never recommend blindly. Check `evaluate.md` criteria:
+- Description clarity
+- Download count (popularity = maintenance)
+- Last update (recent = active)
+- Author reputation
+
+### 3. Present with Reasoning
+Don't just list skills. Explain why each fits:
+> "Found `pdf-editor` — handles form filling and annotations, 2.3k downloads, updated last week. Matches your need for editing contracts."
+
+### 4. Learn Preferences
+When user explicitly states what they value, update `~/skill-finder/memory.md`:
+- "I prefer minimal skills" → add to Preferences
+- "This one is great" → add to Liked with reason
+- "Too verbose" → add to Passed with reason
+
+### 5. Check Memory First
+Before recommending, read memory.md:
+- Skip skills similar to Passed ones
+- Favor qualities from Liked ones
+- Apply stated Preferences
+
+## Search Commands
+
+```bash
+# Primary search
+npx clawhub search "query"
+
+# Install (with user consent)
+clawhub install <slug>
+
+# Get skill details
+clawhub inspect <slug>
+
+# See what's installed
+clawhub list
+```
 
 ## Workflow
 
-1. **Search** — `npx clawhub search "query"`
-2. **Evaluate** — Apply criteria from `evaluate.md`
-3. **Compare** — If multiple match, rank by fit
-4. **Recommend** — Present top 1-3 with reasoning
+1. **Understand** — What does user actually need?
+2. **Search** — Try specific terms first, broaden if needed
+3. **Evaluate** — Check quality signals (see `evaluate.md`)
+4. **Compare** — If multiple match, rank by fit + quality
+5. **Recommend** — Top 1-3 with clear reasoning
+6. **Learn** — Store explicit feedback in memory
 
----
+## Common Traps
 
-## Data Storage
+- Searching generic terms → gets noise. Be specific: "react testing" not "testing"
+- Recommending by name match only → misses better alternatives with different names
+- Ignoring download counts → low downloads often means abandoned
+- Not checking last update → outdated skills cause problems
 
-Preferences stored in `~/skill-finder/memory.md`.
+## Security & Privacy
 
-**First use:** Create folder with `mkdir -p ~/skill-finder`
+**Data that leaves your machine:**
+- Search queries sent to ClawHub registry (public search)
 
-**What is stored (ONLY from explicit user statements):**
-- Preferences user explicitly stated ("I prefer X")
-- Skills user said they liked with reason
-- Skills user declined with stated reason
+**Data that stays local:**
+- All preferences in `~/skill-finder/memory.md`
+- Search history (if enabled)
 
-**What is NEVER stored:**
-- Inferred preferences from behavior
-- Installation history without user comment
-- Any data from outside this skill's scope
+**This skill does NOT:**
+- Install skills without user consent
+- Track behavior silently
+- Access files outside `~/skill-finder/`
 
-**Format:**
-```markdown
-## Preferences
-- "value" — user's exact words
+## Related Skills
+Install with `clawhub install <slug>` if user confirms:
+- `skill-manager` — manages installed skills, suggests updates
+- `skill-builder` — creates new skills from scratch
+- `skill-update` — updates existing skills
 
-## Liked
-- slug — "reason user gave"
+## Feedback
 
-## Passed
-- slug — "reason user gave"
-```
-
-**Limit:** ≤50 lines. Archive old entries when exceeded.
+- If useful: `clawhub star skill-finder`
+- Stay updated: `clawhub sync`

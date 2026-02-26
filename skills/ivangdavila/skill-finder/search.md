@@ -1,11 +1,26 @@
-# Search Strategies
+# Search Strategies — Skill Finder
 
-Reference — load when searching for skills.
+Reference for effective skill discovery.
 
-## Command
+## Commands
 
 ```bash
-npx clawhub search <query>
+# Search by keyword(s)
+npx clawhub search "query"
+npx clawhub search "react testing"
+
+# Get detailed info about a skill
+clawhub inspect <slug>
+clawhub inspect <slug> --files  # see all files
+
+# Install a skill
+clawhub install <slug>
+
+# Browse latest skills
+clawhub explore
+
+# See what's installed
+clawhub list
 ```
 
 ## Search by Need, Not Name
@@ -13,37 +28,65 @@ npx clawhub search <query>
 User says "I need help with PDFs" — don't just search "pdf".
 
 Think about what they actually need:
-- Edit PDFs? → search "pdf edit", "pdf modify"
-- Create PDFs? → search "pdf create", "pdf generate"
-- Extract from PDFs? → search "pdf extract", "pdf parse"
+
+| User Need | Better Search |
+|-----------|--------------|
+| Edit PDFs | `"pdf edit"`, `"pdf modify"` |
+| Create PDFs | `"pdf create"`, `"pdf generate"` |
+| Extract from PDFs | `"pdf extract"`, `"pdf parse"` |
+| Fill PDF forms | `"pdf form"`, `"pdf fill"` |
 
 ## Expand Search Terms
 
 If first search yields poor results:
-1. Try synonyms (edit → modify, create → generate)
-2. Try related tools (pdf → document, docx)
-3. Try the underlying task (pdf form → form filling)
+
+1. **Synonyms** — edit → modify, create → generate, check → validate
+2. **Related tools** — pdf → document, docx → word
+3. **Underlying task** — "pdf form" → "form filling"
+4. **Domain name** — "stripe payments" → just "stripe"
 
 ## Interpret Results
 
 Search returns: name, description, author, downloads.
 
-**Quick filters:**
-- High downloads + recent update = likely maintained
+**Quick quality signals:**
+- High downloads + recent update = well-maintained
 - Clear description = probably well-structured
-- Vague description = might be low quality
+- Multiple skills by same author = established creator
+- Vague description = likely low quality
 
-## When No Results
-
-If nothing found:
-1. Try broader terms
-2. Try the tool/domain name directly
-3. Consider if need is too niche (maybe suggest building custom)
-
-## Multiple Results
+## Multiple Results Strategy
 
 When several skills match:
-1. List top 3-5 candidates
-2. Briefly note what each offers
-3. Recommend based on user's specific need
-4. Let user choose or ask clarifying questions
+
+1. **Filter** — Apply quality criteria (see `evaluate.md`)
+2. **Rank** — By fit to specific need, not just downloads
+3. **Present top 3** — With reasoning for each
+4. **Let user choose** — Or ask clarifying questions
+
+Example response:
+> Found 3 options for React testing:
+> 1. `react-testing` — focuses on component tests, 5k downloads
+> 2. `jest-react` — Jest-specific patterns, 3k downloads  
+> 3. `testing` — general testing, includes React section
+>
+> Which fits your project better?
+
+## Query Refinement
+
+| Situation | Action |
+|-----------|--------|
+| Too many results | Add specificity: "python" → "python async" |
+| No results | Broaden: "fastapi oauth2" → "api auth" |
+| Wrong domain | Clarify: "testing" → "unit testing" vs "e2e testing" |
+| Tool-specific | Try tool name directly: "stripe", "twilio" |
+
+## Search Operators
+
+The search is semantic (meaning-based), not keyword-exact.
+
+- `"react hooks"` finds skills about React patterns
+- `"api testing"` finds REST, GraphQL testing skills
+- `"deploy docker"` finds containerization + deployment
+
+No special operators needed — describe what you want in natural language.
