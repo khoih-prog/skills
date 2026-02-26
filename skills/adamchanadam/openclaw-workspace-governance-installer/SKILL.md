@@ -72,7 +72,7 @@ Then in OpenClaw chat:
 3. `gov_migrate` — align workspace behavior to the latest governance rules after install or upgrade.
 4. `gov_audit` — verify 12 integrity checks and catch drift before declaring completion.
 5. `gov_uninstall quick|check|uninstall` — clean removal with backup and restore evidence.
-6. `gov_openclaw_json` — safely edit platform config (`openclaw.json`) with backup, validation, and rollback.
+6. `gov_openclaw_json` — safely edit platform config (`openclaw.json`) with backup, validation, and rollback. Includes pre-modification config reference verification: scans local workspace docs before changes, falls back to official web docs, and degrades gracefully when neither is available.
 7. `gov_brain_audit` — review and harden Brain Docs quality with preview-first approval and rollback.
 8. `gov_boot_audit` — scan for recurring issues and generate upgrade proposals (read-only diagnostic).
 9. `gov_apply <NN>` — apply a single BOOT upgrade proposal with explicit human approval (**Experimental**, controlled UAT only).
@@ -118,11 +118,11 @@ Version check (operator-side):
 
 ## Runtime gate behavior (important)
 1. Read-only diagnostics/testing commands are allowed and should not be blocked.
-2. Write/update/save commands require PLAN + READ evidence before CHANGE.
-3. If blocked by runtime gate, this usually means governance guard worked (not a system crash).
-4. Include `WG_PLAN_GATE_OK` + `WG_READ_GATE_OK` in governance output, then retry.
-5. All `gov_*` responses use branded output: `🐾` header, emoji status prefix (✅ PASS/READY, ⚠️ WARNING, ❌ BLOCKED/FAIL), structured `•` bullets, `👉` next-step, and `─────` dividers.
-6. If `gov_setup upgrade` still reports gate deadlock, update plugin to latest + restart gateway, then rerun `gov_setup check` and `gov_setup upgrade`.
+2. **Normal writes** (skills/, projects/, code): always advisory — write proceeds with a logged warning, never hard-blocked.
+3. **High-risk writes** (Brain Docs, `openclaw.json`, `_control/*`, governance prompts): advisory on 1st-2nd attempt, hard block on 3rd+ without evidence.
+4. If blocked by runtime gate, this usually means governance guard worked (not a system crash). Include your plan and list of files read, then retry.
+5. If blocked 3+ times: use `/gov_brain_audit force-accept` to clear all gates (with audit trail).
+6. All `gov_*` responses use branded output: `🐾` header, emoji status prefix (✅ PASS/READY, ⚠️ WARNING, ❌ BLOCKED/FAIL), structured `•` bullets, `👉` next-step, and `─────` dividers.
 7. Tool-exposure root-fix is enabled by default: governance plugin tools require explicit `/gov_*` intent (or `/skill gov_*`) in the current turn window.
 
 ## If slash routing is unstable
