@@ -3,9 +3,15 @@
   "slug": "repliz",
   "displayName": "Repliz Api",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1771761905074,
-    "commit": "https://github.com/openclaw/skills/commit/65549576ee4ceff19853bbb841348e67ea6044ab"
+    "version": "1.0.2",
+    "publishedAt": 1772097285321,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1771761905074,
+      "commit": "https://github.com/openclaw/skills/commit/65549576ee4ceff19853bbb841348e67ea6044ab"
+    }
+  ]
 }
