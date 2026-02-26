@@ -50,7 +50,9 @@ CHART TYPES:
   heatmap       Heatmap grid (use --color-value-field)
 
 BASIC OPTIONS:
-  --data        JSON array of data points (required unless piping)
+  --data        JSON array of data points (or shorthand "Mon:10,Tue:15")
+  --csv-file    Path to CSV file (headers become field names)
+  --csv         Inline CSV string (headers + rows, newline-separated)
   --output      Output file path (default: chart.png)
   --title       Chart title
   --subtitle    Chart subtitle
@@ -80,6 +82,17 @@ SORTING:
   --sort            Sort bars by value: asc, desc (bar charts only)
   --bar-labels      Show value labels on top of every bar (bar charts only)
   --gradient        Gradient fill for area charts (fades from color to background)
+  --transparent     Transparent background (useful for embedding)
+  --bg-color COLOR  Custom background color (hex, e.g. #f0f0f0)
+  --y-scale TYPE    Y axis scale type: linear (default), log, sqrt, symlog
+  --zero-baseline   Force Y axis to start at zero (aka --zero)
+  --conditional-color  Color by threshold: "value,belowColor,aboveColor" (default: red/green)
+
+DUAL AXIS:
+  --y2-field        Second Y axis field (independent right axis)
+  --y2-title        Title for second Y axis
+  --y2-color        Color for second series (default: blue)
+  --y2-type         Chart type for second axis: line, bar, area (default: line)
 
 ANNOTATIONS:
   --trend-line      Add linear regression trend line (dashed)
@@ -113,6 +126,12 @@ EXAMPLES:
 
   # Sparkline for inline use
   node chart.mjs --sparkline --data '[{"x":1,"y":10},{"x":2,"y":15}]' -o spark.png
+
+  # CSV file input
+  node chart.mjs --type bar --csv-file data.csv --x-field name --y-field value -o out.png
+
+  # CSV via stdin (auto-detected)
+  cat data.csv | node chart.mjs --type line --x-field date --y-field price -o out.png
 `);
   process.exit(0);
 }
@@ -144,12 +163,15 @@ function parseArgs(args) {
     });
   }
 
+  // parseCsv is defined at module level (below parseArgs)
+
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     const next = args[i + 1];
     
     switch (arg) {
       case '--help': case '-h': showHelp(); break;
+      case '--version': case '-v': console.log('chart.mjs v2.2.0'); process.exit(0); break;
       case '--type': opts.type = next; i++; break;
       case '--data': opts.data = parseDataArg(next); i++; break;
       case '--spec': opts.specFile = next; i++; break;
@@ -210,6 +232,27 @@ function parseArgs(args) {
       case '--sort': opts.sort = next; i++; break;  // Sort bars: asc, desc, none (default: none)
       case '--bar-labels': opts.barLabels = true; break;  // Show value on every bar
       case '--gradient': opts.gradient = true; break;  // Gradient fill for area charts (top-to-bottom fade)
+      case '--y-scale': opts.yScale = next; i++; break;  // Y axis scale: linear (default), log, sqrt, symlog
+      case '--y2-field': opts.y2Field = next; i++; break;  // Second Y axis field (dual-axis)
+      case '--y2-title': opts.y2Title = next; i++; break;  // Second Y axis title
+      case '--y2-color': opts.y2Color = next; i++; break;  // Second Y axis line color
+      case '--y2-type': opts.y2Type = next; i++; break;  // Second Y axis chart type: line, bar, area (default: line)
+      case '--transparent': opts.transparent = true; break;  // Transparent background
+      case '--bg-color': opts.bgColor = next; i++; break;  // Custom background color
+      case '--csv': opts.data = parseCsv(next); i++; break;  // Inline CSV string
+      case '--csv-file': opts.data = parseCsv(readFileSync(next, 'utf8')); i++; break;  // CSV file path
+      case '--zero-baseline': case '--zero': opts.zeroBaseline = true; break;  // Force Y axis to start at 0
+      case '--conditional-color': {
+        // Format: "threshold,belowColor,aboveColor" or "threshold" (uses red/green defaults)
+        const ccParts = next.split(',');
+        opts.conditionalColor = {
+          threshold: parseFloat(ccParts[0]),
+          below: ccParts[1] || '#e63946',
+          above: ccParts[2] || '#2a9d8f'
+        };
+        i++;
+        break;
+      }
       case '-o': opts.output = next; i++; break;  // Shorthand for --output
     }
   }
@@ -250,6 +293,54 @@ function parseArgs(args) {
 }
 
 // Read from stdin if no data provided
+// Parse CSV string into array of objects (auto-detect numeric fields)
+// RFC 4180-compliant CSV parser — handles quoted fields with commas, newlines, escaped quotes
+function parseCsvLine(line) {
+  const fields = [];
+  let i = 0, field = '', inQuotes = false;
+  while (i < line.length) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"' && line[i + 1] === '"') { field += '"'; i += 2; }
+      else if (ch === '"') { inQuotes = false; i++; }
+      else { field += ch; i++; }
+    } else {
+      if (ch === '"') { inQuotes = true; i++; }
+      else if (ch === ',') { fields.push(field); field = ''; i++; }
+      else { field += ch; i++; }
+    }
+  }
+  fields.push(field);
+  return fields;
+}
+
+function parseCsv(str) {
+  // Strip UTF-8 BOM (common in Excel-exported CSVs)
+  if (str.charCodeAt(0) === 0xFEFF) str = str.slice(1);
+  // Handle TSV auto-detection: if first line has tabs but no commas, treat as TSV
+  const firstLine = str.trim().split('\n')[0];
+  const sep = (firstLine.includes('\t') && !firstLine.includes(',')) ? '\t' : null;
+
+  const lines = str.trim().split('\n').map(l => l.trim()).filter(Boolean);
+  if (lines.length < 2) return [];
+
+  const parseRow = sep
+    ? (line) => line.split(sep).map(v => v.trim().replace(/^["']|["']$/g, ''))
+    : parseCsvLine;
+
+  const headers = parseRow(lines[0]).map(h => h.trim());
+  return lines.slice(1).map(line => {
+    const vals = parseRow(line);
+    const row = {};
+    headers.forEach((h, i) => {
+      const raw = (vals[i] || '').trim();
+      const num = Number(raw);
+      row[h] = (raw !== '' && !isNaN(num)) ? num : raw;
+    });
+    return row;
+  });
+}
+
 async function readStdin() {
   return new Promise((resolve) => {
     let data = '';
@@ -287,14 +378,14 @@ function resolveYFormat(fmt) {
 function buildSpec(opts) {
   // Theme colors
   const theme = opts.dark ? {
-    bg: '#1a1a2e',
+    bg: opts.transparent ? 'transparent' : (opts.bgColor || '#1a1a2e'),
     text: '#e0e0e0',
     grid: opts.noGrid ? 'transparent' : '#333355',
     accent: opts.color || '#ff6b6b',
     positive: '#4ade80',
     negative: '#f87171',
   } : {
-    bg: '#ffffff',
+    bg: opts.transparent ? 'transparent' : (opts.bgColor || '#ffffff'),
     text: '#333333',
     grid: opts.noGrid ? 'transparent' : '#e0e0e0',
     accent: opts.color || '#e63946',
@@ -556,9 +647,14 @@ function buildSpec(opts) {
       candleSpec.title = { text: opts.title, anchor: 'start', color: theme.text };
     }
     
-    if (opts.yDomain) {
-      candleSpec.layer[0].encoding.y.scale = { domain: opts.yDomain };
-      candleSpec.layer[1].encoding.y.scale = { domain: opts.yDomain };
+    if (opts.yDomain || opts.yScale || opts.zeroBaseline) {
+      const scaleObj = {
+        ...(opts.yDomain ? { domain: opts.yDomain } : {}),
+        ...(opts.yScale ? { type: opts.yScale } : {}),
+        ...(opts.zeroBaseline ? { zero: true } : {})
+      };
+      candleSpec.layer[0].encoding.y.scale = scaleObj;
+      candleSpec.layer[1].encoding.y.scale = scaleObj;
     }
     
     return candleSpec;
@@ -803,6 +899,102 @@ function buildSpec(opts) {
     return volumeSpec;
   }
   
+  // General dual-axis chart (--y2-field)
+  if (opts.y2Field && opts.data) {
+    const y2Color = opts.y2Color || (opts.dark ? '#60a5fa' : '#2563eb');  // Blue default
+    const y2Mark = opts.y2Type || 'line';
+    
+    // Apply focusRecent
+    let chartData = opts.data;
+    if (opts.focusRecent && chartData.length > opts.focusRecent) {
+      chartData = chartData.slice(-opts.focusRecent);
+    }
+    
+    const xAxisType = opts.xType || 'ordinal';
+    const yFormat = resolveYFormat(opts.yFormat);
+    
+    const dualSpec = {
+      $schema: 'https://vega.github.io/schema/vega-lite/v5.json',
+      width: opts.width,
+      height: opts.height,
+      background: theme.bg,
+      padding: { left: 10, right: 50, top: 10, bottom: 10 },
+      data: { values: chartData },
+      layer: [
+        // Primary Y axis (left)
+        {
+          mark: { type: opts.type || 'line', ...(opts.type === 'line' || !opts.type ? { point: true, strokeWidth: 2, ...(opts.smooth ? { interpolate: 'monotone' } : {}) } : {}), color: theme.accent },
+          encoding: {
+            x: {
+              field: opts.xField,
+              type: xAxisType,
+              title: opts.xTitle || opts.xField,
+              axis: { labelAngle: opts.xLabelAngle !== undefined ? opts.xLabelAngle : -45 }
+            },
+            y: {
+              field: opts.yField,
+              type: 'quantitative',
+              axis: {
+                title: opts.yTitle || opts.yField,
+                orient: 'left',
+                gridColor: theme.grid,
+                ...(yFormat ? { format: yFormat } : {})
+              },
+              scale: {
+                ...(opts.yDomain ? { domain: opts.yDomain } : {}),
+                ...(opts.yScale ? { type: opts.yScale } : {})
+              }
+            }
+          }
+        },
+        // Secondary Y axis (right)
+        {
+          mark: { type: y2Mark, ...(y2Mark === 'line' ? { point: true, strokeWidth: 2, ...(opts.smooth ? { interpolate: 'monotone' } : {}) } : { opacity: 0.5 }), color: y2Color },
+          encoding: {
+            x: { field: opts.xField, type: xAxisType },
+            y: {
+              field: opts.y2Field,
+              type: 'quantitative',
+              axis: {
+                title: opts.y2Title || opts.y2Field,
+                orient: 'right',
+                titleColor: y2Color,
+                labelColor: y2Color,
+                gridColor: 'transparent'
+              }
+            }
+          }
+        }
+      ],
+      resolve: {
+        scale: { y: 'independent' }
+      },
+      config: {
+        font: 'Helvetica, Arial, sans-serif',
+        title: { fontSize: 16, fontWeight: 'bold', color: theme.text },
+        axis: {
+          labelFontSize: 11,
+          titleFontSize: 13,
+          labelColor: theme.text,
+          titleColor: theme.text,
+          domainColor: theme.grid
+        },
+        view: { stroke: null }
+      }
+    };
+    
+    if (opts.title) {
+      dualSpec.title = {
+        text: opts.title,
+        anchor: 'start',
+        color: theme.text,
+        ...(opts.subtitle ? { subtitle: opts.subtitle, subtitleColor: theme.grid, subtitleFontSize: 12 } : {})
+      };
+    }
+    
+    return dualSpec;
+  }
+  
   // Calculate change if requested
   let changeText = opts.annotation || null;
   if (opts.showChange && opts.data && opts.data.length >= 2) {
@@ -857,12 +1049,55 @@ function buildSpec(opts) {
     }
   };
   
-  if (opts.yDomain) {
-    mainLayer.encoding.y.scale = { domain: opts.yDomain };
+  if (opts.yDomain || opts.yScale || opts.zeroBaseline) {
+    mainLayer.encoding.y.scale = {
+      ...(opts.yDomain ? { domain: opts.yDomain } : {}),
+      ...(opts.yScale ? { type: opts.yScale } : {}),
+      ...(opts.zeroBaseline ? { zero: true } : {})
+    };
   }
   
+  // Conditional color encoding (--conditional-color "threshold,belowColor,aboveColor")
+  if (opts.conditionalColor) {
+    const cc = opts.conditionalColor;
+    if (opts.type === 'bar' || opts.type === 'area' || opts.type === 'point') {
+      // Direct color condition on marks
+      mainLayer.encoding.color = {
+        condition: {
+          test: `datum['${opts.yField}'] >= ${cc.threshold}`,
+          value: cc.above
+        },
+        value: cc.below
+      };
+      // Legend not needed for conditional coloring
+    } else {
+      // Line charts: neutral line + colored points
+      mainLayer.mark = { type: 'line', strokeWidth: 2, color: opts.dark ? '#888' : '#999', ...(opts.smooth ? { interpolate: 'monotone' } : {}) };
+      delete mainLayer.encoding.color;
+    }
+  }
+
   const layers = [mainLayer];
-  
+
+  // Conditional color: add colored points layer for line charts
+  if (opts.conditionalColor && (!opts.type || opts.type === 'line')) {
+    const cc = opts.conditionalColor;
+    layers.push({
+      mark: { type: 'point', size: 60, filled: true },
+      encoding: {
+        x: { ...mainLayer.encoding.x },
+        y: { ...mainLayer.encoding.y },
+        color: {
+          condition: {
+            test: `datum['${opts.yField}'] >= ${cc.threshold}`,
+            value: cc.above
+          },
+          value: cc.below
+        }
+      }
+    });
+  }
+
   // Add value labels on every bar (--bar-labels)
   if (opts.barLabels && opts.type === 'bar' && opts.data && opts.data.length > 0) {
     const yFormat2 = resolveYFormat(opts.yFormat);
@@ -1200,19 +1435,28 @@ async function main() {
     // Try stdin
     const stdin = await readStdin();
     if (stdin.trim()) {
-      const input = JSON.parse(stdin);
-      if (input.$schema) {
-        // Full spec via stdin
-        spec = input;
-      } else if (Array.isArray(input)) {
-        // Just data array
-        opts.data = input;
+      // Auto-detect CSV/TSV (has commas or tabs, no brackets, first line looks like headers)
+      const trimmed = stdin.trim();
+      const looksLikeCsvOrTsv = !trimmed.startsWith('[') && !trimmed.startsWith('{') && trimmed.includes('\n') &&
+        (trimmed.includes(',') || trimmed.includes('\t'));
+      if (looksLikeCsvOrTsv) {
+        opts.data = parseCsv(trimmed);
         spec = buildSpec(opts);
-      } else if (input.data) {
-        // Simplified format: {type, data, title, ...}
-        Object.assign(opts, input);
-        if (typeof opts.data === 'string') opts.data = JSON.parse(opts.data);
-        spec = buildSpec(opts);
+      } else {
+        const input = JSON.parse(stdin);
+        if (input.$schema) {
+          // Full spec via stdin
+          spec = input;
+        } else if (Array.isArray(input)) {
+          // Just data array
+          opts.data = input;
+          spec = buildSpec(opts);
+        } else if (input.data) {
+          // Simplified format: {type, data, title, ...}
+          Object.assign(opts, input);
+          if (typeof opts.data === 'string') opts.data = JSON.parse(opts.data);
+          spec = buildSpec(opts);
+        }
       }
     }
   }

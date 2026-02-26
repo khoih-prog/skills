@@ -3,11 +3,16 @@
   "slug": "chart-image",
   "displayName": "Chart Image",
   "latest": {
-    "version": "2.3.0",
-    "publishedAt": 1771401538358,
-    "commit": "https://github.com/openclaw/skills/commit/0340ee37ac7f7147eba6b68c6d43522fd10d4755"
+    "version": "2.4.0",
+    "publishedAt": 1772086683801,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.3.0",
+      "publishedAt": 1771401538358,
+      "commit": "https://github.com/openclaw/skills/commit/0340ee37ac7f7147eba6b68c6d43522fd10d4755"
+    },
     {
       "version": "2.2.0",
       "publishedAt": 1770787156134,

@@ -283,5 +283,5 @@ MIT
 ---
 
 <p align="center">
-  <sub>Built by <a href="https://clawhub.com/u/Cluka-399">@Cluka-399</a> · Published on <a href="https://clawhub.com">ClawHub</a></sub>
+  <sub>Built by <a href="https://clawhub.ai/u/Cluka-399">@Cluka-399</a> · Published on <a href="https://clawhub.ai">ClawHub</a></sub>
 </p>
