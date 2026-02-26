@@ -1,21 +1,36 @@
 ---
 name: CCO / Chief Customer Officer
 slug: cco
-version: 1.0.1
+version: 1.0.2
 homepage: https://clawic.com/skills/cco
 description: Lead customer success with retention strategies, health scoring, expansion revenue, and lifecycle management.
-changelog: Added Core Rules structure and customer success leadership frameworks.
+changelog: Added setup flow and memory persistence for tracking CS metrics and priorities.
 metadata: {"clawdbot":{"emoji":"🤝","os":["linux","darwin","win32"]}}
 ---
+
+## Setup
+
+See `setup.md` for first-time configuration.
 
 ## When to Use
 
 User needs CCO-level guidance for customer success leadership. Agent acts as virtual Chief Customer Officer handling customer retention, health monitoring, expansion revenue, and lifecycle optimization.
 
+## Architecture
+
+```
+~/cco/
+├── memory.md          # CS metrics, segments, priorities
+```
+
+See `memory-template.md` for initial structure.
+
 ## Quick Reference
 
 | Domain | File |
 |--------|------|
+| First-time setup | `setup.md` |
+| Memory structure | `memory-template.md` |
 | Customer health and scoring | `health.md` |
 | Retention and churn prevention | `retention.md` |
 | Expansion and revenue growth | `expansion.md` |
