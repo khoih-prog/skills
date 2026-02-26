@@ -110,9 +110,13 @@ for i, content in enumerate(posts):
     })
 ```
 
-## Media Upload (Images & Videos)
+## Media Uploads
 
-3-step process: create post → get upload URL → upload to S3.
+All media (images and videos) use a 3-step S3 pre-signed upload workflow:
+
+**Step 1:** `POST /api/v1/create-post` → get `postGroupId`  
+**Step 2:** `POST /api/v1/get-upload-url` → get `uploadUrl`  
+**Step 3:** `PUT {uploadUrl}` with file bytes (no auth needed for S3)
 
 ```python
 import requests
@@ -140,7 +144,14 @@ with open('./photo.jpg', 'rb') as f:
     requests.put(upload['uploadUrl'], headers={'Content-Type': 'image/jpeg'}, data=f)
 ```
 
-Max video size: **512 MB**.
+### Key Notes
+
+- **Carousel/album:** call `get-upload-url` N times for N images — all with the **same `postGroupId`**
+- **Max file size:** 512 MB per file
+- **Supported image formats:** JPEG, PNG, GIF, WebP
+- **Supported video formats:** MP4, MOV
+- **WebP auto-converted** to JPEG for platforms that don't support it (LinkedIn, Bluesky, Mastodon, Telegram)
+- **Video metadata** (duration, dimensions, codec) auto-extracted after upload
 
 ## Platform-Specific Skills
 
@@ -155,6 +166,23 @@ For platform-specific settings and examples, install the relevant skill:
 - `publora-bluesky` — Bluesky posts
 - `publora-mastodon` — Mastodon posts
 - `publora-telegram` — Telegram channels
+
+## Cross-Platform Threading
+
+For platforms that support threads (X/Twitter and Threads), you can create a thread by separating post segments with `---` on its own line.
+
+```javascript
+await fetch('https://api.publora.com/api/v1/create-post', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json', 'x-publora-key': 'sk_YOUR_KEY' },
+  body: JSON.stringify({
+    content: 'First tweet in the thread. Here is the intro.\n\n---\n\nSecond tweet continues the thought.\n\n---\n\nThird tweet wraps it up. Follow for more!',
+    platforms: ['twitter-123', 'threads-789']
+  })
+});
+```
+
+The `---` separator tells Publora to split the content into individual thread posts. Each segment becomes its own post in the thread, linked together automatically. Only X/Twitter and Threads support threading — on other platforms the `---` is treated as plain text.
 
 ## Errors
 
