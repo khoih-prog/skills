@@ -550,16 +550,6 @@ MCP tool errors return plain text messages instead of JSON (e.g. `"Invalid input
 
 ## Auth Responses
 
-### `POST /v1/auth/register`
-
-```json
-{
-  "api_key": "pv_live_abc123...",
-  "key_prefix": "pv_live_abc12345",
-  "tier": "api"
-}
-```
-
 ### `GET /v1/auth/me`
 
 ```json

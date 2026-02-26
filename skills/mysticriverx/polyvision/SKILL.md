@@ -49,29 +49,19 @@ Add to your MCP client configuration (e.g. `claude_desktop_config.json`, Cursor,
 
 ## Setup: Get an API Key
 
-Register for a free API key (no daily limits):
+Get a free API key (no daily limits) from the Telegram bot:
 
-```bash
-curl -X POST https://api.polyvisionx.com/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email": "you@example.com", "name": "My App"}'
-```
+1. Open the [PolyVision bot](https://t.me/PolyVisionBot) on Telegram
+2. Run `/apikey` to generate your key
+3. Copy the `pv_live_...` key (shown only once, store it securely)
 
-Response:
-
-```json
-{
-  "api_key": "pv_live_abc123...",
-  "key_prefix": "pv_live_abc12345",
-  "tier": "api"
-}
-```
-
-Store the key — it is shown only once and cannot be retrieved later. Set it as an environment variable:
+Set it as an environment variable:
 
 ```bash
 export POLYVISION_API_KEY="pv_live_abc123..."
 ```
+
+Full API docs: https://polyvisionx.com/docs
 
 ## MCP Tools Reference
 
@@ -224,7 +214,6 @@ Interactive docs and the OpenAPI spec are available at:
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `POST /v1/auth/register` | POST | Register and get an API key (no auth required) |
 | `GET /v1/auth/me` | GET | Get current user info and usage stats |
 | `GET /v1/analyze/{wallet_address}?mode=quick` | GET | Full wallet analysis (includes `open_positions_detail`) |
 | `GET /v1/score/{wallet_address}` | GET | Compact copy-trading score |
@@ -282,8 +271,7 @@ curl -s https://api.polyvisionx.com/v1/discover \
 | Code | Meaning | Recovery |
 |------|---------|----------|
 | 400 | Invalid wallet address (must be 42-char hex starting with `0x`) | Fix the address format |
-| 401 | Invalid or inactive API key | Check your `POLYVISION_API_KEY` or register a new one |
-| 409 | Email already registered (registration only) | Use existing key or register with a different email |
+| 401 | Invalid or inactive API key | Get a key from the [PolyVision Telegram bot](https://t.me/PolyVisionBot) via `/apikey` |
 | 429 | Rate limited | Wait and retry — Polymarket API has upstream limits |
 | 503 | System at capacity (all analysis slots in use) | Retry in 30-60 seconds |
 | 502 | Upstream Polymarket API error | Retry — the upstream data API may be temporarily unavailable |
