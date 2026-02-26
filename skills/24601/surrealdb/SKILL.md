@@ -3,7 +3,7 @@ name: surrealdb
 description: "Expert SurrealDB 3 architect and developer skill. SurrealQL mastery, multi-model data modeling (document, graph, vector, time-series, geospatial), schema design, security, deployment, performance tuning, SDK integration (JS, Python, Go, Rust), Surrealism WASM extensions, and full ecosystem (Surrealist, Surreal-Sync, SurrealFS). Universal skill for 30+ AI agents."
 license: MIT
 metadata:
-  version: "1.0.6"
+  version: "1.1.0"
   author: "24601"
   snapshot_date: "2026-02-24"
   repository: "https://github.com/24601/surreal-skills"
@@ -23,6 +23,10 @@ requires:
       optional: false
     - name: docker
       purpose: "Containerized SurrealDB instances"
+      optional: true
+    - name: gh
+      install: "brew install gh"
+      purpose: "GitHub CLI -- used only by check_upstream.py for comparing upstream repo SHAs"
       optional: true
   env_vars:
     - name: SURREAL_ENDPOINT
@@ -47,7 +51,7 @@ requires:
       sensitive: false
 security:
   no_network: false
-  no_network_note: "Scripts connect to a user-specified SurrealDB endpoint for health checks and schema introspection. No external/third-party network calls."
+  no_network_note: "doctor.py and schema.py connect to a user-specified SurrealDB endpoint (WebSocket) for health checks and schema introspection. check_upstream.py calls GitHub API via gh CLI to compare upstream repo SHAs. No other third-party network calls."
   no_credentials: false
   no_credentials_note: "Scripts accept SURREAL_USER/SURREAL_PASS for DB authentication. No credentials are stored in the skill itself."
   no_env_write: true
@@ -264,6 +268,9 @@ Introspection uses `INFO FOR DB`, `INFO FOR TABLE`, and `INFO FOR NS` to reconst
 | `rules/surrealfs.md` | AI agent filesystem, file storage, metadata, retrieval patterns |
 
 ## Workflow Examples
+
+> **All workflow examples use `root/root` for local development only.**
+> For production, use `DEFINE USER` with scoped, least-privilege credentials.
 
 ### New Project Setup
 

@@ -3,11 +3,16 @@
   "slug": "surrealdb",
   "displayName": "SurrealDB 3",
   "latest": {
-    "version": "1.0.6",
-    "publishedAt": 1771969871750,
-    "commit": "https://github.com/openclaw/skills/commit/0301665956dc846803b9b9227fc610ab5161423f"
+    "version": "1.1.0",
+    "publishedAt": 1772082040233,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.6",
+      "publishedAt": 1771969871750,
+      "commit": "https://github.com/openclaw/skills/commit/0301665956dc846803b9b9227fc610ab5161423f"
+    },
     {
       "version": "1.0.3",
       "publishedAt": 1771783747470,
