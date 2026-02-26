@@ -3,11 +3,16 @@
   "slug": "vincent-twitter",
   "displayName": "Vincent - Twitter",
   "latest": {
-    "version": "1.0.58",
-    "publishedAt": 1771918239274,
-    "commit": "https://github.com/openclaw/skills/commit/4b0d6fee3e2f0c907a4c16f3e810dd27ab67921b"
+    "version": "1.0.60",
+    "publishedAt": 1771981954839,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.58",
+      "publishedAt": 1771918239274,
+      "commit": "https://github.com/openclaw/skills/commit/4b0d6fee3e2f0c907a4c16f3e810dd27ab67921b"
+    },
     {
       "version": "1.0.54",
       "publishedAt": 1771729887745,
