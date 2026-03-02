@@ -1,23 +1,19 @@
 # ♾️ OpenClaw Infinite Oracle
 
+In ancient Greece, an Oracle was a revelation from the gods to mortals. Mortals could only listen in awe and execute with all their might to produce a Key Result. When an Agent is given an OKR (Oracle-Key Result), given enough time and resources, in what surprising (or terrifying) ways will it succeed (or fail)?
+
 [English](README_EN.md) | [中文](README.md)
 
-**Infinite Oracle** is a skill designed for the OpenClaw ecosystem. It’s more than just a background loop script—it’s an architectural exploration of how to make an LLM reliably, affordably, and safely pursue an endless objective.
-
-## 🌌 The Origin Story: The AI that turned the universe into greeting cards
-There’s a famous thought experiment in the AI world: If you give a super-capable AI a single objective—like "produce as many greeting cards as possible"—and leave it entirely unsupervised, it will eventually dismantle the universe to harvest the necessary resources.
-
-The `infinite-oracle` skill is our practical nod to this dark joke. We wanted to strip away constant human hand-holding, give OpenClaw an infinite state-machine engine, and see how far it can go when driven by a single, unyielding goal.
+**Infinite Oracle** is a skill designed for the OpenClaw ecosystem. It's more than just a background loop script—it's an architectural exploration of how to make an LLM reliably, affordably, and safely pursue an endless objective.
 
 ---
 
 ## 🏗️ Design Philosophy & Mechanics
-
 Leaving an LLM in an infinite loop usually results in two fatal outcomes: **Context Bloat** (crashing your API budget and making the AI forgetful) and **Getting Stuck in Dead Ends**. To solve this, we implemented several key design choices:
 
 ### 1. The Manager-Worker Decoupling
 It is a disaster to have the same AI chatting with you while it grinds away in an infinite background loop. Your casual questions will break its coding train of thought, and its massive logs will flush out your chat context.
-That’s why we use a **decoupled architecture**:
+That's why we use a **decoupled architecture**:
 
 *   **👨‍💼 The Manager (Oracle)**: This is your primary OpenClaw Agent (e.g., `main`). Equipped with the `infinite-oracle` skill, it chats with you via Lark/Feishu or your terminal. You can assign it the smartest (and priciest) model available (like Claude 3.5 Sonnet or GPT-4o) to handle complex orchestration and decisions.
 *   **🤖 The Worker (`peco_worker`)**: A separate Agent spawned by the Manager. It gets locked in an isolated background Session to grind away. To save costs, the Manager can assign it a highly cost-effective model (like Qwen or Gemini 1.5 Flash).
@@ -26,13 +22,17 @@ That’s why we use a **decoupled architecture**:
 This is perhaps the most interesting part of the design. While working, the AI inevitably hits physical barriers: it needs an SMS verification code, a bank card linkage, or a facial scan.
 In older architectures, the AI would either loop infinitely trying to bypass it or crash completely. We introduced the **[HUMAN_TASK]** mechanism:
 * When the Worker hits a hard physical wall, it logs a "Human To-Do" ticket and then *sidesteps* the issue to work on other parts of the project (no idle waiting).
+* The same HUMAN_TASK is deduplicated before writing to backlog/Feishu, so repeated blockers do not spam duplicate tickets.
+* If the same human dependency repeats twice, the Worker is forced back to PLAN for stronger divergence and non-human workaround attempts.
+* If the same human dependency repeats three times, the Worker self-pauses and asks the Manager Agent to notify the human with blocker details.
 * You (acting as a fleshy, physical API) see the ticket in a Feishu spreadsheet, grab the verification code from your phone, and type it in.
 * The Worker picks up your code on its next iteration and keeps running.
 **In a sense, this design makes you work for the AI. But it's exactly this "human-as-a-service" fallback that allows a fully autonomous loop to survive in the real world.**
 
-### 3. FSM & Active Amnesia (Preventing Context Bloat)
+### 3. FSM & Native Memory (Preventing Context Bloat)
 The background `peco_loop.py` is a ruthless supervisor. It forces the Worker to cycle through the **PECO (Plan-Execute-Check-Optimize)** steps and mandates JSON-formatted outputs.
-*The core trick*: Every few iterations (e.g., 5 rounds), `peco_loop.py` forces the Worker to write a concise "milestone summary." Then, it **wipes the last 5 rounds of chat history entirely, opens a brand new Session, and injects only the summary as the starting point.** This "active amnesia" permanently cures the token bankruptcy issue common in infinite loops.
+
+Starting from v1.0.3, we removed the custom session rotation mechanism and now rely on OpenClaw's **native memory system**. The Worker no longer needs "active amnesia"—OpenClaw automatically manages context, allowing the loop to run truly infinitely without token explosion.
 
 ### 4. Injecting Persona: The Worker is not a Parrot
 When creating the Worker, the Manager doesn't just give it a desk; it injects a hardcore set of principles (`SOUL.md`) into its system settings:
@@ -62,13 +62,38 @@ Once installed, you don't need to touch server commands. Just talk to your Manag
 > **"Oracle: The verification code for that site is 8888. Also, stop the market research immediately and run the scraper you just wrote!"**
 *(The Manager writes your command into the override file. On the next heartbeat, the Worker reads it and immediately pivots.)*
 
+### 🎯 4. Objective Tuning vs Objective Replacement (New)
+> **"Oracle: Keep current context, but tune the objective to prioritize executable scripts and validation reports."**
+*(The Manager runs the tuning flow: keep history/context, back up objective state files, append a tuning record, then continue execution.)*
+
+> **"Oracle: The current infinite objective is obsolete. Replace it completely and restart from scratch."**
+*(The Manager runs the full replacement flow: stop process, create timestamped backups, clear state/history artifacts, then restart with a brand-new objective.)*
+
 ---
 
 ## 🛠️ Dual-Track Support: Lark Bitable vs Local Files
 
 We support two modes of tracking progress:
-1.  **Local File Mode (Default)**: Logs go to `peco_loop_v3.log`, cries for help go to `human_tasks_backlog.txt`, and overrides go to `peco_override.txt`. Zero configuration needed.
-2.  **Lark (Feishu) Bitable Mode (Advanced)**: If you configure `FEISHU_APP_ID` and other env variables, the Worker streams its progress and Human Tasks directly to a Lark spreadsheet. You can just check a "Resolved" box and type a code on your phone, and the Worker automatically syncs it back. (See comments in `peco_loop.py` for setup).
+
+### Local File Mode (Default)
+Zero configuration, works out of the box. Logs go to `peco_loop_v3.log`, cries for help go to `human_tasks_backlog.txt`, and overrides go to `peco_override.txt`.
+When the loop self-pauses (for example `decision=halt`, circuit-breaker open, or repeated human blocker x3), it also writes a manager-notification fallback record to `peco_manager_notifications.log`.
+
+Objective management notes:
+- In tuning mode, changes are appended to `peco_objective_tuning.log` and existing progress/backlog history is preserved.
+- In replacement mode, the Manager executes a backup + reset + restart flow to prevent mixing old and new objectives.
+
+### Lark (Feishu) Bitable Mode (Advanced)
+If you chat with your main Agent via Lark/Feishu, the Manager will proactively help you create or find a Lark Bitable for syncing progress. The Worker streams its progress and Human Tasks directly to the spreadsheet. You can just check a "Resolved" box and type a code on your phone, and the Worker automatically syncs it back.
+
+Initialization constraints:
+- On a brand-new task or a full objective replacement, the Manager initializes a fresh empty table context and creates both the progress/log table and the human-help backlog table.
+- Each task maps to exactly one Feishu Bitable document link, and that single link must contain both the cycle-log table and the human-help table.
+- Field requirements are unified as: required `loop_status` field set + required `human_backlog` field set; `tasks` is an optional summary table (recommended).
+- Saved app credentials/integration IDs (for example app id/app secret) are preserved by default during new-task initialization, and are rotated only when the user explicitly asks for credential reset.
+- Do not split one task across two different Feishu Bitable document links (one for logs and one for human-help).
+
+**Note**: If you're using Terminal, Discord, WhatsApp, or other non-Lark channels, the system gracefully falls back to local file mode—the experience remains smooth. (See comments in `peco_loop.py` for Lark setup details.)
 
 ---
 
@@ -77,15 +102,19 @@ We support two modes of tracking progress:
 ### Prerequisites
 - A functional OpenClaw environment.
 
-### ClawHub Install (Recommended, once published)
+### ClawHub Install
 
 ```bash
 clawhub install infinite-oracle
 ```
 
 ### The "One-Shot" Prompt Install (Let your Agent do it)
-Send this to your OpenClaw Agent:
-> "Please use your bash tool to clone `git@github.com:KepanWang/openclaw-infinite-oracle.git` into `/tmp/`. Then, copy the `SKILL.md` file inside to `~/.openclaw/skills/infinite-oracle/SKILL.md`, and copy `peco_loop.py` to `~/.openclaw/peco_loop.py`, ensuring it is executable. Once done, read the SKILL.md and tell me what new powers you have acquired."
+
+Copy and send this to your OpenClaw Agent:
+
+```
+Download the repo at git@github.com:KepanWang/openclaw-infinite-oracle.git, install SKILL.md as the infinite-oracle skill, and place peco_loop.py in the working directory. After that, read the skill docs and tell me what you've learned.
+```
 
 ### Manual Install
 ```bash
