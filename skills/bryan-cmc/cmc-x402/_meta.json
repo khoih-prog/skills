@@ -1,0 +1,11 @@
+{
+  "owner": "bryan-cmc",
+  "slug": "cmc-x402",
+  "displayName": "CoinMarketCap x402 APIs",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1772469328392,
+    "commit": null
+  },
+  "history": []
+}
