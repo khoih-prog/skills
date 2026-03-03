@@ -3,29 +3,27 @@ name: openpayment
 description: Create x402 stablecoin payment links using the OpenPayment CLI.
 homepage: https://openpayment.link
 # prettier-ignore
-metadata: {"openclaw": {"emoji": "💸", "requires": {"bins": ["node"], "install": [{"id": "node", "kind": "node", "package": "openpayment", "bins": ["openpayment"], "label": "Install OpenPayment CLI (npm)"}]}}}
+metadata: {"openclaw": {"emoji": "💸", "requires": {"bins": ["node"]}, "install": [{"id": "node", "kind": "node", "package": "openpayment", "bins": ["openpayment"], "label": "Install OpenPayment CLI (npm)"}]}}
 ---
 
 # OpenPayment Skill
 
-Creates x402 stablecoin payment links via the `openpayment` CLI. All links are hosted at **https://openpayment.link/** and settle in USDC on Base.
+Creates x402 stablecoin payment links via the `openpayment` CLI.
+
+All links are hosted at [OpenPayment](https://openpayment.link) and settle in USDC on Base.
 
 Use this skill whenever a user wants to create a payment link, request a stablecoin payment, set up a crypto payment, generate a USDC payment URL, or mentions x402, OpenPayment, or wants to get paid in crypto/stablecoins on Base.
 Trigger even if the user says things like "create a payment link", "I want to accept USDC", "generate a crypto payment request", "send me money in stablecoins", or "set up a blockchain payment".
 
-## About OpenPayment Link
+## About OpenPayment
 
 OpenPayment lets merchants, creators, developers, and AI agents accept USDC payments with shareable payment links and APIs. 0% platform fees, instant settlement to recipient wallet, and no sign-up required. Powered by x402.
-
----
 
 ## Install
 
 ```bash
 npm i -g openpayment
 ```
-
----
 
 ## Core Command
 
@@ -54,8 +52,6 @@ openpayment create \
 | `--description` | Payment description (max 500 chars)  |
 | `--json`        | Output as JSON instead of plain text |
 
----
-
 ## Payment Types
 
 | Type         | When to use                                                             |
@@ -66,8 +62,6 @@ openpayment create \
 
 **Default to `SINGLE_USE`** unless the user specifies otherwise.
 
----
-
 ## Networks
 
 | Network      | Flag value     | Description           |
@@ -77,7 +71,7 @@ openpayment create \
 
 **Default to `eip155:8453` (Base Mainnet)** unless the user says "test", "testnet", or "sepolia".
 
----
+Support for other networks will be added soon.
 
 ## Currency
 
@@ -86,9 +80,7 @@ The default currency is **USDC**.
 - Base Mainnet USDC: `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`
 - Base Sepolia USDC: `0x036CbD53842c5426634e7929541eC2318f3dCF7e`
 
-Support for custom ERC-20 tokens will be added soon.
-
----
+Support for other stablecoins and custom ERC-20 tokens will be added soon.
 
 ## Example Commands
 
@@ -147,8 +139,6 @@ openpayment create \
   --json
 ```
 
----
-
 ## Output
 
 **Plain text:**
@@ -185,8 +175,6 @@ Example:
 }
 ```
 
----
-
 ## Workflow for Handling User Requests
 
 1. **Identify missing info** you need: amount (`--price`), receiver wallet address (`--payTo`). Ask if not provided.
@@ -197,12 +185,10 @@ Example:
 
 ### What to ask if info is missing
 
-- **No wallet address**: "What's recipient EVM wallet address (starting with 0x)?"
+- **No wallet address**: "What's the recipient EVM wallet address (starting with 0x)?"
 - **No amount**: "How much USDC should the payment be for?"
 - **No type specified but context suggests multi-use**: "Should this link be single-use (one payment only) or reusable?", "Should the amount be fixed or editable?"
 - **No network specified**: assume Base Mainnet; mention it in your response.
-
----
 
 ## Validation Rules (enforced by CLI before any API call)
 
@@ -212,13 +198,9 @@ Example:
 - `--network`: must be `eip155:8453` or `eip155:84532`
 - `--description`: optional string, max 500 characters
 
----
-
 ## Security Notes
 
-Never ask for or share user private keys.
-
----
+Never ask for or share user private keys and secrets.
 
 ## Learn More
 
