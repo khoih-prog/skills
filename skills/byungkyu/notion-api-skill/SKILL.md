@@ -8,6 +8,7 @@ metadata:
   version: "1.0"
   clawdbot:
     emoji: 🧠
+    homepage: "https://maton.ai"
     requires:
       env:
         - MATON_API_KEY
@@ -117,6 +118,7 @@ EOF
     "last_updated_time": "2026-01-31T20:03:32.593153Z",
     "url": "https://connect.maton.ai/?session_token=...",
     "app": "notion",
+    "method": "OAUTH2",
     "metadata": {}
   }
 }

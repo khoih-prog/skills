@@ -3,11 +3,16 @@
   "slug": "notion-api-skill",
   "displayName": "Notion",
   "latest": {
-    "version": "1.0.5",
-    "publishedAt": 1770756048369,
-    "commit": "https://github.com/openclaw/skills/commit/52bb403f27433934336eee4d3d2225c304b790ab"
+    "version": "1.0.6",
+    "publishedAt": 1772498515751,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.5",
+      "publishedAt": 1770756048369,
+      "commit": "https://github.com/openclaw/skills/commit/52bb403f27433934336eee4d3d2225c304b790ab"
+    },
     {
       "version": "1.0.3",
       "publishedAt": 1770343872891,
