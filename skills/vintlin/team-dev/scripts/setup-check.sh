@@ -1,6 +1,6 @@
 #!/bin/bash
 # setup-check.sh - First-time setup verification
-# Skill: team-dev
+# Skill: dev-team
 
 set -e
 
@@ -12,7 +12,7 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-echo "=== Team Dev Skill Setup Check ==="
+echo "=== Dev Team Skill Setup Check ==="
 echo ""
 
 ISSUES=0
@@ -41,9 +41,9 @@ else
 fi
 echo ""
 
-# Check 3: Required CLIs
-echo "Checking required CLIs..."
-for cli in gh codex claude gemini cursor; do
+# Check 3: Core CLIs
+echo "Checking core CLIs..."
+for cli in git gh python3; do
     if command -v $cli &> /dev/null; then
         echo -e "  ✓ $cli available"
     else
@@ -51,11 +51,59 @@ for cli in gh codex claude gemini cursor; do
         ISSUES=$((ISSUES + 1))
     fi
 done
+if command -v gh &> /dev/null; then
+    GH_AUTH=$(gh auth status 2>&1 || true)
+    if echo "$GH_AUTH" | grep -qi "token in default is invalid\\|not logged in\\|not logged into any github hosts"; then
+        echo -e "  ⚠ gh installed but auth invalid (run: gh auth login)"
+    else
+        echo -e "  ✓ gh auth looks OK"
+    fi
+fi
 echo ""
 
-# Check 4: Directories
+# Check 4: Optional agent CLIs
+echo "Checking optional agent CLIs (at least one recommended)..."
+AGENT_CLI_COUNT=0
+for cli in codex claude gemini cursor; do
+    if command -v $cli &> /dev/null; then
+        echo -e "  ✓ $cli available"
+        AGENT_CLI_COUNT=$((AGENT_CLI_COUNT + 1))
+    else
+        echo -e "  - $cli not found (optional)"
+    fi
+done
+if [[ $AGENT_CLI_COUNT -eq 0 ]]; then
+    echo -e "  ⚠ No agent CLI found yet (install at least one before spawning tasks)"
+fi
+if command -v cursor &> /dev/null; then
+    CURSOR_STATUS=$(cursor agent status 2>&1 || true)
+    if echo "$CURSOR_STATUS" | grep -qi "not logged in"; then
+        CURSOR_TMUX_OK=0
+        if command -v tmux &> /dev/null; then
+            PROBE_SESSION="teamdev-cursor-setup-$$"
+            PROBE_FILE="/tmp/${PROBE_SESSION}.txt"
+            tmux new-session -d -s "$PROBE_SESSION" "cursor agent status > '$PROBE_FILE' 2>&1" >/dev/null 2>&1 || true
+            sleep 2
+            if [[ -f "$PROBE_FILE" ]] && ! grep -qi "not logged in" "$PROBE_FILE"; then
+                CURSOR_TMUX_OK=1
+            fi
+            tmux kill-session -t "$PROBE_SESSION" >/dev/null 2>&1 || true
+            rm -f "$PROBE_FILE" >/dev/null 2>&1 || true
+        fi
+        if [[ "$CURSOR_TMUX_OK" -eq 1 ]]; then
+            echo -e "  ✓ cursor login OK in tmux (non-interactive shell may misreport)"
+        else
+            echo -e "  ⚠ cursor installed but not logged in (run: cursor agent login)"
+        fi
+    else
+        echo -e "  ✓ cursor login status looks OK"
+    fi
+fi
+echo ""
+
+# Check 5: Directories
 echo "Checking directories..."
-for dir in logs references; do
+for dir in logs logs/archives references; do
     if [[ -d "$SKILL_DIR/$dir" ]]; then
         echo -e "  ✓ $dir/ exists"
     else
@@ -65,13 +113,39 @@ for dir in logs references; do
 done
 echo ""
 
-# Check 5: Active tasks file
+# Check 6: Maintenance scripts
+echo "Checking maintenance scripts..."
+for script in prune-history.sh cleanup-worktrees.sh check-agents.sh; do
+    if [[ -x "$SCRIPT_DIR/$script" ]]; then
+        echo -e "  ✓ $script executable"
+    else
+        echo -e "  ⚠ $script not executable"
+    fi
+done
+echo ""
+
+# Migration: move legacy runtime files from root to assets/ (one-time)
+if [[ -f "$SKILL_DIR/active-tasks.json" ]] || [[ -f "$SKILL_DIR/tasks.json" ]] || [[ -f "$SKILL_DIR/notifications.json" ]] || [[ -d "$SKILL_DIR/logs" ]]; then
+    echo "Migrating legacy runtime files to assets/..."
+    mkdir -p "$SKILL_DIR/assets"
+    [[ -f "$SKILL_DIR/active-tasks.json" ]] && [[ ! -f "$SKILL_DIR/assets/active-tasks.json" ]] && mv "$SKILL_DIR/active-tasks.json" "$SKILL_DIR/assets/" && echo "  ✓ active-tasks.json"
+    [[ -f "$SKILL_DIR/tasks.json" ]] && [[ ! -f "$SKILL_DIR/assets/tasks.json" ]] && mv "$SKILL_DIR/tasks.json" "$SKILL_DIR/assets/" && echo "  ✓ tasks.json"
+    [[ -f "$SKILL_DIR/notifications.json" ]] && [[ ! -f "$SKILL_DIR/assets/notifications.json" ]] && mv "$SKILL_DIR/notifications.json" "$SKILL_DIR/assets/" && echo "  ✓ notifications.json"
+    if [[ -d "$SKILL_DIR/logs" ]] && [[ ! -d "$SKILL_DIR/assets/logs" ]]; then
+        mv "$SKILL_DIR/logs" "$SKILL_DIR/assets/"
+        echo "  ✓ logs/"
+    fi
+    echo ""
+fi
+
+# Check 7: Active tasks file
 echo "Checking task registry..."
-if [[ -f "$SKILL_DIR/active-tasks.json" ]]; then
+if [[ -f "$SKILL_DIR/assets/active-tasks.json" ]]; then
     echo -e "  ✓ active-tasks.json exists"
 else
     echo -e "  ⚠ active-tasks.json not found, will be created on first use"
-    echo '{}' > "$SKILL_DIR/active-tasks.json"
+    mkdir -p "$SKILL_DIR/assets"
+    echo '{}' > "$SKILL_DIR/assets/active-tasks.json"
 fi
 echo ""
 
