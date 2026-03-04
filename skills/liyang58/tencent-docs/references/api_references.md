@@ -84,13 +84,15 @@
 ```json
 {
   "title": "项目需求文档",
-  "markdown": "# 项目需求\n\n## 项目背景\n\n本项目旨在开发一套智能文档管理系统...\n\n## 功能需求\n\n- 文档创建功能\n- 文档编辑功能\n- 协作功能\n\n## 技术架构\n\n| 组件 | 技术选型 |\n|------|----------|\n| 前端 | React |\n| 后端 | Go |\n| 数据库 | MySQL |"
+  "markdown": "# 项目需求\n\n## 项目背景\n\n本项目旨在开发一套智能文档管理系统...\n\n## 功能需求\n\n- 文档创建功能\n- 文档编辑功能\n- 协作功能\n\n## 技术架构\n\n| 组件 | 技术选型 |\n|------|----------|\n| 前端 | React |\n| 后端 | Go |\n| 数据库 | MySQL |",
+  "parent_id": "folder_1234567890"
 }
 ```
 
 ### 参数说明
 - `title` (string, 必填): 文档标题
 - `markdown` (string, 必填): UTF-8 格式的 Markdown 文本
+- `parent_id` (string, 可选): 父节点ID，为空时在空间根目录创建，不为空时在指定节点下创建
 
 ### 返回值说明
 ```json
@@ -111,13 +113,15 @@
 ```json
 {
   "title": "销售数据报表",
-  "markdown": "| 日期 | 产品 | 销售额 | 销售量 |\n|------|------|--------|--------|\n| 2024-01-01 | 产品A | 10000 | 100 |\n| 2024-01-02 | 产品B | 15000 | 150 |"
+  "markdown": "| 日期 | 产品 | 销售额 | 销售量 |\n|------|------|--------|--------|\n| 2024-01-01 | 产品A | 10000 | 100 |\n| 2024-01-02 | 产品B | 15000 | 150 |",
+  "parent_id": "folder_1234567890"
 }
 ```
 
 ### 参数说明
 - `title` (string, 必填): 表格标题
 - `markdown` (string, 必填): 包含表格的 Markdown 文本
+- `parent_id` (string, 可选): 父节点ID，为空时在空间根目录创建，不为空时在指定节点下创建
 
 ### 返回值说明
 ```json
@@ -150,13 +154,15 @@ PPT 必须遵循严格的层级结构：
 ```json
 {
   "title": "项目汇报",
-  "markdown": "# 项目汇报\n\n## 项目背景\n\n### 项目概述\n\n- 项目目标\n    - 本项目旨在开发一套智能文档管理系统，提升团队协作效率\n- 项目范围\n    - 系统将涵盖文档创建、编辑、协作等功能\n\n### 市场分析\n\n- 市场需求\n    - 当前市场对智能文档管理系统的需求日益增长\n- 竞争分析\n    - 现有竞品在功能完整性方面存在不足"
+  "markdown": "# 项目汇报\n\n## 项目背景\n\n### 项目概述\n\n- 项目目标\n    - 本项目旨在开发一套智能文档管理系统，提升团队协作效率\n- 项目范围\n    - 系统将涵盖文档创建、编辑、协作等功能\n\n### 市场分析\n\n- 市场需求\n    - 当前市场对智能文档管理系统的需求日益增长\n- 竞争分析\n    - 现有竞品在功能完整性方面存在不足",
+  "parent_id": "folder_1234567890"
 }
 ```
 
 ### 参数说明
 - `title` (string, 必填): 幻灯片标题
 - `markdown` (string, 必填): 遵循幻灯片层级结构的 Markdown 文本
+- `parent_id` (string, 可选): 父节点ID，为空时在空间根目录创建，不为空时在指定节点下创建
 
 ### 返回值说明
 ```json
@@ -177,13 +183,15 @@ PPT 必须遵循严格的层级结构：
 ```json
 {
   "title": "产品功能规划",
-  "markdown": "# 产品功能规划\n\n## 核心功能\n\n- 文档管理\n    - 创建文档\n    - 编辑文档\n    - 版本控制\n\n## 协作功能\n\n- 实时协作\n- 评论系统\n- 权限管理"
+  "markdown": "# 产品功能规划\n\n## 核心功能\n\n- 文档管理\n    - 创建文档\n    - 编辑文档\n    - 版本控制\n\n## 协作功能\n\n- 实时协作\n- 评论系统\n- 权限管理",
+  "parent_id": "folder_1234567890"
 }
 ```
 
 ### 参数说明
 - `title` (string, 必填): 思维导图标题
 - `markdown` (string, 必填): 层次化的 Markdown 文本
+- `parent_id` (string, 可选): 父节点ID，为空时在空间根目录创建，不为空时在指定节点下创建
 
 ### 返回值说明
 ```json
@@ -204,13 +212,15 @@ PPT 必须遵循严格的层级结构：
 ```json
 {
   "title": "用户登录流程",
-  "mermaid": "graph TD\n    A[User Access] --> B{Logged in?}\n    B -->|Yes| C[Go to Home]\n    B -->|No| D[Go to Login Page]\n    D --> E[Enter Username and Password]\n    E --> F{Auth Success?}\n    F -->|Yes| C\n    F -->|No| G[Show Error Message]\n    G --> E"
+  "mermaid": "graph TD\n    A[User Access] --> B{Logged in?}\n    B -->|Yes| C[Go to Home]\n    B -->|No| D[Go to Login Page]\n    D --> E[Enter Username and Password]\n    E --> F{Auth Success?}\n    F -->|Yes| C\n    F -->|No| G[Show Error Message]\n    G --> E",
+  "parent_id": "folder_1234567890"
 }
 ```
 
 ### 参数说明
 - `title` (string, 必填): 流程图标题
 - `mermaid` (string, 必填): 不包含中文的 Mermaid 语法文本
+- `parent_id` (string, 可选): 父节点ID，为空时在空间根目录创建，不为空时在指定节点下创建
 
 ### 返回值说明
 ```json
@@ -231,13 +241,15 @@ PPT 必须遵循严格的层级结构：
 ```json
 {
   "title": "技术文档",
-  "markdown": "# 技术文档\n\n## 系统架构\n\n本文档描述系统的技术架构设计...\n\n## 数据库设计\n\n| 表名 | 说明 |\n|------|------|\n| users | 用户表 |\n| documents | 文档表 |"
+  "markdown": "# 技术文档\n\n## 系统架构\n\n本文档描述系统的技术架构设计...\n\n## 数据库设计\n\n| 表名 | 说明 |\n|------|------|\n| users | 用户表 |\n| documents | 文档表 |",
+  "parent_id": "folder_1234567890"
 }
 ```
 
 ### 参数说明
 - `title` (string, 必填): Word 文档标题
 - `markdown` (string, 必填): UTF-8 格式的 Markdown 文本
+- `parent_id` (string, 可选): 父节点ID，为空时在空间根目录创建，不为空时在指定节点下创建
 
 ### 返回值说明
 ```json
@@ -328,10 +340,35 @@ PPT 必须遵循严格的层级结构：
 }
 ```
 
-## 9. search_space_file
+## 9. delete_space_node
 
 ### 功能说明
-在空间内搜索文档。
+删除空间中的指定节点。仅删除当前节点时，子节点自动挂载到上级节点；使用 `all` 模式时递归删除所有子节点（谨慎使用）。
+
+### 调用示例
+```json
+{
+  "node_id": "doc_1234567890",
+  "remove_type": "current"
+}
+```
+
+### 参数说明
+- `node_id` (string, 必填): 要删除的节点ID
+- `remove_type` (string, 可选): 删除类型，枚举值：`current`（默认，仅删除当前节点，子节点挂载到上级）、`all`（删除当前节点及所有子节点，⚠️ 谨慎使用）
+
+### 返回值说明
+```json
+{
+  "error": "",
+  "trace_id": "trace_1234567890"
+}
+```
+
+## 10. search_space_file
+
+### 功能说明
+在空间内搜索文档。注意：仅能搜索到文档类节点（word、excel、slide 等），无法搜索到文件夹节点；如需查找文件夹，请使用 `query_space_node` 遍历节点树。
 
 ### 调用示例
 ```json
@@ -368,7 +405,7 @@ PPT 必须遵循严格的层级结构：
 }
 ```
 
-## 10. get_content
+## 11. get_content
 
 ### 功能说明
 获取文档完整内容。
@@ -392,7 +429,7 @@ PPT 必须遵循严格的层级结构：
 }
 ```
 
-## 11. batch_update_sheet_range
+## 12. batch_update_sheet_range
 
 ### 功能说明
 批量更新表格单元格内容。数据将从表格末尾开始追加新行，不会覆盖已有内容。
@@ -424,7 +461,7 @@ PPT 必须遵循严格的层级结构：
 }
 ```
 
-## 12. create_smartcanvas_element
+## 13. create_smartcanvas_element
 
 ### 功能说明
 在已有智能文档中追加内容。
