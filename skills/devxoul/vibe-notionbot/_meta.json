@@ -3,11 +3,16 @@
   "slug": "vibe-notionbot",
   "displayName": "Vibe Notionbot",
   "latest": {
-    "version": "0.8.0",
-    "publishedAt": 1772339963399,
-    "commit": "https://github.com/openclaw/skills/commit/fd8ef8ab2b7623939dd3d3081383264589230104"
+    "version": "0.8.1",
+    "publishedAt": 1772545156411,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.8.0",
+      "publishedAt": 1772339963399,
+      "commit": "https://github.com/openclaw/skills/commit/fd8ef8ab2b7623939dd3d3081383264589230104"
+    },
     {
       "version": "0.6.0",
       "publishedAt": 1771863731857,
