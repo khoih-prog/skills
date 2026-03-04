@@ -1,0 +1,11 @@
+{
+  "owner": "drpeterkalmar",
+  "slug": "garmin-connect-pro",
+  "displayName": "Garmin Connect Pro",
+  "latest": {
+    "version": "1.3.0",
+    "publishedAt": 1772573361103,
+    "commit": null
+  },
+  "history": []
+}
