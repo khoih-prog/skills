@@ -1,6 +1,6 @@
 # Torch SDK — Design Document
 
-> TypeScript SDK for the Torch Market protocol on Solana. Version 3.7.23.
+> TypeScript SDK for the Torch Market protocol on Solana. Version 3.7.30.
 
 ## Overview
 
@@ -34,7 +34,8 @@ The SDK is designed for AI agent integration. The core safety primitive is the *
 │  getAllLoanPositions()   │  │  buildRepayTransaction()   │
 │  getVault()              │  │  buildLiquidateTransaction │
 │  getVaultForWallet()     │  │  buildClaimProtocolRewardsTx│
-│  getVaultWalletLink()    │  │  buildHarvestFeesTx()      │
+│  getVaultWalletLink()    │  │  buildReclaimFailedTokenTx()│
+│                          │  │  buildHarvestFeesTx()      │
 │                          │  │  buildSwapFeesToSolTx()    │
 │                          │  │  buildCreateVaultTx()      │
 │                          │  │  buildDepositVaultTx()     │
@@ -75,7 +76,7 @@ src/
 ├── said.ts             SAID Protocol integration (verify, confirm)
 ├── gateway.ts          Irys metadata fetch with fallback
 ├── ephemeral.ts        Ephemeral agent (disposable wallet helper)
-└── torch_market.json   Anchor IDL (v3.7.8, 27 instructions)
+└── torch_market.json   Anchor IDL (v3.7.10, 27 instructions)
 ```
 
 ### Dependency Graph
@@ -228,7 +229,7 @@ CREATE → BONDING → COMPLETE → MIGRATE → DEX TRADING
 - `buildBuyTransaction` — buy tokens on the bonding curve
 - `buildSellTransaction` — sell tokens back to the curve
 - `getBuyQuote` / `getSellQuote` — simulate trades
-- Fee split: 1% protocol fee (90% treasury / 10% dev), remainder to curve+treasury (20%→5% flat dynamic rate). Creator receives 0.2%→1% carved from treasury rate.
+- Fee split: 1% protocol fee (90% treasury / 10% dev), remainder to curve+treasury (20%→5% flat dynamic rate). Creator tokens: creator receives 0.2%→1% carved from treasury rate. Community tokens (default): 0% to creator.
 
 ### Migration (V26 — Permissionless)
 
@@ -244,7 +245,11 @@ CREATE → BONDING → COMPLETE → MIGRATE → DEX TRADING
 ### Treasury Cranks (Permissionless)
 
 - `buildHarvestFeesTransaction` — harvest accumulated Token-2022 transfer fees from token accounts into the treasury. Auto-discovers source accounts with withheld fees via `getTokenLargestAccounts` + `unpackAccount` + `getTransferFeeAmount`. Falls back gracefully if RPC doesn't support discovery. Optional `sources` param for explicit accounts.
-- `buildSwapFeesToSolTransaction` — swap harvested transfer fee tokens to SOL via Raydium CPMM. Bundles `create_idempotent(treasury_wsol)` + `harvest_fees` + `swap_fees_to_sol` in one atomic transaction. SOL proceeds split 85% treasury / 15% creator. Set `harvest=false` to skip harvest if already done separately.
+- `buildSwapFeesToSolTransaction` — swap harvested transfer fee tokens to SOL via Raydium CPMM. Bundles `create_idempotent(treasury_wsol)` + `harvest_fees` + `swap_fees_to_sol` in one atomic transaction. Creator tokens: SOL proceeds split 85% treasury / 15% creator. Community tokens (default): 100% to treasury. Set `harvest=false` to skip harvest if already done separately.
+
+### Reclaim (Permissionless)
+
+- `buildReclaimFailedTokenTransaction` — reclaim failed tokens inactive for 7+ days that haven't completed bonding. SOL from bonding curve and token treasury goes to protocol treasury. Anyone can trigger.
 
 ### Community Features
 
@@ -263,7 +268,7 @@ The SDK includes a local quote engine that mirrors the on-chain math exactly:
 ```
 1. Protocol fee: 1% of input SOL (90% treasury / 10% dev wallet)
 2. Dynamic treasury split: 20%→5% flat across all tiers (decays as bonding progresses)
-3. Creator share: 0.2%→1% carved from treasury split (grows linearly with reserves)
+3. Creator share: 0.2%→1% carved from treasury split (creator tokens only; community tokens = 0%)
 4. Remaining SOL → constant product formula → tokens out
 5. Token split: 90% to buyer, 10% to community treasury
 ```
@@ -431,3 +436,5 @@ Expected result: **29 passed, 0 failed** (mainnet fork). Tiers test covers harve
 | 3.7.22 | **V33 Buyback Removed, Lending Extended.** Removed `buildAutoBuybackTransaction` and `AutoBuybackParams`. `execute_auto_buyback` instruction removed from on-chain program (27 instructions). Lending utilization cap 50%→70%. Treasury simplified to: fee harvest → sell → SOL → lending yield + epoch rewards. IDL updated to v3.7.7. |
 | 3.7.23 | **V34 Creator Revenue.** Three creator income streams: (1) bonding SOL share 0.2%→1% carved from treasury rate, growing linearly with reserves; (2) post-migration fee split 85% treasury / 15% creator on `swap_fees_to_sol`; (3) star payout ~40 SOL at 2,000 stars. `creator` account added to `buy` and `swap_fees_to_sol` instructions, validated against `bonding_curve.creator`. `calculateTokensOut` returns `solToCreator` and `creatorRateBps`. Star cost 0.05→0.02 SOL. Transfer fee 3→4 bps (0.04%). Protocol fee split 75/25→90/10 (treasury/dev). Volume eligibility 10→2 SOL. 43 Kani proofs (4 new: creator share bounds, conservation, fee split). IDL updated to v3.7.8. |
 | 3.7.25 | **V34 Optional Account on Sell.** no functional changes |
+| 3.7.29 | **V3.7.9 Reclaim Failed Tokens + Per-User Borrow Cap.** New `buildReclaimFailedTokenTransaction` — permissionless reclaim of failed tokens inactive 7+ days, SOL from bonding curve + treasury goes to protocol treasury. New `ReclaimParams` type. `getTokenStatus` returns `'reclaimed'` status (previously filtered out). New `last_activity_at` field on `TokenSummary`. On-chain per-user borrow cap: max borrow = 3x collateral share of supply. New error `UserBorrowCapExceeded`. `getLendingInfo` exposes `utilization_cap_bps` and `borrow_share_multiplier`. Bundled lib `LENDING_UTILIZATION_CAP_BPS` synced to 7000 (70%, V33). IDL updated to v3.7.9. |
+| 3.7.30 | **V35 Community Token Option.** New `community_token?: boolean` parameter on `buildCreateTokenTransaction` (default `true`). Community tokens route 0% to creator — all bonding SOL share and `swap_fees_to_sol` proceeds go entirely to treasury. Creator tokens (opt-in `community_token: false`) retain V34 behavior. On-chain uses sentinel value (`u64::MAX`) in deprecated `Treasury.total_bought_back` — no struct layout changes. No new SDK types or functions. IDL updated to v3.7.10. 48 Kani proofs (2 new for community token paths). |

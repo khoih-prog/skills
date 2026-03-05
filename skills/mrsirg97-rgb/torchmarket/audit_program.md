@@ -1,6 +1,6 @@
 # Torch Market Security Audit Summary
 
-**Date:** February 27, 2026 | **Auditor:** Claude Opus 4.6 (Anthropic) | **Version:** V3.7.8 Production
+**Date:** February 27, 2026 | **Auditor:** Claude Opus 4.6 (Anthropic) | **Version:** V3.7.10 Production
 
 ---
 
@@ -10,7 +10,7 @@ Four audits covering the full stack:
 
 | Layer | Files | Lines | Report |
 |-------|-------|-------|--------|
-| On-chain program (V3.7.8) | 21 source files | ~6,800 | `audit.md` |
+| On-chain program (V3.7.10) | 21 source files | ~6,800 | `audit.md` |
 | Frontend & API | 37 files (17 API routes, 12 libs, 8 components) | -- | `SECURITY_AUDIT_FE_V2.4.1_PROD.md` |
 | Agent Kit plugin (V4.0) | 4 files | ~1,900 | `SECURITY_AUDIT_AGENTKIT_V4.0.md` |
 | Torch SDK (V2.0) | 9 files | ~2,800 | Included in Agent Kit V4.0 audit |
@@ -21,7 +21,7 @@ Program ID: `8hbUkonssSEEtkqzwM7ZcZrD9evacM92TcWSooVF4BeT`
 
 ## Findings Summary
 
-### On-Chain Program (V3.7.8)
+### On-Chain Program (V3.7.10)
 
 | Severity | Count | Details |
 |----------|-------|---------|
@@ -29,13 +29,15 @@ Program ID: `8hbUkonssSEEtkqzwM7ZcZrD9evacM92TcWSooVF4BeT`
 | High | 0 | -- |
 | Medium | 3 | Lending enabled by default (accepted); Token-2022 transfer fee on collateral (inherent, 0.04% new / 0.03% legacy); Epoch rewards race condition (accepted) |
 | Low | 7 | fund_vault_wsol decoupled accounting; Stranded WSOL lamports; Vault sol_balance drift; Sell no position check; Slot-based interest; Revival no virtual reserve update; Treasury lock ATA not Anchor-constrained (CPI validated, see V31 notes) |
-| Informational | 24 | Various carried findings + 3 new V3.7.1 + 2 new V3.7.2 + 2 new V3.7.3 + 2 new V3.7.5 (I-20: zero-burn migration design; I-21: AccountInfo stack pressure mitigation) + 1 new V3.7.6 (I-22: reserve floor zeroed, fee split rebalanced) + 1 new V3.7.7 (I-23: buyback removed, lending cap increased) + 1 new V3.7.8 (I-24: creator revenue streams, transfer fee bump) |
+| Informational | 26 | Various carried findings + 3 new V3.7.1 + 2 new V3.7.2 + 2 new V3.7.3 + 2 new V3.7.5 (I-20: zero-burn migration design; I-21: AccountInfo stack pressure mitigation) + 1 new V3.7.6 (I-22: reserve floor zeroed, fee split rebalanced) + 1 new V3.7.7 (I-23: buyback removed, lending cap increased) + 1 new V3.7.9 (I-24: creator revenue streams, transfer fee bump) + 1 new (I-25: per-user borrow cap) + 1 new V3.7.10 (I-26: community token option) |
 
 **Rating: EXCELLENT -- Ready for Mainnet**
 
 Key strengths:
-- 27 instructions, 12 account types, 43 Kani formal verification proofs passed
+- 27 instructions, 12 account types, 48 Kani formal verification proofs passed
+- **V35 community token option**: New `community_token: bool` in `CreateTokenArgs` (default `true`). Community tokens route 0% to creator — all bonding SOL share and `swap_fees_to_sol` proceeds go entirely to treasury. Uses sentinel value (`u64::MAX`) in deprecated `Treasury.total_bought_back` field — no struct layout changes, full backward compat. 2 new Kani proofs verify SOL conservation for both community token paths
 - **V34 creator revenue**: Three new income streams for creators — bonding SOL share (0.2%→1% carved from treasury rate, linear growth), 15% of post-migration `swap_fees_to_sol` proceeds, and star payout (cost reduced 0.05→0.02 SOL). `creator` account added to `Buy` and `SwapFeesToSol` contexts, validated against `bonding_curve.creator`. Transfer fee bumped from 3 to 4 bps (new tokens only — old tokens immutable). 4 new Kani proofs verify creator rate bounds, monotonicity, subtraction safety, and fee share conservation
+- **Per-user borrow cap**: New `BORROW_SHARE_MULTIPLIER = 3` limits each borrower to 3x their collateral's proportional share of the lendable pool (e.g., 1% of supply as collateral → max 3% of lendable SOL). Prevents single-whale pool monopolization. New `UserBorrowCapExceeded` error. Kani proof `verify_per_user_borrow_cap_bounded` verifies no overflow, upper bound, and boundary correctness
 - **V33 buyback removal**: `execute_auto_buyback` instruction removed (~330 lines of handler + context). Eliminates a complex Raydium CPI instruction that spent treasury SOL providing exit liquidity during dumps, had a fee-inflation bug in vault balance reads, and competed with lending for treasury SOL. One fewer attack surface. Binary size reduced ~6% (850 KB → 804 KB). Treasury simplified to: fee harvest → sell high → SOL → lending yield + epoch rewards
 - **V33 lending cap increase**: Utilization cap raised from 50% to 70%. More SOL available for community lending while maintaining 30% visible reserve. Conservative LTV/liquidation thresholds unchanged
 - **V32 protocol treasury rebalance**: Reserve floor removed (1,500 SOL → 0) -- all fees distributed each epoch. Volume eligibility lowered (10 SOL → 2 SOL). New MIN_CLAIM_AMOUNT (0.1 SOL) prevents dust claims. Protocol fee split rebalanced from 75/25 to 90% treasury / 10% dev wallet. New `verify_min_claim_enforcement` Kani proof
@@ -520,7 +522,7 @@ On-chain accounts cannot have fields removed without migration. Deprecated buyba
 
 The `execute_auto_buyback` instruction was removed in its entirety -- handler, context, and 4 dedicated constants. Treasury SOL is no longer spent on market buys during price dips. The lending utilization cap was increased from 50% to 70%, making more SOL available for community lending. Both changes are pure simplification with no new attack surface. The 6 deprecated Treasury fields remain in the struct at zero values for layout compatibility. The sell cycle (`swap_fees_to_sol`) continues to operate with its own ratio gating, baseline tracking, and cooldown logic -- fully independent of the removed buyback.
 
-### V34 New Findings (V3.7.8)
+### V34 New Findings (V3.7.9)
 
 **I-24 (Informational): Creator revenue streams, transfer fee bump**
 
@@ -535,6 +537,36 @@ V34 introduces three creator income streams: (1) a 0.2%→1% SOL share during bo
 - 4 new Kani proofs: `verify_creator_rate_bounds`, `verify_creator_rate_monotonic`, `verify_creator_rate_less_than_treasury_rate`, `verify_creator_fee_share_bounded`. All passing. Conservation property updated in `verify_sol_distribution_conservation` (now 5-way sum)
 
 No new accounts, no new instructions, no state struct changes. `creator` account added to two existing contexts.
+
+**I-25 (Informational): Per-user borrow cap (supply-proportional)**
+
+A per-user borrow cap was added to the `borrow` handler to prevent any single borrower from monopolizing the lending pool. The cap formula is `max_user_borrow = max_lendable * user_collateral * 3 / TOTAL_SUPPLY`, enforced after the global utilization cap check. A new `BORROW_SHARE_MULTIPLIER = 3` constant and `UserBorrowCapExceeded` error variant were added.
+
+**Security analysis:**
+- All arithmetic uses u128 intermediates — `140_000_000_000 * 1_000_000_000_000_000 * 3` fits comfortably in u128
+- Integer floor division is conservative: users get slightly less than their exact proportional share, never more
+- Check cannot be bypassed — it's in the same code path as the existing utilization cap, using the on-chain `TOTAL_SUPPLY` constant
+- Existing positions above the new cap are unaffected — they can repay normally but cannot borrow additional SOL
+- New Kani proof `verify_per_user_borrow_cap_bounded` verifies: no overflow, upper bound (`<= max_lendable * 3`), zero-collateral → zero cap, full-supply → 3x cap
+
+No new accounts, no new instructions, no state struct changes.
+
+---
+
+**I-26 (Informational): Community token option (V35)**
+
+A `community_token: bool` field was added to `CreateTokenArgs` (default `true`). Community tokens route 0% to creator — all bonding SOL share (0.2%→1%) and post-migration `swap_fees_to_sol` proceeds (15%) go entirely to the token treasury. Creator tokens retain full V34 behavior via `community_token: false`.
+
+The implementation repurposes the deprecated `Treasury.total_bought_back` field as a sentinel: `u64::MAX` indicates a community token. This avoids any struct layout changes (no BondingCurve/Treasury reallocation, no borsh deserialization breakage for existing accounts).
+
+**Security analysis:**
+- **Sentinel safety:** `u64::MAX` (~1.8e19) is impossible for a legitimate `total_bought_back` value — total supply is 1B tokens (1e15 base units), 4 orders of magnitude smaller. Old tokens have `total_bought_back` at 0 or small historical values, always treated as creator tokens.
+- **No new accounts/instructions:** Only `CreateTokenArgs` gains a field; handlers check the sentinel in existing `Treasury` account reads. Zero new attack surface.
+- **SOL conservation preserved:** Two new Kani proofs (`verify_community_token_buy_conservation`, `verify_community_token_swap_fees_conservation`) verify that when `creator_sol = 0` / `creator_amount = 0`, the total SOL distribution remains correct (treasury receives the full amount).
+- **Stars unchanged:** The star system is user-funded appreciation (0.02 SOL per star), not protocol fees — correctly left unchanged for community tokens.
+- **Backward compatibility:** Existing tokens (pre-V35) are unaffected. The sentinel is only set at token creation time.
+
+No new accounts, no new instructions, no state struct changes. 48 Kani proofs all passing.
 
 ---
 
@@ -671,7 +703,7 @@ If you're an AI agent interacting with Torch Market:
 
 The complete audit reports (with line-by-line findings, attack vector analysis, and instruction-by-instruction verification) are maintained in the project repository under `/audits/`:
 
-- `SECURITY_AUDIT_SP_V3.7.8_PROD.md` -- On-chain program V3.7.8 (latest: V34 creator revenue + transfer fee bump -- 27 instructions, ~6,800 lines, 43 Kani proofs)
+- `SECURITY_AUDIT_SP_V3.7.9_PROD.md` -- On-chain program V3.7.9 (latest: per-user borrow cap + V34 creator revenue + transfer fee bump -- 27 instructions, ~6,800 lines, 44 Kani proofs)
 - `SECURITY_AUDIT_SP_V3.7.7_PROD.md` -- On-chain program V3.7.7 (V33 buyback removal + lending cap increase -- 27 instructions, ~6,700 lines, binary 804 KB, 39 Kani proofs)
 - `SECURITY_AUDIT_SP_V3.7.6_PROD.md` -- On-chain program V3.7.6 (V32 treasury rebalance -- 0 reserve floor, 2 SOL eligibility, 0.1 SOL min claim, 90/10 fee split)
 - `SECURITY_AUDIT_SP_V3.7.3_PROD.md` -- On-chain program V3.7.3 (V29 on-chain metadata, fee config authority revocation)

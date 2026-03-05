@@ -9,7 +9,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.buildSwapFeesToSolTransaction = exports.buildHarvestFeesTransaction = exports.buildVaultSwapTransaction = exports.buildMigrateTransaction = exports.buildWithdrawTokensTransaction = exports.buildClaimProtocolRewardsTransaction = exports.buildLiquidateTransaction = exports.buildRepayTransaction = exports.buildBorrowTransaction = exports.buildTransferAuthorityTransaction = exports.buildUnlinkWalletTransaction = exports.buildLinkWalletTransaction = exports.buildWithdrawVaultTransaction = exports.buildDepositVaultTransaction = exports.buildCreateVaultTransaction = exports.buildStarTransaction = exports.buildCreateTokenTransaction = exports.buildSellTransaction = exports.buildDirectBuyTransaction = exports.buildBuyTransaction = void 0;
+exports.buildSwapFeesToSolTransaction = exports.buildHarvestFeesTransaction = exports.buildVaultSwapTransaction = exports.buildMigrateTransaction = exports.buildWithdrawTokensTransaction = exports.buildReclaimFailedTokenTransaction = exports.buildClaimProtocolRewardsTransaction = exports.buildLiquidateTransaction = exports.buildRepayTransaction = exports.buildBorrowTransaction = exports.buildTransferAuthorityTransaction = exports.buildUnlinkWalletTransaction = exports.buildLinkWalletTransaction = exports.buildWithdrawVaultTransaction = exports.buildDepositVaultTransaction = exports.buildCreateVaultTransaction = exports.buildStarTransaction = exports.buildCreateTokenTransaction = exports.buildSellTransaction = exports.buildDirectBuyTransaction = exports.buildBuyTransaction = void 0;
 const web3_js_1 = require("@solana/web3.js");
 const spl_token_1 = require("@solana/spl-token");
 const anchor_1 = require("@coral-xyz/anchor");
@@ -302,7 +302,7 @@ exports.buildSellTransaction = buildSellTransaction;
  * @returns Partially-signed transaction, mint PublicKey, and mint Keypair
  */
 const buildCreateTokenTransaction = async (connection, params) => {
-    const { creator: creatorStr, name, symbol, metadata_uri, sol_target = 0 } = params;
+    const { creator: creatorStr, name, symbol, metadata_uri, sol_target = 0, community_token = true } = params;
     const creator = new web3_js_1.PublicKey(creatorStr);
     if (name.length > 32)
         throw new Error('Name must be 32 characters or less');
@@ -333,7 +333,7 @@ const buildCreateTokenTransaction = async (connection, params) => {
     const provider = makeDummyProvider(connection, creator);
     const program = new anchor_1.Program(torch_market_json_1.default, provider);
     const createIx = await program.methods
-        .createToken({ name, symbol, uri: metadata_uri, solTarget: new anchor_1.BN(sol_target) })
+        .createToken({ name, symbol, uri: metadata_uri, solTarget: new anchor_1.BN(sol_target), communityToken: community_token })
         .accounts({
         creator,
         globalConfig,
@@ -892,6 +892,45 @@ const buildClaimProtocolRewardsTransaction = async (connection, params) => {
     };
 };
 exports.buildClaimProtocolRewardsTransaction = buildClaimProtocolRewardsTransaction;
+// ============================================================================
+// Reclaim Failed Token (V4)
+// ============================================================================
+/**
+ * Build an unsigned reclaim-failed-token transaction.
+ *
+ * Permissionless — anyone can reclaim a failed token that has been
+ * inactive for 7+ days and hasn't completed bonding.
+ * SOL from both bonding curve and token treasury goes to protocol treasury.
+ */
+const buildReclaimFailedTokenTransaction = async (connection, params) => {
+    const { payer: payerStr, mint: mintStr } = params;
+    const payer = new web3_js_1.PublicKey(payerStr);
+    const mint = new web3_js_1.PublicKey(mintStr);
+    const [bondingCurvePda] = (0, program_1.getBondingCurvePda)(mint);
+    const [tokenTreasuryPda] = (0, program_1.getTokenTreasuryPda)(mint);
+    const [protocolTreasuryPda] = (0, program_1.getProtocolTreasuryPda)();
+    const tx = new web3_js_1.Transaction();
+    const provider = makeDummyProvider(connection, payer);
+    const program = new anchor_1.Program(torch_market_json_1.default, provider);
+    const ix = await program.methods
+        .reclaimFailedToken()
+        .accounts({
+        payer,
+        mint,
+        bondingCurve: bondingCurvePda,
+        tokenTreasury: tokenTreasuryPda,
+        protocolTreasury: protocolTreasuryPda,
+        systemProgram: web3_js_1.SystemProgram.programId,
+    })
+        .instruction();
+    tx.add(ix);
+    await finalizeTransaction(connection, tx, payer);
+    return {
+        transaction: tx,
+        message: `Reclaim failed token ${mintStr.slice(0, 8)}...`,
+    };
+};
+exports.buildReclaimFailedTokenTransaction = buildReclaimFailedTokenTransaction;
 // ============================================================================
 // Withdraw Tokens (V18)
 // ============================================================================

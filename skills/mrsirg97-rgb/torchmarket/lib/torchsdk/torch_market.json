@@ -2,7 +2,7 @@
     "address": "8hbUkonssSEEtkqzwM7ZcZrD9evacM92TcWSooVF4BeT",
     "metadata": {
         "name": "torch_market",
-        "version": "3.7.8",
+        "version": "3.7.10",
         "spec": "0.1.0",
         "description": "torch.market"
     },
@@ -5197,71 +5197,76 @@
         },
         {
             "code": 6048,
+            "name": "UserBorrowCapExceeded",
+            "msg": "Per-user borrow cap exceeded (max 3x collateral share of supply)"
+        },
+        {
+            "code": 6049,
             "name": "BorrowTooSmall",
             "msg": "Borrow amount below minimum (0.1 SOL)"
         },
         {
-            "code": 6049,
+            "code": 6050,
             "name": "NoActiveLoan",
             "msg": "No active loan position"
         },
         {
-            "code": 6050,
+            "code": 6051,
             "name": "NotLiquidatable",
             "msg": "Position is not liquidatable (LTV below threshold)"
         },
         {
-            "code": 6051,
+            "code": 6052,
             "name": "EmptyBorrowRequest",
             "msg": "Must provide collateral or borrow amount"
         },
         {
-            "code": 6052,
+            "code": 6053,
             "name": "RepayExceedsDebt",
             "msg": "Repay amount exceeds total owed"
         },
         {
-            "code": 6053,
+            "code": 6054,
             "name": "InvalidPoolAccount",
             "msg": "Invalid Raydium pool account (wrong owner, vault, or mint)"
         },
         {
-            "code": 6054,
+            "code": 6055,
             "name": "InsufficientVaultBalance",
             "msg": "Insufficient vault balance"
         },
         {
-            "code": 6055,
+            "code": 6056,
             "name": "VaultUnauthorized",
             "msg": "Unauthorized - only vault authority can perform this action"
         },
         {
-            "code": 6056,
+            "code": 6057,
             "name": "WalletNotLinked",
             "msg": "Wallet is not linked to any vault"
         },
         {
-            "code": 6057,
+            "code": 6058,
             "name": "VaultWalletLinkMismatch",
             "msg": "Wallet link does not point to the provided vault"
         },
         {
-            "code": 6058,
+            "code": 6059,
             "name": "InvalidWsolAccount",
             "msg": "Invalid WSOL account - must be vault's WSOL ATA"
         },
         {
-            "code": 6059,
+            "code": 6060,
             "name": "InvalidBondingTarget",
             "msg": "Invalid bonding target: must be 50, 100, or 200 SOL"
         },
         {
-            "code": 6060,
+            "code": 6061,
             "name": "InvalidTokenAccount",
             "msg": "Invalid token account - must be treasury lock's Token-2022 ATA"
         },
         {
-            "code": 6061,
+            "code": 6062,
             "name": "ClaimBelowMinimum",
             "msg": "Claim amount below minimum (0.1 SOL)"
         }
@@ -5538,6 +5543,10 @@
                     {
                         "name": "sol_target",
                         "type": "u64"
+                    },
+                    {
+                        "name": "community_token",
+                        "type": "bool"
                     }
                 ]
             }

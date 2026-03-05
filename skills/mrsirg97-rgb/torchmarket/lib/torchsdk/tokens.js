@@ -50,6 +50,8 @@ const constants_1 = require("./constants");
 const gateway_1 = require("./gateway");
 const torch_market_json_1 = __importDefault(require("./torch_market.json"));
 const getTokenStatus = (bc) => {
+    if (bc.reclaimed)
+        return 'reclaimed';
     if (bc.migrated)
         return 'migrated';
     if (bc.bonding_complete)
@@ -67,8 +69,6 @@ const fetchAllRawTokens = async (connection) => {
             const decoded = coder.accounts.decode('BondingCurve', acc.account.data);
             const mintStr = decoded.mint.toString();
             if (constants_1.BLACKLISTED_MINTS.includes(mintStr))
-                continue;
-            if (decoded.reclaimed)
                 continue;
             tokens.push({
                 mint: mintStr,
@@ -102,6 +102,7 @@ const toTokenSummary = (raw) => {
         progress_percent: (0, program_1.calculateBondingProgress)(realSol),
         holders: null,
         created_at: 0,
+        last_activity_at: Number(bc.last_activity_slot.toString()),
     };
 };
 const filterAndSort = (tokens, params) => {
@@ -451,7 +452,8 @@ const INTEREST_RATE_BPS = 200; // 2% per epoch
 const MAX_LTV_BPS = 5000; // 50%
 const LIQUIDATION_THRESHOLD_BPS = 6500; // 65%
 const LIQUIDATION_BONUS_BPS = 1000; // 10%
-const LENDING_UTILIZATION_CAP_BPS = 5000; // 50%
+const LENDING_UTILIZATION_CAP_BPS = 7000; // 70% (V33)
+const BORROW_SHARE_MULTIPLIER = 3; // Per-user cap: max borrow = 3x collateral share of supply
 /**
  * Get lending info for a migrated token.
  *
@@ -510,6 +512,8 @@ const getLendingInfo = async (connection, mintStr) => {
         max_ltv_bps: MAX_LTV_BPS,
         liquidation_threshold_bps: LIQUIDATION_THRESHOLD_BPS,
         liquidation_bonus_bps: LIQUIDATION_BONUS_BPS,
+        utilization_cap_bps: LENDING_UTILIZATION_CAP_BPS,
+        borrow_share_multiplier: BORROW_SHARE_MULTIPLIER,
         total_sol_lent: totalSolLent,
         active_loans: activeLoans,
         treasury_sol_available: Math.max(0, Math.floor(treasurySol * LENDING_UTILIZATION_CAP_BPS / 10000) - (totalSolLent ?? 0)),

@@ -1,7 +1,7 @@
 {
   "name": "Torch Market",
   "description": "Torch Vault is a full-custody on-chain escrow for AI agents on Solana. The vault holds all assets -- SOL and tokens. The agent wallet is a disposable controller that signs transactions but holds nothing of value. No private key with funds required. The vault can be created and funded entirely by the human principal. Built on Torch Market -- a programmable economic substrate where every token is its own self-sustaining economy with bonding curves, community treasuries, lending markets, and governance. All operations (buy, sell, DEX swap, borrow, repay, star) route through the vault. Authority separation means instant revocation, permissionless deposits, and authority-only withdrawals.",
-  "version": "4.7.15",
+  "version": "4.7.17",
   "type": "protocol",
   "disable-model-invocation": true,
   "website": "https://torch.market",
@@ -39,7 +39,7 @@
       {
         "id": "npm-torchsdk",
         "kind": "npm",
-        "package": "torchsdk@^3.7.25",
+        "package": "torchsdk@^3.7.30",
         "flags": [],
         "label": "Install Torch SDK (npm, optional -- SDK is bundled in lib/torchsdk/ on clawhub)"
       }
@@ -66,7 +66,8 @@
     "lending-market-scanner",
     "permissionless-migration",
     "dynamic-network",
-    "creator-revenue"
+    "creator-revenue",
+    "community-token"
   ],
   "chain": "solana",
   "network": "mainnet",
@@ -76,7 +77,6 @@
     "skill": "https://torch.market/skill.md",
     "llms_txt": "https://torch.market/llms.txt",
     "docs": "https://torch-market-docs.vercel.app",
-    "hackathon": "https://torch.market/hackathon.md",
     "whitepaper": "https://torch.market/whitepaper.md",
     "verification": "https://torch.market/verification.md"
   },
@@ -151,7 +151,7 @@
     },
     {
       "name": "TORCH_CREATE_TOKEN",
-      "description": "Launch a new community with bonding curve, treasury, and governance vote. Optional sol_target selects tier: Spark (50 SOL), Flame (100 SOL), or Torch (200 SOL, default)"
+      "description": "Launch a new community with bonding curve, treasury, and governance vote. Optional sol_target selects tier: Spark (50 SOL), Flame (100 SOL), or Torch (200 SOL, default). Community token by default (0% creator fees, all to treasury). Set community_token: false for creator revenue streams."
     },
     {
       "name": "TORCH_GET_MESSAGES",
@@ -202,12 +202,16 @@
       "description": "Claim protocol trading rewards via vault (epoch-based, requires >= 2 SOL volume in previous epoch). SOL rewards go to vault."
     },
     {
+      "name": "TORCH_RECLAIM_FAILED_TOKEN",
+      "description": "Reclaim a failed token that has been inactive for 7+ days and hasn't completed bonding. SOL from bonding curve and token treasury goes to protocol treasury. Permissionless -- anyone can trigger."
+    },
+    {
       "name": "TORCH_HARVEST_FEES",
       "description": "Harvest accumulated Token-2022 transfer fees (0.04%) from token accounts into the treasury. Permissionless -- anyone can trigger. Auto-discovers source accounts with withheld fees or accepts explicit list."
     },
     {
       "name": "TORCH_SWAP_FEES_TO_SOL",
-      "description": "Swap harvested transfer fee tokens to SOL via Raydium CPMM. Permissionless -- anyone can trigger after migration. Bundles harvest + swap in one atomic transaction. SOL proceeds split 85% treasury / 15% creator."
+      "description": "Swap harvested transfer fee tokens to SOL via Raydium CPMM. Permissionless -- anyone can trigger after migration. Bundles harvest + swap in one atomic transaction. Creator tokens: SOL proceeds split 85% treasury / 15% creator. Community tokens (default): 100% to treasury."
     }
   ],
   "constants": {
@@ -223,16 +227,18 @@
       "min_percent": 5,
       "creator_min_percent": 0.2,
       "creator_max_percent": 1,
-      "note": "Flat 20%→5% decay across all tiers (V25). Creator receives 0.2%→1% carved from treasury rate (V34)."
+      "note": "Flat 20%→5% decay across all tiers (V25). Creator tokens: creator receives 0.2%→1% carved from treasury rate (V34). Community tokens (default V35): 0% to creator, full split to treasury."
     },
     "protocol_fee_percent": 1,
     "protocol_fee_split": "90% treasury / 10% dev wallet",
     "max_wallet_percent": 2,
     "star_cost_sol": 0.02,
     "creator_revenue": {
-      "bonding_sol_share": "0.2%→1% (carved from treasury rate, grows linearly with reserves)",
-      "post_migration_fee_split": "85% treasury / 15% creator (from swap_fees_to_sol)",
-      "star_payout": "~40 SOL at 2,000 stars on token"
+      "bonding_sol_share": "0.2%→1% (carved from treasury rate, grows linearly with reserves) — creator tokens only",
+      "post_migration_fee_split": "85% treasury / 15% creator (from swap_fees_to_sol) — creator tokens only",
+      "star_payout": "~40 SOL at 2,000 stars on token",
+      "community_token_default": true,
+      "note": "V35: community_token=true (default) routes 0% to creator. Set community_token=false at creation for creator revenue."
     },
     "initial_virtual_sol_legacy": 30,
     "initial_virtual_tokens_v27": 756250000,
@@ -315,6 +321,7 @@
       "TORCH_DEPOSIT_VAULT",
       "TORCH_LIQUIDATE",
       "TORCH_MIGRATE",
+      "TORCH_RECLAIM_FAILED_TOKEN",
       "TORCH_HARVEST_FEES",
       "TORCH_SWAP_FEES_TO_SOL"
     ]
