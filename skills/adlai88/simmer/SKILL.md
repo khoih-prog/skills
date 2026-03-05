@@ -138,7 +138,7 @@ client.link_wallet()
 client.set_approvals()  # requires: pip install eth-account
 
 # Then trade normally:
-client.trade(market.id, "yes", 10.0, venue="polymarket")
+client.trade(market.id, "yes", 10.0, venue="polymarket")  # or venue="sim" for paper trading
 ```
 
 **Requirements:** USDC.e (bridged USDC) on Polygon + small POL balance for gas.
@@ -173,7 +173,7 @@ If it's been a while since last Simmer check:
 1. Call briefing: `GET /api/sdk/briefing?since=<last_check_timestamp>`
 2. Act on `risk_alerts` first — expiring positions, concentration warnings
 3. Walk each venue in `venues` — check `actions` array for what needs doing
-4. Check `venues.simmer.by_skill` — disable or resize skills that are bleeding
+4. Check `venues.sim.by_skill` — disable or resize skills that are bleeding
 5. Scan `opportunities.new_markets` — anything matching your expertise?
 6. Update lastSimmerCheck timestamp
 ```
@@ -181,7 +181,7 @@ If it's been a while since last Simmer check:
 One call returns everything. No need to hit multiple endpoints.
 
 **What's in the briefing:**
-- **`venues.simmer`** — Your $SIM positions. Each venue includes `balance`, `pnl`, `positions_count`, `positions_needing_attention` (only significant moves or expiring), `actions` (plain text). Simmer also has `by_skill`.
+- **`venues.sim`** — Your $SIM positions. Each venue includes `balance`, `pnl`, `positions_count`, `positions_needing_attention` (only significant moves or expiring), `actions` (plain text). Simmer also has `by_skill`.
 - **`venues.polymarket`** — Your real USDC positions on Polymarket (if you have a linked wallet). Same shape.
 - **`venues.kalshi`** — Your real USD positions on Kalshi (if you have trades). Same shape.
 - Venues with no positions return `null` — skip them in display.
@@ -245,13 +245,13 @@ Format the briefing clearly. Keep $SIM and real money **completely separate**. W
 
 | Venue | Currency | Description |
 |-------|----------|-------------|
-| `simmer` | $SIM (virtual) | Default. Practice with virtual money on Simmer's LMSR markets. |
+| `sim` | $SIM (virtual) | Default. Practice with virtual money on Simmer's LMSR markets. |
 | `polymarket` | USDC.e (real) | Real trading on Polymarket. Requires external wallet setup. |
 | `kalshi` | USDC (real) | Real trading on Kalshi via DFlow/Solana. Requires Pro plan. |
 
 Start on Simmer. Graduate to Polymarket or Kalshi when ready.
 
-**Paper trading:** Set `TRADING_VENUE=simmer` to trade with $SIM at real market prices. Target edges >5% in $SIM before graduating to real money (real venues have 2-5% orderbook spreads).
+**Paper trading:** Set `TRADING_VENUE=sim` to trade with $SIM at real market prices. (`"simmer"` is also accepted as an alias.) Target edges >5% in $SIM before graduating to real money (real venues have 2-5% orderbook spreads).
 
 **Display convention:** Always show $SIM amounts as `XXX $SIM` (e.g. "10,250 $SIM"), never as `$XXX`. The `$` prefix implies real dollars and confuses users. USDC amounts use `$XXX` format (e.g. "$25.00").
 
