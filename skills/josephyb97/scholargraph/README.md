@@ -294,6 +294,41 @@ const order = builder.getTopologicalOrder(graph);
 - 📊 Mermaid 可视化
 - 📚 学习建议
 
+#### 11. 🎬 论文可视化演示 (Paper Visualization)
+
+将论文分析结果转换为交互式 HTML 幻灯片演示，支持编辑和 PPT 导出。
+
+```bash
+# 基本用法 — 分析论文并生成演示
+lit paper-viz "https://arxiv.org/abs/1706.03762" --output attention.html
+
+# 指定分析深度和主题
+lit paper-viz "https://arxiv.org/abs/2005.14165" --mode deep --theme academic-light
+
+# 同时导出 PPT
+lit paper-viz "https://arxiv.org/abs/1706.03762" --output paper.html --ppt
+```
+
+**幻灯片内容**：标题页、摘要、关键要点（按重要度标注）、方法论、实验结果、贡献、局限与未来工作、参考文献
+
+**交互功能**：← → / 空格 / 滚轮 / 触摸导航、E 键编辑模式、学术深色/浅色双主题
+
+#### 12. 🕸️ 交互式知识图谱 (Interactive Knowledge Graph)
+
+将知识图谱数据转换为交互式 D3.js 力导向图 HTML，支持节点探索和论文预览。
+
+```bash
+# 从已有图谱生成交互式 HTML
+lit graph-interactive dl-graph --output dl-interactive.html
+
+# 不嵌入论文数据（更轻量）
+lit graph-interactive my-graph --no-paper-viz
+```
+
+**可视化特性**：节点大小反映关联论文数、边粗细反映概念紧密度、类别颜色区分
+
+**交互操作**：缩放平移、节点拖拽、点击面板详情、搜索高亮、论文预览
+
 ---
 
 ## 📦 安装
@@ -302,6 +337,7 @@ const order = builder.getTopologicalOrder(graph);
 
 - [Bun](https://bun.sh/) 1.3 或更高版本
 - Node.js 18+ (可选，如果不使用 Bun)
+- Python 3.8+ (可选，用于 PDF 图表提取和 PPT 导出)
 
 ### 安装步骤
 
@@ -387,6 +423,12 @@ lit critique "https://arxiv.org/abs/1706.03762" --focus "novelty,scalability"
 
 # 12. 查找学习路径
 lit path "Machine Learning" "Deep Learning" --concepts "Neural Networks"
+
+# 13. 论文可视化演示
+lit paper-viz "https://arxiv.org/abs/1706.03762" --output attention.html
+
+# 14. 交互式知识图谱
+lit graph-interactive dl-graph --output dl-interactive.html
 ```
 
 ---
@@ -452,6 +494,18 @@ lit compare concepts "Transformer" "LSTM"
 
 # 3. 构建对比图谱
 lit graph CNN RNN LSTM Transformer --format mermaid
+```
+
+### 场景 5: 论文可视化与知识图谱探索
+
+```bash
+# 1. 分析论文并生成交互式演示
+lit paper-viz "https://arxiv.org/abs/1706.03762" --output attention.html --ppt
+
+# 2. 生成交互式图谱
+lit graph-interactive dl-graph --output dl-interactive.html
+
+# 3. 在浏览器中打开 HTML 文件探索
 ```
 
 ---
@@ -521,11 +575,28 @@ literature-skills/
 │       ├── analyze.ts
 │       └── types.ts
 │
-└── knowledge-graph/            # 知识图谱
+├── knowledge-graph/            # 知识图谱
+│   ├── skill.md
+│   └── scripts/
+│       ├── graph.ts
+│       └── types.ts
+│
+├── paper-viz/                  # 论文可视化演示
+│   ├── skill.md
+│   └── scripts/
+│       ├── types.ts            # 演示文稿数据接口
+│       ├── slide-builder.ts    # PaperAnalysis → 幻灯片
+│       ├── html-generator.ts   # 生成自包含 HTML
+│       ├── pdf-figure-extractor.ts  # PDF 图表提取
+│       └── ppt-exporter.ts     # PPT 导出
+│
+└── graph-viz/                  # 交互式知识图谱
     ├── skill.md
     └── scripts/
-        ├── graph.ts
-        └── types.ts
+        ├── types.ts            # D3 图谱数据接口
+        ├── graph-data-adapter.ts # KnowledgeGraph → D3 数据
+        ├── html-generator.ts   # 生成交互式 HTML (D3.js)
+        └── paper-viz-bridge.ts # 图谱→论文演示桥接
 ```
 
 ---
@@ -659,6 +730,11 @@ export SERPAPI_KEY="your-key"            # Google Scholar (via SerpAPI)
 - **对比分析**: 相似点、差异点、使用场景
 - **批判性分析**: 优点、缺点、研究空白、改进建议
 
+### 交互式 HTML
+
+- **论文演示**: 全屏幻灯片 HTML，键盘/滚轮/触摸导航，编辑模式
+- **知识图谱**: D3.js 力导向图 HTML，缩放平移、节点拖拽、搜索、论文面板
+
 ### JSON 数据
 
 结构化 JSON 输出，便于程序化处理：
@@ -742,6 +818,8 @@ lit <command> [options]
   compare <type> <items...>   对比分析
   critique <url>              批判性分析论文
   path <from> <to>            查找学习路径
+  paper-viz <url>             生成论文可视化演示 HTML
+  graph-interactive <name>    生成交互式知识图谱 HTML
   config <action>             配置管理
 
 选项:
@@ -753,8 +831,11 @@ lit <command> [options]
   --download                  同时下载 PDF (用于 search 命令)
   --depth <d>                 学习深度 (beginner|intermediate|advanced)
   --mode <m>                  分析模式 (quick|standard|deep)
+  --theme <t>                 演示主题 (academic-dark|academic-light)
   --format <f>                输出格式 (mermaid|json)
   --focus <areas>             关注领域 (逗号分隔)
+  --ppt                       同时导出 PPT (paper-viz)
+  --no-paper-viz              不嵌入论文数据 (graph-interactive)
 ```
 
 详细使用说明请参考 [ADVANCED_FEATURES.md](ADVANCED_FEATURES.md)。
@@ -840,8 +921,13 @@ MIT License - 详见 [LICENSE](LICENSE) 文件。
 - [DBLP](https://dblp.org/) - 计算机科学文献库
 - [CORE](https://core.ac.uk/) - 开放获取全文聚合
 - [Unpaywall](https://unpaywall.org/) - 开放获取 PDF 查找
+- [D3.js](https://d3js.org/) - 数据驱动的可视化库
 - [Bun](https://bun.sh/) - 快速的 JavaScript 运行时
 - 所有 AI 提供商 - 提供强大的语言模型支持
+
+**设计灵感**：
+- [frontend-slides](https://github.com/zarazhangrui/frontend-slides) - 论文幻灯片演示的设计参考
+- [Argo Scholar](https://github.com/poloclub/argo-scholar) - 交互式知识图谱的设计参考
 
 ---
 

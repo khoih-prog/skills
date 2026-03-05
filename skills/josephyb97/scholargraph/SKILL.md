@@ -1,16 +1,45 @@
 ---
 name: scholargraph
-description: Academic literature intelligence toolkit with AI-powered multi-source search (11 sources including arXiv, Semantic Scholar, OpenAlex, PubMed, CrossRef, DBLP, IEEE, CORE, Google Scholar), complementary search strategy with domain auto-detection, PDF download, concept learning, gap detection, progress tracking, paper analysis, knowledge graph building, review detection, concept extraction, and SQLite-based persistent storage across 15+ AI providers.
+description: Academic literature intelligence toolkit for multi-source paper search, analysis, and knowledge graph building with AI assistance.
 metadata:
-  {
-    "openclaw": {
-      "emoji": "📚",
-      "requires": {
-        "bins": ["bun"],
-        "env": ["AI_PROVIDER"]
-      }
-    }
-  }
+  openclaw:
+    emoji: "📚"
+    version: "1.0.0"
+    source:
+      type: github
+      url: https://github.com/Josephyb97/ScholarGraph
+      license: MIT
+    requires:
+      bins:
+        - bun
+      optionalBins:
+        - python3
+      env:
+        - AI_PROVIDER
+      optionalEnv:
+        - OPENAI_API_KEY
+        - DEEPSEEK_API_KEY
+        - QWEN_API_KEY
+        - ZHIPU_API_KEY
+        - SERPER_API_KEY
+        - NCBI_API_KEY
+        - IEEE_API_KEY
+        - CORE_API_KEY
+        - UNPAYWALL_EMAIL
+        - CROSSREF_MAILTO
+        - SERPAPI_KEY
+    install:
+      command: bun install
+      verify: bun run cli.ts --help
+    security:
+      network: true
+      filesystem: true
+      llmPrompts: true
+      notes: |
+        - Makes API calls to academic sources (arXiv, Semantic Scholar, etc.)
+        - Stores data in local SQLite database
+        - Uses custom LLM system prompts for structured output
+        - Optional Python dependencies (pymupdf, python-pptx) for PDF/PPT features
 ---
 
 # ScholarGraph - Academic Literature Intelligence Toolkit
@@ -18,6 +47,21 @@ metadata:
 ## Overview
 
 ScholarGraph is a comprehensive academic literature intelligence toolkit that helps researchers efficiently search, analyze, and manage academic papers using AI-powered tools. Features 11 academic search sources with intelligent domain-based source selection and PDF download capabilities.
+
+## Security & Privacy
+
+This skill operates with the following permissions:
+
+- **Network Access**: Queries academic APIs (arXiv, Semantic Scholar, OpenAlex, PubMed, CrossRef, DBLP, IEEE, CORE, Google Scholar, Unpaywall) and web search services
+- **File System**: Reads/writes configuration files, downloads PDFs, stores knowledge graphs in SQLite database (`data/knowledge-graphs.db`)
+- **LLM Integration**: Sends custom system prompts to AI providers for structured JSON output (concept extraction, paper analysis, etc.)
+- **Optional Python**: PDF figure extraction (pymupdf) and PPT export (python-pptx) require Python 3.8+
+
+**Data Storage**: All data is stored locally. No telemetry or analytics are collected.
+
+**API Keys**: Optional API keys are only used for their respective services and are never transmitted elsewhere.
+
+**Source Code**: Open source under MIT license at https://github.com/Josephyb97/ScholarGraph
 
 ## Features
 
@@ -107,6 +151,20 @@ ScholarGraph is a comprehensive academic literature intelligence toolkit that he
     - Export graphs to JSON
     - Visualize with Mermaid
 
+16. **Paper Visualization** - Interactive paper presentation
+    - Convert paper analysis to HTML slide presentations
+    - Academic dark/light themes with responsive typography
+    - Keyboard/touch/scroll navigation, edit mode (E key)
+    - PDF figure extraction (pymupdf) and PPT export (python-pptx)
+    - 8+ slides: title, abstract, key points, methodology, experiments, contributions, limitations, references
+
+17. **Interactive Knowledge Graph** - D3.js force-directed visualization
+    - Convert knowledge graphs to interactive HTML with D3.js v7
+    - Node size reflects paper count, edge thickness reflects concept tightness
+    - Zoom/pan, node dragging, click-to-detail panel, search, legend
+    - Paper preview bridge: click "View Presentation" to open paper slides in new tab
+    - Category colors: foundation=#4FC3F7, core=#FFB74D, advanced=#CE93D8, application=#81C784
+
 ## Technical Features
 
 - **11 Academic Search Sources**: arXiv, Semantic Scholar, OpenAlex, PubMed, CrossRef, DBLP, IEEE Xplore, CORE, Google Scholar, Unpaywall, Web Search
@@ -117,7 +175,8 @@ ScholarGraph is a comprehensive academic literature intelligence toolkit that he
 - **SQLite Persistence**: Knowledge graphs stored in SQLite database via bun:sqlite
 - **Bidirectional Indexing**: Concept-paper and paper-concept bidirectional query support
 - **Rate Limiting**: Per-source rate limiting with automatic retry and delay
-- **Multiple Output Formats**: Markdown, JSON, Mermaid
+- **Interactive HTML Output**: Paper slide presentations, D3.js knowledge graph visualizations
+- **Multiple Output Formats**: Markdown, JSON, Mermaid, HTML, PPTX
 - **TypeScript + Bun**: Fast and type-safe runtime
 - **CLI + API**: Both command-line and programmatic interfaces
 
@@ -269,6 +328,27 @@ lit graph-viz dl-graph --format mermaid --output graph.md
 lit graph-export dl-graph --output dl-graph.json
 ```
 
+### Paper Visualization
+```bash
+# Generate interactive HTML presentation
+lit paper-viz "https://arxiv.org/abs/1706.03762" --output attention.html
+
+# With theme and PPT export
+lit paper-viz "https://arxiv.org/abs/1706.03762" --mode deep --theme academic-light --ppt
+
+# Manually provide figures
+lit paper-viz "https://example.com/paper" --figures ./my-figures
+```
+
+### Interactive Knowledge Graph
+```bash
+# Generate interactive D3.js graph from existing knowledge graph
+lit graph-interactive dl-graph --output dl-interactive.html
+
+# Without paper data (lighter weight)
+lit graph-interactive my-graph --no-paper-viz
+```
+
 ## Use Cases
 
 ### 1. Quick Field Onboarding
@@ -298,6 +378,12 @@ lit graph-export dl-graph --output dl-graph.json
 - Extract concepts from reviews
 - Build persistent knowledge graphs
 - Query concept-paper relationships
+
+### 6. Paper Visualization & Graph Exploration
+- Analyze paper and generate interactive HTML presentation
+- Build knowledge graph from reviews
+- Generate interactive D3.js graph with paper preview
+- Click nodes to view paper details and open presentations
 
 ## Project Structure
 
@@ -361,6 +447,21 @@ ScholarGraph/
 │       ├── storage.ts          # SQLite persistence
 │       └── enricher.ts         # Key paper association
 │
+├── paper-viz/                  # Paper visualization
+│   └── scripts/
+│       ├── types.ts            # Presentation data interfaces
+│       ├── slide-builder.ts    # PaperAnalysis → slides
+│       ├── html-generator.ts   # Self-contained HTML generation
+│       ├── pdf-figure-extractor.ts  # PDF figure extraction (pymupdf)
+│       └── ppt-exporter.ts     # PPT export (python-pptx)
+│
+├── graph-viz/                  # Interactive knowledge graph
+│   └── scripts/
+│       ├── types.ts            # D3 graph data interfaces
+│       ├── graph-data-adapter.ts # KnowledgeGraph → D3 data
+│       ├── html-generator.ts   # Interactive HTML (D3.js v7)
+│       └── paper-viz-bridge.ts # Graph → paper presentation bridge
+│
 ├── workflows/                  # End-to-end workflows
 │   └── review-to-graph.ts      # Review to graph pipeline
 │
@@ -413,11 +514,16 @@ Structured data for programmatic processing
 ### Mermaid Diagrams
 Interactive knowledge graphs and learning paths
 
+### Interactive HTML
+- Paper slide presentations with keyboard/scroll/touch navigation
+- D3.js force-directed knowledge graph with zoom, search, and paper panel
+
 ## Requirements
 
 - Bun 1.3+ or Node.js 18+
 - AI provider API key
 - Internet connection for paper search
+- Python 3.8+ (optional, for PDF figure extraction and PPT export)
 
 ## License
 
@@ -438,6 +544,10 @@ Current version: 1.0.0
 ScholarGraph Team
 
 ---
+
+**Design Inspirations**:
+- [frontend-slides](https://github.com/zarazhangrui/frontend-slides) - Paper slide presentation design reference
+- [Argo Scholar](https://github.com/poloclub/argo-scholar) - Interactive knowledge graph design reference
 
 *For detailed documentation, see README.md*
 *For advanced features, see test/ADVANCED_FEATURES.md*

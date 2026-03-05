@@ -139,3 +139,20 @@ export interface MemoryConfig {
   maxAgeMs: number;
   cleanupIntervalMs: number;
 }
+
+// 论文可视化 CLI 参数
+export interface PaperVizCliParams {
+  url: string;
+  mode: AnalysisMode;
+  theme: 'academic-dark' | 'academic-light';
+  outputFile?: string;
+  ppt: boolean;
+  figuresDir?: string;
+}
+
+// 交互式图谱 CLI 参数
+export interface GraphInteractiveCliParams {
+  graphName: string;
+  outputFile?: string;
+  includePaperViz: boolean;
+}

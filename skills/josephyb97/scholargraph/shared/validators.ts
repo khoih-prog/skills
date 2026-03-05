@@ -15,6 +15,7 @@ import type {
 } from './types';
 
 // 有效值常量
+const VALID_PAPER_VIZ_THEMES = ['academic-dark', 'academic-light'] as const;
 const VALID_SEARCH_SOURCES: SearchSource[] = [
   'arxiv', 'semantic_scholar', 'web',
   'pubmed', 'crossref', 'openalex', 'dblp',
@@ -368,6 +369,50 @@ export function validatePdfDownloadParams(params: {
   if (params.limit !== undefined) {
     const limitResult = validateNumberRange(params.limit, 1, 50, 'limit');
     errors.push(...limitResult.errors);
+  }
+
+  return createResult(errors);
+}
+
+/**
+ * 验证论文可视化参数
+ */
+export function validatePaperVizParams(params: {
+  url?: string;
+  mode?: string;
+  theme?: string;
+}): ValidationResult {
+  const errors: ValidationError[] = [];
+
+  if (!params.url) {
+    errors.push(createError('url', 'Paper URL is required'));
+  } else {
+    const urlResult = validateUrl(params.url);
+    errors.push(...urlResult.errors);
+  }
+
+  if (params.mode !== undefined) {
+    const modeResult = validateAnalysisMode(params.mode);
+    errors.push(...modeResult.errors);
+  }
+
+  if (params.theme !== undefined && !VALID_PAPER_VIZ_THEMES.includes(params.theme as typeof VALID_PAPER_VIZ_THEMES[number])) {
+    errors.push(createError('theme', `Invalid theme. Must be one of: ${VALID_PAPER_VIZ_THEMES.join(', ')}`, params.theme));
+  }
+
+  return createResult(errors);
+}
+
+/**
+ * 验证交互式图谱参数
+ */
+export function validateGraphInteractiveParams(params: {
+  graphName?: string;
+}): ValidationResult {
+  const errors: ValidationError[] = [];
+
+  if (!params.graphName || params.graphName.trim().length === 0) {
+    errors.push(createError('graphName', 'Graph name is required'));
   }
 
   return createResult(errors);

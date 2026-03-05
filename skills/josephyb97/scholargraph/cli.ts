@@ -26,6 +26,15 @@ import PaperAnalyzer from './paper-analyzer/scripts/analyze';
 import KnowledgeGraphBuilder from './knowledge-graph/scripts/graph';
 import { ConfigManager, defaultConfig } from './config';
 import { getErrorMessage } from './shared/errors';
+import { SlideBuilder } from './paper-viz/scripts/slide-builder';
+import { generatePaperHtml } from './paper-viz/scripts/html-generator';
+import { PdfFigureExtractor } from './paper-viz/scripts/pdf-figure-extractor';
+import { PptExporter } from './paper-viz/scripts/ppt-exporter';
+import { ACADEMIC_DARK_THEME, ACADEMIC_LIGHT_THEME } from './paper-viz/scripts/types';
+import { GraphDataAdapter } from './graph-viz/scripts/graph-data-adapter';
+import { generateGraphHtml } from './graph-viz/scripts/html-generator';
+import { PaperVizBridge } from './graph-viz/scripts/paper-viz-bridge';
+import GraphStorage from './knowledge-graph/scripts/storage';
 import {
   validateSearchParams,
   validateLearnParams,
@@ -33,6 +42,8 @@ import {
   validateAnalyzeParams,
   validateGraphParams,
   validatePdfDownloadParams,
+  validatePaperVizParams,
+  validateGraphInteractiveParams,
   formatValidationErrors,
   isValidSearchSource,
   isValidSortBy,
@@ -53,7 +64,9 @@ const COMMANDS = {
   config: '配置管理',
   compare: '对比分析',
   critique: '批判性分析',
-  path: '学习路径'
+  path: '学习路径',
+  'paper-viz': '论文可视化演示',
+  'graph-interactive': '交互式知识图谱'
 };
 
 function showHelp() {
@@ -113,6 +126,17 @@ function showHelp() {
   path <from> <to>            查找学习路径
     --concepts <list>         概念列表 (逗号分隔)
     --output <file>           输出文件
+
+  paper-viz <url>              论文可视化演示
+    --mode <m>                分析模式 (quick|standard|deep)
+    --theme <t>               主题 (academic-dark|academic-light)
+    --output <file>           输出 HTML 文件
+    --ppt                     同时导出 PPT
+    --figures <dir>           手动指定图表目录
+
+  graph-interactive <name>     交互式知识图谱
+    --output <file>           输出 HTML 文件
+    --no-paper-viz            不嵌入论文数据
 
   config <action>             配置管理
     init                      初始化配置文件
@@ -197,6 +221,12 @@ function showHelp() {
   # 查找学习路径
   lit path "Machine Learning" "Deep Learning" --concepts "ML,NN,DL,CNN"
 
+  # 论文可视化演示
+  lit paper-viz "https://arxiv.org/abs/1706.03762" --output attention.html --ppt
+
+  # 交互式知识图谱
+  lit graph-interactive dl-graph --output dl-interactive.html
+
   # 使用 OpenAI 提供商
   AI_PROVIDER=openai lit search "transformer"
 
@@ -263,6 +293,14 @@ async function main() {
 
       case 'path':
         await handlePath(cmdArgs);
+        break;
+
+      case 'paper-viz':
+        await handlePaperViz(cmdArgs);
+        break;
+
+      case 'graph-interactive':
+        await handleGraphInteractive(cmdArgs);
         break;
 
       default:
@@ -972,6 +1010,162 @@ ${path.map((concept, i) => i < path.length - 1 ? `  ${concept.replace(/\s+/g, '_
     console.log('\n🗺️ Learning Path:\n');
     console.log(path.map((concept, i) => `  ${i + 1}. ${concept}`).join('\n'));
     console.log('\n路径: ' + path.join(' → '));
+  }
+}
+
+/**
+ * 处理论文可视化命令
+ */
+async function handlePaperViz(args: string[]) {
+  const url = args[0];
+  const modeIndex = args.indexOf('--mode');
+  const mode = modeIndex > -1 ? args[modeIndex + 1] : 'deep';
+  const themeIndex = args.indexOf('--theme');
+  const themeName = themeIndex > -1 ? args[themeIndex + 1] : 'academic-dark';
+  const outputIndex = args.indexOf('--output');
+  const outputFile = outputIndex > -1 ? args[outputIndex + 1] : undefined;
+  const exportPpt = args.includes('--ppt');
+  const figuresIndex = args.indexOf('--figures');
+  const figuresDir = figuresIndex > -1 ? args[figuresIndex + 1] : undefined;
+
+  // 验证参数
+  const validation = validatePaperVizParams({ url, mode, theme: themeName });
+  if (!validation.valid) {
+    console.error('Validation errors:\n' + formatValidationErrors(validation.errors));
+    process.exit(1);
+  }
+
+  console.log(`\n🎬 Analyzing paper: ${url}`);
+  console.log(`   Mode: ${mode} | Theme: ${themeName}\n`);
+
+  // 1. 分析论文
+  const analyzer = new PaperAnalyzer();
+  await analyzer.initialize();
+  const analysis = await analyzer.analyze({ url, mode: mode as AnalysisMode });
+
+  console.log(`✅ Analysis complete: "${analysis.metadata.title}"`);
+
+  // 2. 提取图表（如果有 PDF）
+  let figures: import('./paper-viz/scripts/types').ExtractedFigure[] = [];
+  if (figuresDir) {
+    console.log(`📊 Loading figures from: ${figuresDir}`);
+    const fs = await import('fs');
+    const path = await import('path');
+    if (fs.existsSync(figuresDir)) {
+      const files = fs.readdirSync(figuresDir).filter((f: string) =>
+        /\.(png|jpg|jpeg|gif|webp)$/i.test(f)
+      );
+      figures = files.map((f: string, i: number) => ({
+        path: path.join(figuresDir, f),
+        mimeType: `image/${f.split('.').pop()?.toLowerCase() === 'jpg' ? 'jpeg' : f.split('.').pop()?.toLowerCase()}`,
+        caption: `Figure ${i + 1}`,
+        pageNumber: 0,
+        width: 0,
+        height: 0,
+      }));
+      console.log(`   Found ${figures.length} figures`);
+    }
+  } else if (analysis.metadata.url && analysis.metadata.url.includes('arxiv')) {
+    const pdfPath = `./downloads/pdfs/${analysis.metadata.arxivId || 'paper'}.pdf`;
+    const fs = await import('fs');
+    if (fs.existsSync(pdfPath)) {
+      console.log(`📊 Extracting figures from PDF...`);
+      const extractor = new PdfFigureExtractor();
+      figures = await extractor.extract(pdfPath);
+      console.log(`   Extracted ${figures.length} figures`);
+    }
+  }
+
+  // 3. 构建幻灯片数据
+  const theme = themeName === 'academic-light' ? ACADEMIC_LIGHT_THEME : ACADEMIC_DARK_THEME;
+  const builder = new SlideBuilder({ theme, figures });
+  const presentation = builder.buildFromAnalysis(analysis);
+
+  console.log(`📝 Generated ${presentation.slides.length} slides`);
+
+  // 4. 生成 HTML
+  const html = generatePaperHtml(presentation);
+  const htmlPath = outputFile || `${analysis.metadata.title.slice(0, 50).replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-')}-viz.html`;
+
+  const fs = await import('fs');
+  fs.writeFileSync(htmlPath, html);
+  console.log(`\n✅ Presentation saved: ${htmlPath}`);
+
+  // 5. 可选 PPT 导出
+  if (exportPpt) {
+    const pptPath = htmlPath.replace(/\.html$/, '.pptx');
+    console.log(`📊 Exporting PPT...`);
+    try {
+      const exporter = new PptExporter();
+      await exporter.export(presentation, { outputPath: pptPath });
+      console.log(`✅ PPT saved: ${pptPath}`);
+    } catch (err) {
+      console.error(`⚠️  PPT export failed: ${getErrorMessage(err)}`);
+      console.log('   Make sure Python and python-pptx are installed.');
+    }
+  }
+}
+
+/**
+ * 处理交互式图谱命令
+ */
+async function handleGraphInteractive(args: string[]) {
+  const graphName = args[0];
+  const outputIndex = args.indexOf('--output');
+  const outputFile = outputIndex > -1 ? args[outputIndex + 1] : undefined;
+  const noPaperViz = args.includes('--no-paper-viz');
+
+  // 验证参数
+  const validation = validateGraphInteractiveParams({ graphName });
+  if (!validation.valid) {
+    console.error('Validation errors:\n' + formatValidationErrors(validation.errors));
+    process.exit(1);
+  }
+
+  console.log(`\n🌐 Building interactive graph: ${graphName}\n`);
+
+  // 1. 加载图谱
+  const storage = new GraphStorage();
+  try {
+    const graph = storage.loadGraph(graphName);
+    if (!graph) {
+      console.error(`Error: Graph "${graphName}" not found`);
+      console.log('Available graphs:');
+      const list = storage.listGraphs();
+      list.forEach((g) => console.log(`  - ${g.name} (${g.totalConcepts} concepts, ${g.totalPapers} papers)`));
+      process.exit(1);
+    }
+
+    console.log(`✅ Loaded graph: ${graph.nodes.length} nodes, ${graph.edges.length} edges`);
+
+    // 2. 转换为 D3 数据
+    const adapter = new GraphDataAdapter();
+    const d3Data = adapter.convert(graph);
+
+    // 3. 构建论文数据（可选）
+    let paperPayload = {};
+    if (!noPaperViz) {
+      const bridge = new PaperVizBridge();
+      paperPayload = bridge.buildAllPaperPayloads(graph);
+      const totalPapers = Object.values(paperPayload).reduce(
+        (sum: number, papers: unknown) => sum + (papers as unknown[]).length, 0
+      );
+      console.log(`📚 Embedded ${totalPapers} paper references`);
+    }
+
+    // 4. 生成 HTML
+    const html = generateGraphHtml(d3Data, {
+      includePaperData: !noPaperViz,
+      paperPayload,
+    });
+
+    const htmlPath = outputFile || `${graphName}-interactive.html`;
+    const fs = await import('fs');
+    fs.writeFileSync(htmlPath, html);
+    console.log(`\n✅ Interactive graph saved: ${htmlPath}`);
+    console.log(`   Open in browser to explore the knowledge graph.`);
+  } finally {
+    storage.close();
   }
 }
 
