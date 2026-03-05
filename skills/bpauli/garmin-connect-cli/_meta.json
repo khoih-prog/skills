@@ -3,11 +3,16 @@
   "slug": "garmin-connect-cli",
   "displayName": "Garmin Connect CLI",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772426706373,
-    "commit": "https://github.com/openclaw/skills/commit/8c7bea772d6b59ed48a152de0464ca18102c19ac"
+    "version": "1.0.1",
+    "publishedAt": 1772729620432,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772426706373,
+      "commit": "https://github.com/openclaw/skills/commit/8c7bea772d6b59ed48a152de0464ca18102c19ac"
+    },
     {
       "version": "0.3.0",
       "publishedAt": 1771323310373,
