@@ -3,11 +3,16 @@
   "slug": "moltblock",
   "displayName": "Moltblock - Trust Layer for AI Agents",
   "latest": {
-    "version": "0.11.1",
-    "publishedAt": 1770928645742,
-    "commit": "https://github.com/openclaw/skills/commit/16bf20302eb65abddfa2ee58a8b4722be4ae48b5"
+    "version": "0.11.4",
+    "publishedAt": 1772668559093,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.11.1",
+      "publishedAt": 1770928645742,
+      "commit": "https://github.com/openclaw/skills/commit/16bf20302eb65abddfa2ee58a8b4722be4ae48b5"
+    },
     {
       "version": "0.7.7",
       "publishedAt": 1770917929831,
