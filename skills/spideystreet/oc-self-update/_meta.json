@@ -1,0 +1,11 @@
+{
+  "owner": "spideystreet",
+  "slug": "oc-self-update",
+  "displayName": "Oc Self Update",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1772634030384,
+    "commit": null
+  },
+  "history": []
+}
