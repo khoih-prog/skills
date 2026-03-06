@@ -229,7 +229,10 @@ MR_DESC_FILE="${LOGS_DIR}/${TASK_ID}-mr-desc.txt"
 } > "$MR_DESC_FILE"
 
 MR_URL=""
-MR_OUT=$(swarm_mr_create "$DESC" "$MR_DESC_FILE" "$BRANCH") || true
+cd "$WORKTREE"
+log "Creating MR from $(pwd) for branch $BRANCH"
+MR_OUT=$(swarm_mr_create "$DESC" "$MR_DESC_FILE" "$BRANCH" 2>&1) || true
+log "MR create output: $(echo "$MR_OUT" | head -5)"
 MR_URL=$(swarm_mr_url "$MR_OUT")
 
 # Fallback: query by branch

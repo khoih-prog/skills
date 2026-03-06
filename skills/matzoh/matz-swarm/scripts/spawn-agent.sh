@@ -29,7 +29,7 @@ fi
 
 REPO_URL=$(echo "$PROJECT_CONFIG" | jq -r '.repo // empty')
 LOCAL_REPO=$(echo "$PROJECT_CONFIG" | jq -r '.local_repo // empty')
-CONTEXT_FILE=$(echo "$PROJECT_CONFIG" | jq -r '.context_path')
+CONTEXT_PATH=$(echo "$PROJECT_CONFIG" | jq -r '.context_path // "context.md"')
 BASE_BRANCH_CFG=$(echo "$PROJECT_CONFIG" | jq -r '.base_branch // "main"')
 BASE_BRANCH="${BASE_BRANCH:-$BASE_BRANCH_CFG}"
 
@@ -122,6 +122,7 @@ fi
 
 # ── Phase 3: Build prompt file ────────────────────────────────────────
 CONTEXT_SECTION=""
+CONTEXT_FILE="${LOCAL_REPO}/${CONTEXT_PATH}"
 [ -f "$CONTEXT_FILE" ] && CONTEXT_SECTION=$(cat "$CONTEXT_FILE")
 
 {
@@ -144,7 +145,7 @@ CONTEXT_SECTION=""
     echo "6. Run tests if available"
     echo "7. Definition of done: code committed + pushed to origin"
     echo "8. After completing all work, summarize what you did."
-    echo "9. If your changes introduce new modules, change architecture, or add key files, update context.md (${CONTEXT_FILE}) accordingly. Skip this for minor fixes or simple additions."
+    echo "9. If your changes introduce new features, gameplay changes, new modules, architecture changes, or add key files, update context.md (${CONTEXT_PATH}) in the project root accordingly. Only skip for trivial config/formatting changes."
     echo ""
     echo "Start working now."
 } > "$PROMPT_FILE"

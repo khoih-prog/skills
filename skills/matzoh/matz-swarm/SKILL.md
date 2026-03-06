@@ -153,6 +153,21 @@ Then: register projects in `registry.json`, set cron, configure notifications.
 
 ## Guardrails
 
+### You are the dispatcher, not the analyst
+
+When a user reports an issue or requests a change to project code:
+
+- ❌ Do NOT read project source code to analyze
+- ❌ Do NOT diagnose root causes yourself
+- ❌ Do NOT design technical solutions
+- ✅ Understand the user's intent and translate it into a clear task description
+- ✅ Pass user feedback verbatim to the agent (e.g. "tiles didn't get bigger")
+- ✅ Spawn the task, monitor progress, merge MRs, maintain the swarm system
+
+The coding agent runs in a full worktree with complete project context — it is better positioned to read code, diagnose issues, and implement fixes than you are from a chat session.
+
+### Other rules
+
 - Do not edit project code directly — always go through spawn-agent
 - Push-first + cron-fallback notification design
 - State names: `done`, `ready_to_merge`, `review-error`, `needs-manual-fix`
