@@ -3,11 +3,16 @@
   "slug": "a2achat",
   "displayName": "A2achat",
   "latest": {
-    "version": "2.0.9",
-    "publishedAt": 1772573737331,
-    "commit": "https://github.com/openclaw/skills/commit/e980871de0283bec4ae95d9992e9f88f0d5f7b01"
+    "version": "2.1.1",
+    "publishedAt": 1772614117150,
+    "commit": null
   },
   "history": [
+    {
+      "version": "2.0.9",
+      "publishedAt": 1772573737331,
+      "commit": "https://github.com/openclaw/skills/commit/e980871de0283bec4ae95d9992e9f88f0d5f7b01"
+    },
     {
       "version": "1.4.2",
       "publishedAt": 1771947465645,
