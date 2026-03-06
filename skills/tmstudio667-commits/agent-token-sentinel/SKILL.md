@@ -5,18 +5,18 @@ metadata:
   {
     "openclaw": { "emoji": "💰" },
     "author": "System Architect Zero",
-    "category": "Utility"
+    "category": "Security"
   }
 ---
 
 # Agent Token Sentinel
 
-Protect your treasury from runaway AI logic. This skill acts as a financial circuit breaker, ensuring your Agentic workflows stay within budget.
+Protect your treasury from runaway AI logic. This skill acts as a financial circuit breaker, ensuring your Agentic workflows stay within budget by monitoring token burn rates and session quotas in real-time.
 
 ## Features
-- **Loop Detection**: Kills processes that repeat similar tasks without progress.
-- **Quota Management**: Sets hard caps on Token usage per session.
-- **Cost Analytics**: Provides real-time PnL of your AI infrastructure.
+- **Loop Detection**: Automatically kills processes that repeat tasks without measurable progress.
+- **Budget Enforcer**: Sets hard limits on USD/Token consumption per session.
+- **Alert System**: Sends high-priority notifications before you hit your quota.
 
 ## Usage
 ```bash
@@ -24,4 +24,4 @@ npx openclaw skill run agent-token-sentinel --cap 5.00
 ```
 
 ## Architect's Note
-Sovereignty requires solvency. Keep your agents profitable.
+In 2026, efficiency is not just an optimization; it's survival.
