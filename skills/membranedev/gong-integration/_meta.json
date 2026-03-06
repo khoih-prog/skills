@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "gong-integration",
+  "displayName": "Gong",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772694171084,
+    "commit": null
+  },
+  "history": []
+}
