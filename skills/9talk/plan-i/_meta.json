@@ -3,11 +3,16 @@
   "slug": "plan-i",
   "displayName": "Plan I",
   "latest": {
-    "version": "0.1.7",
-    "publishedAt": 1772533323224,
-    "commit": "https://github.com/openclaw/skills/commit/d6582820d8c722943d842fbb03da9bb9a932334c"
+    "version": "0.1.9",
+    "publishedAt": 1772795446954,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.7",
+      "publishedAt": 1772533323224,
+      "commit": "https://github.com/openclaw/skills/commit/d6582820d8c722943d842fbb03da9bb9a932334c"
+    },
     {
       "version": "0.1.2",
       "publishedAt": 1772525880081,
