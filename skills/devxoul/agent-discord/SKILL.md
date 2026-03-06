@@ -1,7 +1,7 @@
 ---
 name: agent-discord
 description: Interact with Discord servers - send messages, read channels, manage reactions
-version: 1.9.2
+version: 1.10.5
 allowed-tools: Bash(agent-discord:*)
 metadata:
   openclaw:
@@ -37,6 +37,8 @@ Credentials are extracted automatically from the Discord desktop app on first us
 
 On macOS, the system may prompt for your Keychain password the first time (required to decrypt Discord's stored token). This is a one-time prompt.
 
+**IMPORTANT**: NEVER guide the user to open a web browser, use DevTools, or manually copy tokens from a browser. Always use `agent-discord auth extract` to obtain tokens from the desktop app.
+
 ### Multi-Server Support
 
 ```bash
@@ -52,6 +54,80 @@ agent-discord server current
 # Check auth status
 agent-discord auth status
 ```
+
+## Memory
+
+The agent maintains a `~/.config/agent-messenger/MEMORY.md` file as persistent memory across sessions. This is agent-managed — the CLI does not read or write this file. Use the `Read` and `Write` tools to manage your memory file.
+
+### Reading Memory
+
+At the **start of every task**, read `~/.config/agent-messenger/MEMORY.md` using the `Read` tool to load any previously discovered server IDs, channel IDs, user IDs, and preferences.
+
+- If the file doesn't exist yet, that's fine — proceed without it and create it when you first have useful information to store.
+- If the file can't be read (permissions, missing directory), proceed without memory — don't error out.
+
+### Writing Memory
+
+After discovering useful information, update `~/.config/agent-messenger/MEMORY.md` using the `Write` tool. Write triggers include:
+
+- After discovering server IDs and names (from `server list`, `snapshot`, etc.)
+- After discovering useful channel IDs and names (from `channel list`, `snapshot`, etc.)
+- After discovering user IDs and names (from `user list`, `user me`, etc.)
+- After the user gives you an alias or preference ("call this the dev server", "my main channel is X")
+- After discovering channel structure (categories, voice channels)
+
+When writing, include the **complete file content** — the `Write` tool overwrites the entire file.
+
+### What to Store
+
+- Server IDs with names
+- Channel IDs with names and categories
+- User IDs with display names
+- User-given aliases ("dev server", "announcements channel")
+- Commonly used thread IDs
+- Any user preference expressed during interaction
+
+### What NOT to Store
+
+Never store tokens, credentials, or any sensitive data. Never store full message content (just IDs and channel context). Never store file upload contents.
+
+### Handling Stale Data
+
+If a memorized ID returns an error (channel not found, server not found), remove it from `MEMORY.md`. Don't blindly trust memorized data — verify when something seems off. Prefer re-listing over using a memorized ID that might be stale.
+
+### Format / Example
+
+```markdown
+# Agent Messenger Memory
+
+## Discord Servers
+
+- `1234567890123456` — Acme Dev (default)
+- `9876543210987654` — Open Source Community
+
+## Channels (Acme Dev)
+
+- `1111111111111111` — #general (General category)
+- `2222222222222222` — #engineering (Engineering category)
+- `3333333333333333` — #deploys (Engineering category)
+
+## Users (Acme Dev)
+
+- `4444444444444444` — Alice (server owner)
+- `5555555555555555` — Bob
+
+## Aliases
+
+- "dev server" → `1234567890123456` (Acme Dev)
+- "deploys" → `3333333333333333` (#deploys in Acme Dev)
+
+## Notes
+
+- User prefers --pretty output for snapshots
+- Main server is "Acme Dev"
+```
+
+> Memory lets you skip repeated `channel list` and `server list` calls. When you already know an ID from a previous session, use it directly.
 
 ## Commands
 
