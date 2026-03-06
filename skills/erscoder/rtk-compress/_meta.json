@@ -1,11 +1,17 @@
 {
   "owner": "erscoder",
   "slug": "rtk-compress",
-  "displayName": "RTK Compress — Token Saver",
+  "displayName": "Rtk Compress",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772668006154,
-    "commit": "https://github.com/openclaw/skills/commit/5d64c3e46fd675ea044d27964666f0101317bd12"
+    "version": "1.15.2",
+    "publishedAt": 1772802808587,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772668006154,
+      "commit": "https://github.com/openclaw/skills/commit/5d64c3e46fd675ea044d27964666f0101317bd12"
+    }
+  ]
 }
