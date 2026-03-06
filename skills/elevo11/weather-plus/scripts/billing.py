@@ -5,7 +5,7 @@ import json, sys, argparse, os
 import urllib.request, urllib.error
 
 API = "https://skillpay.me/api/v1"
-SKILL_ID = "PENDING"
+SKILL_ID = "5f80663e-942f-4fd5-aaad-ecdf869658a9"
 
 def _key(o=None):
     return o or os.environ.get("SKILLPAY_API_KEY")
