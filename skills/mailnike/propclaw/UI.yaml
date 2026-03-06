@@ -23,6 +23,88 @@ domains:
     label: Accounting
     entities: [trust_account, owner_statement, security_deposit, deposit_deduction]
 
+dashboard:
+  kpis:
+    - key: total_properties
+      label: "Properties"
+      type: count
+      action: list-properties
+      icon: building
+      drill_action: list-properties
+    - key: vacant_units
+      label: "Vacant Units"
+      type: count
+      action: list-units
+      filter: { status: vacant }
+      total_action: list-units
+      severity: warning
+      icon: home
+      drill_action: list-units
+      drill_filter: { status: vacant }
+    - key: open_work_orders
+      label: "Open Work Orders"
+      type: count
+      action: list-work-orders
+      filter: { status: open }
+      severity: warning
+      icon: wrench
+      drill_action: list-work-orders
+    - key: active_leases
+      label: "Active Leases"
+      type: count
+      action: list-leases
+      filter: { status: active }
+      severity: success
+      icon: file-text
+      drill_action: list-leases
+  quick_actions:
+    - action: add-work-order
+      label: "New Work Order"
+      icon: wrench
+    - action: add-application
+      label: "New Application"
+      icon: user-plus
+    - action: add-property
+      label: "New Property"
+      icon: building
+    - action: add-lease
+      label: "New Lease"
+      icon: file-text
+
+workflows:
+  - after: approve-application
+    suggest:
+      - action: add-lease
+        label: "Create lease for this tenant"
+        pass: { customer-id: customer_id, property-id: property_id }
+  - after: activate-lease
+    suggest:
+      - action: record-security-deposit
+        label: "Record security deposit"
+        pass: { lease-id: id }
+      - action: generate-charges
+        label: "Generate first month's rent"
+        pass: { lease-id: id }
+  - after: complete-work-order
+    suggest:
+      - action: add-purchase-invoice
+        skill: erpclaw-buying
+        label: "Record vendor expense"
+        pass: { supplier-id: supplier_id }
+      - action: add-inspection
+        label: "Schedule follow-up inspection"
+        pass: { property-id: property_id }
+  - after: add-property
+    suggest:
+      - action: add-unit
+        label: "Add a unit to this property"
+        pass: { property-id: id }
+  - after: add-work-order
+    suggest:
+      - action: add-work-order-item
+        label: "Add materials/labor to this work order"
+        pass: { work-order-id: id }
+
 entities:
   # ---------------------------------------------------------------------------
   # Properties domain

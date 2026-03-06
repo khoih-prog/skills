@@ -104,7 +104,7 @@ For all actions: `python3 {baseDir}/scripts/db_query.py --action <action> [flags
 | `get-lease` | `--lease-id` | |
 | `list-leases` | `--company-id` | `--property-id --status --customer-id --limit --offset` |
 | `activate-lease` | `--lease-id` | |
-| `terminate-lease` | `--lease-id` | `--notes` |
+| `terminate-lease` | `--lease-id --move-out-date` | `--notes` |
 | `add-rent-schedule` | `--lease-id --charge-type --amount` | `--description --frequency --start-date --end-date` |
 | `list-rent-schedules` | `--lease-id` | |
 | `delete-rent-schedule` | `--rent-schedule-id` | |
@@ -113,13 +113,13 @@ For all actions: `python3 {baseDir}/scripts/db_query.py --action <action> [flags
 | `add-late-fee-rule` | `--company-id --state --fee-type` | `--flat-amount --percentage-rate --grace-days --max-cap` |
 | `list-late-fee-rules` | `--company-id` | `--state` |
 | `apply-late-fees` | `--company-id --as-of-date` | |
-| `propose-renewal` | `--lease-id --start-date --monthly-rent` | `--new-end-date --rent-increase-pct` |
+| `propose-renewal` | `--lease-id --new-start-date --new-monthly-rent` | `--new-end-date --rent-increase-pct` |
 | `accept-renewal` | `--renewal-id` | |
 
 ### Tenants (12 actions)
 | Action | Required Flags | Optional Flags |
 |--------|---------------|----------------|
-| `add-application` | `--company-id --property-id --name` | `--unit-id --applicant-email --desired-move-in --employer` |
+| `add-application` | `--company-id --property-id --applicant-name` | `--unit-id --applicant-email --applicant-phone --desired-move-in --monthly-income --employer` |
 | `update-application` | `--application-id` | `--status --notes` |
 | `get-application` | `--application-id` | |
 | `list-applications` | `--company-id` | `--property-id --status --limit --offset` |

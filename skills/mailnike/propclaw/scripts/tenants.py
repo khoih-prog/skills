@@ -197,14 +197,17 @@ def approve_application(conn, args):
         err("Cannot approve — one or more screenings failed")
 
     # Create customer (tenant) record
+    # customer table has primary_contact (not email/phone columns)
     customer_id = str(uuid.uuid4())
     conn.company_id = app["company_id"]
+    contact_parts = [p for p in [app["applicant_email"], app["applicant_phone"]] if p]
+    primary_contact = ", ".join(contact_parts) if contact_parts else None
     conn.execute(
         """INSERT INTO customer
-           (id, name, email, phone, customer_type, company_id, status)
-           VALUES (?,?,?,?,?,?,?)""",
-        (customer_id, app["applicant_name"], app["applicant_email"],
-         app["applicant_phone"], "individual", app["company_id"], "active"))
+           (id, name, customer_type, primary_contact, company_id, status)
+           VALUES (?,?,?,?,?,?)""",
+        (customer_id, app["applicant_name"], "individual",
+         primary_contact, app["company_id"], "active"))
 
     # Update application
     conn.execute(
