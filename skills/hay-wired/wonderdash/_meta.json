@@ -3,9 +3,15 @@
   "slug": "wonderdash",
   "displayName": "WonderDash",
   "latest": {
-    "version": "5.0.0",
-    "publishedAt": 1772456124088,
-    "commit": "https://github.com/openclaw/skills/commit/44b80878ebb15ecf197a1d977c7f93b6adc05516"
+    "version": "1.0.0",
+    "publishedAt": 1772756530250,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "5.0.0",
+      "publishedAt": 1772456124088,
+      "commit": "https://github.com/openclaw/skills/commit/44b80878ebb15ecf197a1d977c7f93b6adc05516"
+    }
+  ]
 }
