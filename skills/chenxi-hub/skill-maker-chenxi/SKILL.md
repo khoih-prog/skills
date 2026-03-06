@@ -1,112 +1,161 @@
 ---
 name: skill-maker
-description: 用于根据对话记忆提炼可复用工作流并生成高质量 SKILL.md，适用于“从聊天沉淀方法论”“把一次性操作升级为可复用技能”场景。
+description: 创建和升级可复用技能。Use when: (1) 需要新建某类能力的技能, (2) 需要把对话/工作流沉淀为 SKILL.md, (3) 需要优化已有技能结构、触发词与资源组织。
+version: 1.2.0
+changelog: "v1.2.0: 对齐热门 Skill Maker 框架，新增 5 阶段锻造流程、决策树、自检清单和版本化规范。"
 metadata:
   openclaw:
-    emoji: "🧩"
+    emoji: "🔨"
+    category: "creation"
 ---
 
-# Skill Maker 使用说明
+# Skill Maker 🔨
+
+把一次性经验锻造成可复用技能。
 
 ## Trigger
-['创建skill', '新建技能', '写SKILL.md', '根据对话生成skill', '从聊天沉淀工作流', '技能抽取', 'skill-maker', '自动查找上下文生成skill']
 
-## 使用说明
-1. 触发方式：当用户表达“从对话生成技能/沉淀工作流/写 SKILL.md”时调用本技能。  
-2. 输入建议：至少提供以下三项中的两项  
-   - 任务主题关键词（如“会议纪要”“周报生成”）  
-   - 时间范围（如“最近 7 天对话”）  
-   - 来源范围（如“聊天记录 + 当前项目文件”）  
-3. 自动模式：未提供完整对话时，先自动检索上下文，再进行筛选和提炼。  
-4. 输出结果：产出可直接落地的 `SKILL.md` 草稿，并附上 skill 名称、触发词、适用边界与使用示例。  
-5. 失败兜底：若上下文不足，先返回“缺失信息清单”，再请求补充最小必要信息。
-6. 输出路径规范：默认写入 `~/.openclaw/skills/<skill-name>/SKILL.md`；不要写到 `~/.openclaw/workspace/skills`。
+['创建skill', '新建技能', '写SKILL.md', '根据对话生成skill', '沉淀工作流', '技能抽取', 'skill-maker', '优化技能']
 
-## Procedure
-1. 收集输入对话记忆：支持两种方式  
-   - 手动模式：用户直接提供对话片段  
-   - 自动模式：根据任务关键词自动检索最近会话、相关文件、历史草稿中的上下文  
-2. 自动模式上下文筛选：优先保留“目标、约束、偏好、操作步骤、产出格式、复盘经验”，剔除纯寒暄、重复信息与无关片段。  
-3. 判断是否值得沉淀为技能：仅当任务具备“可重复、可迁移、可验收”特征时创建 skill；纯一次性需求不沉淀。  
-4. 提炼任务主线：将对话中的零散动作归并为稳定流程，抽象为 4-8 个可执行步骤，避免写成具体项目细节。  
-5. 生成技能元信息：  
-   - `name` 使用小写英文加连字符（如 `weekly-report-maker`）  
-   - `description` 同时说明“解决什么问题 + 适用场景”  
-   - `trigger` 覆盖用户常见口语表达和同义词  
-6. 生成 SKILL.md 主体：按固定结构输出 `Trigger / Procedure / Experience / User Preferences / Examples`，必要时补充 `Tool Usage` 和 `Additional Information`。  
-7. 进行去敏与通用化处理：移除人名、账号、路径、密钥、内部代号等敏感信息；将具体业务词替换为通用表达。  
-8. 质量验收：检查“可执行性、可复用性、可读性、可调用性”，确保新 skill 可直接用于后续任务。  
-9. 输出生成结果：给出 skill 存放路径与简要使用说明，便于立即调用。
-10. 路径校验：若检测到输出在 `workspace/skills`，立即迁移到 `~/.openclaw/skills` 并告知最终路径。
+## 技能锻造流程（5 阶段）
 
-## Experience
-1. 先做“是否值得沉淀”的筛选，再写技能，能显著减少低价值 skill。  
-2. Procedure 应描述稳定方法论，不要绑定单次任务的对象和数据。  
-3. 示例必须接近最终交付形态，优先给可直接复用的 markdown 模板。  
-4. Trigger 要覆盖用户自然语言说法，否则技能很难被命中。  
-5. 先通用化再美化表达，通常能提升 skill 的长期复用率。
+1. **INTERPRET（理解）**：明确技能目标、触发人群、场景边界。  
+2. **DESIGN（设计）**：确定目录结构、触发词、复杂度和资源。  
+3. **FORGE（锻造）**：生成 `SKILL.md` 与配套 `reference/scripts/assets`。  
+4. **TEST（测试）**：验证触发命中、执行可行性、覆盖边界条件。  
+5. **POLISH（打磨）**：根据反馈修订并版本化发布。
 
-## User Preferences
-- 偏好结构化输出，章节稳定、可直接复用。  
-- 优先产出最小可用版本（MVP），再迭代补充参考资料。  
-- 解释要简洁，重点体现“怎么做”而不是“为什么很重要”。  
-- 能用清单表达的内容尽量清单化，便于执行和检查。
+## 决策树：这次要做什么
 
-## Examples
+- **全新技能**：从阶段 1 开始完整创建。  
+- **替换旧技能**：先读旧版，再保留有效部分做增量升级。  
+- **克隆改造**：复制同类技能，改名后按新场景重写触发词与流程。
 
-### 示例：自动提炼面试评估技能
+## 阶段 1：INTERPRET（理解）
 
-- 任务描述：从面试对话记录中提炼可复用评估技能。  
-- 输入：最近 7 天面试对话 + 目标岗位关键词。  
-- 输出：结构化 `SKILL.md` 草稿。  
+### 核心问题
 
-示例输出结构：
+- 这个技能到底解决什么问题？  
+- 用户会用什么自然语言触发它？  
+- 场景属于哪个领域（文档、数据、自动化、协作）？  
+- 复杂度是简单/中等/复杂？
 
-    ---
-    name: interview-summary-maker
-    description: 用于从面试对话记录中提炼结构化总结，适用于候选人评估、复盘和团队同步场景。
-    ---
-    ## Trigger
-    ['面试总结', '候选人复盘', '生成评估报告']
-    ## Procedure
-    1. 收集并合并面试对话记录
-    2. 提炼维度（沟通、技术、经验匹配、风险）
-    3. 将主观评价转为证据化描述
-    4. 生成结构化结论与建议
+### 自检清单
+
+- [ ] 能用一句话描述技能能力  
+- [ ] 能列出 3-8 个触发表达  
+- [ ] 能说明该技能与已有技能的区别
+
+## 阶段 2：DESIGN（设计）
+
+### 复杂度判定
+
+- **简单**：仅 `SKILL.md`  
+- **中等**：`SKILL.md + reference/`  
+- **复杂**：`SKILL.md + reference/ + scripts/ (可选 assets/)`
+
+### 目录结构规范
+
+```text
+skill-name/
+├── SKILL.md
+├── reference/
+│   └── reference.md
+├── scripts/        # 可选
+└── assets/         # 可选
+```
+
+### 触发词与描述公式
+
+- 描述建议：`[能力说明]。Use when: (1) [场景1], (2) [场景2], (3) [场景3]。`
+- 触发词必须覆盖口语化表达，避免只写技术术语。
+
+### 自检清单
+
+- [ ] `name` 为小写英文加连字符  
+- [ ] `description` 同时包含能力与场景  
+- [ ] 已确定需要哪些资源文件
+
+## 阶段 3：FORGE（锻造）
+
+### 生成规则
+
+1. 根据上下文（手动提供或自动检索）提炼流程。  
+2. 产出稳定结构：`Trigger / Workflow / Experience / Examples / Tool Usage / Additional Information`。  
+3. 加入必要分支决策（如成功/失败兜底、输入不足补问）。  
+4. 去敏处理：移除人名、账号、路径、密钥、内部代号。
+
+### 输出路径（强制）
+
+- 默认写入：`~/.openclaw/skills/<skill-name>/SKILL.md`  
+- 禁止写入：`~/.openclaw/workspace/skills/*`  
+- 若误写入，必须立即迁移并回报最终路径。
+
+### 自检清单
+
+- [ ] frontmatter 完整（name/description/version/changelog）  
+- [ ] 正文包含可执行流程而非空泛原则  
+- [ ] 示例能直接复用
+
+## 阶段 4：TEST（测试）
+
+### 触发测试
+
+针对 `description` 和 `Trigger`，验证：
+
+- 用户说「帮我做 X」能否命中？  
+- 用户说「我想把 Y 自动化」能否命中？  
+- 同义词/口语说法是否能命中？
+
+### 质量门禁
+
+- [ ] 可执行：步骤清晰、前后依赖明确  
+- [ ] 可复用：不绑定一次性场景  
+- [ ] 可维护：结构稳定、易迭代  
+- [ ] 可定位：文件路径与命名规范
+
+## 阶段 5：POLISH（打磨）
+
+### 常见修复
+
+- 命中率低：补充 `Use when` 场景和 Trigger 同义词。  
+- 内容过长：将细节迁移到 `reference/reference.md`。  
+- 场景覆盖不足：新增 Examples 和 Troubleshooting。  
+- 版本混乱：按语义化版本号更新。
+
+### 版本规范
+
+- 修复 bug：`1.0.0 -> 1.0.1`  
+- 新增能力（兼容）：`1.0.1 -> 1.1.0`  
+- 破坏性变更：`1.1.0 -> 2.0.0`
+
+## Example
+
+### 示例：从对话沉淀 `meeting-notes-maker`
+
+- 输入：最近 7 天会议相关对话 + 主题关键词 + 输出名称  
+- 输出：`~/.openclaw/skills/meeting-notes-maker/SKILL.md`  
+- 核心步骤：抽取目标 -> 合并上下文 -> 结构化流程 -> 去敏 -> 验收
 
 ## Tool Usage
-文本编辑器、知识库文档平台、会话日志检索工具（如历史消息检索、笔记系统）均可。
+
+- 文本编辑：Markdown 编辑器  
+- 上下文检索：会话日志/项目文件检索  
+- 发布分发：可结合 `clawhub publish` 做版本发布
 
 ## Additional Information
 
-### 标准 SKILL.md 格式规范（参考 browser-scrape）
-- 必须包含 frontmatter：`name`、`description`，可选 `metadata.openclaw.emoji`  
-- 建议固定章节顺序：`Trigger -> 使用说明/推荐流程 -> Experience -> User Preferences -> Examples -> Tool Usage -> Additional Information`  
-- `Trigger` 需覆盖口语化关键词，避免只写技术术语  
-- `Procedure/推荐流程` 每步应可执行，避免抽象原则堆叠  
-- `Examples` 需包含“输入-输出”或完整 markdown 产出模板  
-- 有外部文档时，使用 `See also` 链接到 `./reference/reference.md`
+### 标准格式要点
 
-### 自动模式输入建议
-- 指定主题关键词：例如“会议纪要整理”“周报生成”“需求评审”  
-- 指定时间范围：例如“最近 7 天对话”  
-- 指定来源范围：例如“聊天记录 + 当前项目相关文件”  
-- 指定输出名称：例如 `meeting-recap-maker`
+- frontmatter：`name`、`description` 必填，推荐 `version`、`changelog`  
+- 建议章节：`Trigger -> Workflow -> Experience -> Examples -> Tool Usage -> Additional Information`  
+- 复杂技能建议配 `reference/reference.md`
 
-### 是否值得创建 skill（快速判定）
-- 该任务是否会重复出现至少 3 次  
-- 是否存在稳定输入、稳定步骤和稳定输出  
-- 他人是否可以按该 skill 独立执行
+### 失败兜底
 
-### SKILL.md 质量检查清单
-- 名称是否为小写英文加连字符（如 `skill-maker`）  
-- description 是否包含“能力 + 场景 + 边界”  
-- Trigger 是否覆盖口语化表达和同义词  
-- Procedure 是否可执行且有顺序依赖  
-- Experience 是否是跨场景经验而非单次复盘  
-- 示例是否展示完整输出结构且可复用  
-- 是否完成去敏处理（人名、账号、路径、密钥）
+- 上下文不足时，不强行生成；先输出缺失信息清单（主题、时间范围、来源范围、目标名称）。  
+- 不确定路径时，默认采用 `~/.openclaw/skills`。
 
 ## See also
 
-- [reference/reference.md](./reference/reference.md) — 自动上下文检索、技能提炼规则与标准产出模板。
+- [reference/reference.md](./reference/reference.md) — 自动上下文检索策略、产出模板与质量检查。
