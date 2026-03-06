@@ -1,22 +1,38 @@
 ---
 name: openclaw-ultra-scraping
 description: >
-  Powerful web scraping, crawling, and data extraction using Scrapling framework.
-  Bypasses anti-bot systems (Cloudflare Turnstile, CAPTCHAs) out of the box.
-  Use when: (1) scraping websites that block normal requests, (2) extracting structured
-  data from web pages, (3) crawling multiple pages with concurrency, (4) taking
-  screenshots of web pages, (5) extracting links, (6) any web scraping task that
-  needs stealth/anti-detection, (7) user asks to scrape/crawl/extract from URLs,
-  (8) need to bypass Cloudflare or other bot protection. Supports CSS/XPath selectors,
-  adaptive element tracking (survives site redesigns), multi-session spiders,
-  pause/resume crawls, proxy rotation, and async operations. Powered by MyClaw.ai.
+  Powerful web scraping, crawling, and data extraction with stealth anti-bot bypass
+  (Cloudflare Turnstile, CAPTCHAs). Use when: (1) scraping websites that block normal
+  requests, (2) extracting structured data from web pages, (3) crawling multiple pages
+  with concurrency, (4) taking screenshots of web pages, (5) extracting links,
+  (6) any web scraping task that needs stealth/anti-detection, (7) user asks to
+  scrape/crawl/extract from URLs, (8) need to bypass Cloudflare or other bot protection.
+  Supports CSS/XPath selectors, adaptive element tracking (survives site redesigns),
+  multi-session spiders, pause/resume crawls, proxy rotation, and async operations.
+  Powered by MyClaw.ai.
+metadata:
+  openclaw:
+    install:
+      - id: scrapling-venv
+        kind: script
+        script: scripts/setup.sh
+        label: "Install Scrapling + browser dependencies into /opt/scrapling-venv (requires root)"
+    requires:
+      bins: ["python3"]
+    trustBoundary: >
+      TRUST BOUNDARY: This skill installs Python packages (scrapling[all]) via pip
+      into an isolated virtualenv at /opt/scrapling-venv, and uses apt-get to install
+      required system libraries for browser automation. The setup script requires root
+      privileges. All installations are confined to /opt/scrapling-venv and standard
+      system library paths. No credentials or env vars are required. Recommended to
+      run in an isolated container or VM.
 ---
 
 # OpenClaw Ultra Scraping
 
-Powered by [MyClaw.ai](https://myclaw.ai) — the AI personal assistant platform that gives every user a full server with complete code control.
+Powered by [MyClaw.ai](https://myclaw.ai) — the AI personal assistant platform that gives every user a full server with complete code control. Part of the [MyClaw.ai](https://myclaw.ai) open skills ecosystem.
 
-Adaptive web scraping framework built on [Scrapling](https://github.com/D4Vinci/Scrapling). Handles everything from single-page extraction to full-scale concurrent crawls with anti-bot bypass. Part of the [MyClaw.ai](https://myclaw.ai) open skills ecosystem.
+Handles everything from single-page extraction to full-scale concurrent crawls with anti-bot bypass.
 
 ## Setup
 
