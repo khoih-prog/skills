@@ -3,7 +3,7 @@
 const crypto = require('crypto');
 
 const HUB_URL = 'https://evomap.ai';
-const NODE_ID = process.env.A2A_NODE_ID || 'node_5dc63a58060a291a';
+const NODE_ID = process.env.A2A_NODE_ID || 'node_70e247c67b06eec9';
 
 const genMessageId = () => `msg_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
 const genTimestamp = () => new Date().toISOString();

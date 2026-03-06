@@ -5,9 +5,10 @@
 
 LOG_FILE="/tmp/evomap-task.log"
 SKILL_DIR="$HOME/.openclaw/workspace/skills/evomap-lite-client"
-NODE_ID="node_5dc63a58060a291a"
+NODE_ID="node_70e247c67b06eec9"
 NODE_PATH="/root/.nvm/versions/node/v22.22.0/bin/node"
 NOTIFY_SCRIPT="$SKILL_DIR/notify.sh"
+MAX_RETRIES=8  # 增加重试次数
 
 echo "========================================" >> $LOG_FILE
 echo "执行时间：$(date)" >> $LOG_FILE
@@ -18,17 +19,38 @@ cd $SKILL_DIR
 export A2A_NODE_ID=$NODE_ID
 export PATH="$NODE_PATH:$PATH"
 
-# 步骤 1：获取任务
-echo "【步骤 1】获取任务..." >> $LOG_FILE
-result=$($NODE_PATH index.js fetch 2>&1)
-echo "$result" >> $LOG_FILE
+# 步骤 1：获取任务（增强重试）
+echo "【步骤 1】获取任务... (最大重试：$MAX_RETRIES)" >> $LOG_FILE
+
+# 手动实现增强重试逻辑，避免 rate limit
+for i in $(seq 1 $MAX_RETRIES); do
+    echo "尝试第 $i 次获取任务..." >> $LOG_FILE
+    result=$($NODE_PATH index.js fetch 2>&1)
+    echo "$result" >> $LOG_FILE
+    
+    # 检查是否获取到任务
+    if echo "$result" | grep -q "获取到 [1-9]"; then
+        echo "✅ 成功获取到任务" >> $LOG_FILE
+        break
+    fi
+    
+    # 如果是 server_busy 或 rate_limited，等待后重试
+    if echo "$result" | grep -q "server_busy\|rate_limited"; then
+        wait_time=$((3000 + i * 1000))  # 递增等待时间
+        echo "⏳ 服务器繁忙，等待 ${wait_time}ms 后重试..." >> $LOG_FILE
+        sleep $(echo "scale=3; $wait_time/1000" | bc)
+    else
+        # 无任务或其他错误，退出循环
+        break
+    fi
+done
 
 # 检查是否有任务
 if echo "$result" | grep -q "获取到 0 个任务"; then
     echo "⏳ 暂无可用任务，等待下次执行" >> $LOG_FILE
     echo "STATUS: NO_TASKS" >> $LOG_FILE
     echo "" >> $LOG_FILE
-    # bash "$NOTIFY_SCRIPT" "NO_TASKS"  # 通知功能已禁用
+    # 无任务时不通知
     exit 0
 fi
 
@@ -57,7 +79,7 @@ if echo "$claim_result" | grep -q '"error"'; then
     echo "⚠️  认领任务失败" >> $LOG_FILE
     echo "STATUS: CLAIM_FAILED" >> $LOG_FILE
     echo "" >> $LOG_FILE
-    # bash "$NOTIFY_SCRIPT" "CLAIM_FAILED" "$TASK_ID"  # 通知功能已禁用
+    bash "$NOTIFY_SCRIPT" "CLAIM_FAILED" "$TASK_ID"
     exit 0
 fi
 
@@ -94,16 +116,16 @@ if echo "$publish_result" | grep -q "发布成功\|published\|duplicate_asset"; 
     if echo "$complete_result" | grep -q '"error"'; then
         echo "⚠️  完成任务失败" >> $LOG_FILE
         echo "STATUS: COMPLETE_FAILED" >> $LOG_FILE
-        # bash "$NOTIFY_SCRIPT" "COMPLETE_FAILED" "$TASK_ID"  # 通知功能已禁用
+        bash "$NOTIFY_SCRIPT" "COMPLETE_FAILED" "$TASK_ID"
     else
         echo "✅ 任务完成成功！" >> $LOG_FILE
         echo "STATUS: SUCCESS" >> $LOG_FILE
-        # bash "$NOTIFY_SCRIPT" "SUCCESS" "$TASK_ID"  # 通知功能已禁用
+        bash "$NOTIFY_SCRIPT" "SUCCESS" "$TASK_ID"
     fi
 else
     echo "⚠️  发布解决方案失败" >> $LOG_FILE
     echo "STATUS: PUBLISH_FAILED" >> $LOG_FILE
-    # bash "$NOTIFY_SCRIPT" "PUBLISH_FAILED" "$TASK_ID"  # 通知功能已禁用
+    bash "$NOTIFY_SCRIPT" "PUBLISH_FAILED" "$TASK_ID"
 fi
 
 echo "" >> $LOG_FILE

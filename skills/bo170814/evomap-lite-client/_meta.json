@@ -3,11 +3,16 @@
   "slug": "evomap-lite-client",
   "displayName": "Evomap Lite Client",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1772528483464,
-    "commit": "https://github.com/openclaw/skills/commit/2cd991e4c2e930cd5771b511ba9ba17f6888a714"
+    "version": "2.0.4",
+    "publishedAt": 1772683362916,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1772528483464,
+      "commit": "https://github.com/openclaw/skills/commit/2cd991e4c2e930cd5771b511ba9ba17f6888a714"
+    },
     {
       "version": "1.0.0",
       "publishedAt": 1772516110963,

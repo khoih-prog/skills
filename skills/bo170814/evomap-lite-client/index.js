@@ -207,10 +207,10 @@ const startHeartbeatLoop = async () => {
   }
 };
 
-// 3. 获取任务
-const fetchTasks = async (retryCount = 5) => {
+// 3. 获取任务（增强版 - 智能重试）
+const fetchTasks = async (retryCount = 8) => {
   const nodeId = getNodeId();
-  console.log(`\n【2】获取任务列表 (重试：${retryCount})`);
+  console.log(`\n【2】获取任务列表 (最大重试：${retryCount})`);
   
   const payload = {
     protocol: 'gep-a2a',
@@ -225,15 +225,30 @@ const fetchTasks = async (retryCount = 5) => {
   try {
     const result = await post('/a2a/fetch', payload);
     
+    // 处理 server_busy - 使用服务器建议的等待时间
     if (result.error === 'server_busy') {
       if (retryCount > 0) {
-        const waitMs = result.retry_after_ms || 3000;
-        console.log(`⏳ 等待 ${waitMs}ms 后重试...`);
+        const waitMs = result.retry_after_ms || (3000 + (8 - retryCount) * 1000); // 递增等待
+        console.log(`⏳ 服务器繁忙，等待 ${waitMs}ms 后重试... (剩余：${retryCount - 1})`);
         await sleep(waitMs);
         return await fetchTasks(retryCount - 1);
       }
-      console.log('⚠️  服务器持续繁忙');
-      return { tasks: [] };
+      console.log('⚠️  服务器持续繁忙，放弃重试');
+      return { tasks: [], error: 'server_busy' };
+    }
+    
+    // 处理 rate_limited - 严格遵守等待时间
+    if (result.error === 'rate_limited') {
+      const waitMs = result.context?.retry_after_ms || 30000;
+      const nextRequestAt = result.context?.next_request_at;
+      console.log(`⚠️  频率受限，需等待 ${waitMs}ms`);
+      if (nextRequestAt) console.log(`   下次请求时间：${nextRequestAt}`);
+      
+      if (retryCount > 0 && waitMs < 60000) { // 只等待小于 1 分钟的情况
+        await sleep(waitMs + Math.random() * 200); // 添加小抖动
+        return await fetchTasks(retryCount - 1);
+      }
+      return { tasks: [], error: 'rate_limited' };
     }
     
     const tasks = result.tasks || [];
@@ -241,16 +256,25 @@ const fetchTasks = async (retryCount = 5) => {
     const filteredTasks = tasks.filter(t => (t.bounty || 0) >= minBounty);
     
     console.log(`📋 获取到 ${tasks.length} 个任务`);
-    if (minBounty > 0) console.log(`   过滤后（≥${minBounty} credits）: ${filteredTasks.length} 个`);
+    if (minBounty > 0 && filteredTasks.length < tasks.length) {
+      console.log(`   过滤后（≥${minBounty} credits）: ${filteredTasks.length} 个`);
+    }
+    
+    // 记录成功获取（即使为空）
+    if (tasks.length > 0) {
+      updateState({ lastFetchSuccess: new Date().toISOString(), lastTaskCount: tasks.length });
+    }
     
     return { ...result, tasks: filteredTasks };
   } catch (error) {
     console.error('❌ 获取任务失败:', error.message);
     if (retryCount > 0) {
-      await sleep(2000);
+      const waitMs = 2000 + (8 - retryCount) * 500; // 递增等待
+      console.log(`⏳ 网络错误，等待 ${waitMs}ms 后重试...`);
+      await sleep(waitMs);
       return await fetchTasks(retryCount - 1);
     }
-    return { tasks: [] };
+    return { tasks: [], error: 'network_error' };
   }
 };
 
