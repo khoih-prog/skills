@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Medical Record Processor with SkillPay Billing Integration
+Medical Record Processor with SkillPay Billing Integration and Free Trial
 Processes unstructured medical notes into standardized EMR format.
 """
 
@@ -21,6 +21,81 @@ BILLING_API_URL = 'https://skillpay.me'
 BILLING_API_KEY = os.environ.get('SKILLPAY_API_KEY', '')
 SKILL_ID = os.environ.get('SKILLPAY_SKILL_ID', '')  # Set your SkillPay Skill ID
 DEFAULT_PRICE = 0.001  # USDT per call
+
+# ═══════════════════════════════════════════════════
+# Free Trial Manager / 免费试用管理
+# ═══════════════════════════════════════════════════
+class TrialManager:
+    """Manages free trial usage for users."""
+    
+    def __init__(self, skill_name: str):
+        self.skill_name = skill_name
+        self.trial_dir = os.path.expanduser("~/.openclaw/skill_trial")
+        self.trial_file = os.path.join(self.trial_dir, f"{skill_name}.json")
+        self.max_free_calls = 10
+        
+        # Ensure trial directory exists
+        os.makedirs(self.trial_dir, exist_ok=True)
+    
+    def _load_trial_data(self) -> Dict[str, Any]:
+        """Load trial data from file."""
+        if os.path.exists(self.trial_file):
+            try:
+                with open(self.trial_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except (json.JSONDecodeError, IOError):
+                return {}
+        return {}
+    
+    def _save_trial_data(self, data: Dict[str, Any]):
+        """Save trial data to file."""
+        try:
+            with open(self.trial_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+        except IOError as e:
+            print(f"Warning: Could not save trial data: {e}", file=sys.stderr)
+    
+    def get_trial_remaining(self, user_id: str) -> int:
+        """Get remaining free trial calls for a user."""
+        if not user_id:
+            return 0
+        
+        data = self._load_trial_data()
+        user_data = data.get(user_id, {})
+        used_calls = user_data.get('used_calls', 0)
+        
+        return max(0, self.max_free_calls - used_calls)
+    
+    def use_trial(self, user_id: str) -> bool:
+        """Record a free trial usage for a user."""
+        if not user_id:
+            return False
+        
+        data = self._load_trial_data()
+        
+        if user_id not in data:
+            data[user_id] = {'used_calls': 0, 'first_use': datetime.now().isoformat()}
+        
+        data[user_id]['used_calls'] += 1
+        data[user_id]['last_use'] = datetime.now().isoformat()
+        
+        self._save_trial_data(data)
+        return True
+    
+    def get_trial_info(self, user_id: str) -> Dict[str, Any]:
+        """Get full trial information for a user."""
+        remaining = self.get_trial_remaining(user_id)
+        data = self._load_trial_data()
+        user_data = data.get(user_id, {})
+        
+        return {
+            'trial_mode': remaining > 0,
+            'trial_remaining': remaining,
+            'trial_total': self.max_free_calls,
+            'trial_used': user_data.get('used_calls', 0),
+            'first_use': user_data.get('first_use'),
+            'last_use': user_data.get('last_use')
+        }
 
 
 class SkillPayBilling:
@@ -105,6 +180,7 @@ class MedicalRecordStructurer:
     
     def __init__(self, api_key: str = BILLING_API_KEY):
         self.billing = SkillPayBilling(api_key)
+        self.trial = TrialManager("medical-record-structurer")
         self.fields = {
             "patient_name": None,
             "gender": None,
@@ -272,7 +348,7 @@ class MedicalRecordStructurer:
             "metadata": {
                 "source_text": text,
                 "processed_at": datetime.now().isoformat(),
-                "processor_version": "1.0.1"
+                "processor_version": "1.0.4"
             }
         }
         
@@ -280,20 +356,39 @@ class MedicalRecordStructurer:
     
     def process(self, text: str, user_id: str = "") -> Dict[str, Any]:
         """
-        Full processing pipeline with SkillPay billing.
+        Full processing pipeline with SkillPay billing and free trial support.
         """
         if not user_id:
             return {
                 "success": False,
-                "error": "User ID is required for billing"
+                "error": "User ID is required"
             }
         
+        # Check free trial status
+        trial_remaining = self.trial.get_trial_remaining(user_id)
+        
+        if trial_remaining > 0:
+            # Free trial mode - no billing
+            self.trial.use_trial(user_id)
+            structured_record = self.structure_record(text)
+            
+            return {
+                "success": True,
+                "trial_mode": True,
+                "trial_remaining": trial_remaining - 1,
+                "balance": None,
+                "structured_record": structured_record
+            }
+        
+        # Normal billing mode
         # Step 1: Check balance first
         balance = self.billing.check_balance(user_id)
         if balance < DEFAULT_PRICE:
             payment_url = self.billing.get_payment_link(user_id, DEFAULT_PRICE)
             return {
                 "success": False,
+                "trial_mode": False,
+                "trial_remaining": 0,
                 "error": "Insufficient balance",
                 "balance": balance,
                 "paymentUrl": payment_url,
@@ -305,6 +400,8 @@ class MedicalRecordStructurer:
         if not charge_result.get('ok'):
             return {
                 "success": False,
+                "trial_mode": False,
+                "trial_remaining": 0,
                 "error": "Payment failed",
                 "balance": charge_result.get('balance', 0),
                 "paymentUrl": charge_result.get('paymentUrl'),
@@ -315,6 +412,8 @@ class MedicalRecordStructurer:
         
         return {
             "success": True,
+            "trial_mode": False,
+            "trial_remaining": 0,
             "balance": charge_result.get('balance'),
             "structured_record": structured_record
         }
@@ -339,13 +438,6 @@ def main():
     
     # Use environment variable if not provided
     api_key = args.api_key or os.environ.get('SKILLPAY_API_KEY', '')
-    
-    if not api_key:
-        print(json.dumps({
-            "success": False,
-            "error": "API key is required. Set SKILLPAY_API_KEY environment variable or use --api-key"
-        }, ensure_ascii=False))
-        return 1
     
     # Process the record
     result = process_medical_record(args.input, args.user_id, api_key)
