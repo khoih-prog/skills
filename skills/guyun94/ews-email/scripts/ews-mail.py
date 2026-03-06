@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """EWS Mail CLI - himalaya-compatible interface over Exchange Web Services."""
-import sys, json, argparse, os
+import sys, json, argparse, os, getpass
 from exchangelib import (
     Credentials, Account, Configuration, DELEGATE,
     Message, Mailbox, FileAttachment
@@ -8,17 +8,37 @@ from exchangelib import (
 import urllib3
 urllib3.disable_warnings()
 
+KEYRING_SERVICE = "openclaw-ews-email"
+
 SERVER = os.environ.get("EWS_SERVER", "")
 EMAIL = os.environ.get("EWS_EMAIL", "")
-PASSWORD = os.environ.get("EWS_PASSWORD", "")
 
-if not all([SERVER, EMAIL, PASSWORD]):
-    print("Error: EWS_SERVER, EWS_EMAIL, EWS_PASSWORD environment variables must be set.", file=sys.stderr)
-    sys.exit(1)
+def get_password():
+    """Get password from system keyring. Never from env vars or config files."""
+    try:
+        import keyring
+    except ImportError:
+        print("Error: keyring module not installed. Run: pip3 install keyring", file=sys.stderr)
+        sys.exit(1)
+    email = EMAIL
+    if not email:
+        print("Error: EWS_EMAIL environment variable must be set.", file=sys.stderr)
+        sys.exit(1)
+    password = keyring.get_password(KEYRING_SERVICE, email)
+    if not password:
+        print(f"Error: No password found in keyring for {email}.", file=sys.stderr)
+        print(f"Run: python3 {__file__} setup", file=sys.stderr)
+        sys.exit(1)
+    return password
+
 CACHE_FILE = os.path.expanduser("~/.openclaw/.ews-mail-cache.json")
 
 def get_account():
-    creds = Credentials(username=EMAIL, password=PASSWORD)
+    if not all([SERVER, EMAIL]):
+        print("Error: EWS_SERVER, EWS_EMAIL environment variables must be set.", file=sys.stderr)
+        sys.exit(1)
+    password = get_password()
+    creds = Credentials(username=EMAIL, password=password)
     config = Configuration(server=SERVER, credentials=creds)
     return Account(primary_smtp_address=EMAIL, config=config,
                    autodiscover=False, access_type=DELEGATE)
@@ -64,6 +84,30 @@ def find_message(account, msg_id):
     except Exception:
         pass
     return None
+
+# --- setup command ---
+
+def cmd_setup(args):
+    """Interactive setup: store EWS password in system keyring."""
+    try:
+        import keyring
+    except ImportError:
+        print("Error: keyring module not installed. Run: pip3 install keyring", file=sys.stderr)
+        sys.exit(1)
+
+    email = EMAIL or input("EWS Email: ").strip()
+    if not email:
+        print("Email cannot be empty.", file=sys.stderr)
+        sys.exit(1)
+
+    password = getpass.getpass(f"EWS Password for {email}: ")
+    if not password:
+        print("Password cannot be empty.", file=sys.stderr)
+        sys.exit(1)
+
+    keyring.set_password(KEYRING_SERVICE, email, password)
+    print(f"Password saved to system keyring (service: {KEYRING_SERVICE}, account: {email})")
+    print("You can now use ews-email commands. Password will never appear in config files.")
 
 # --- commands ---
 
@@ -249,6 +293,7 @@ def main():
     p = argparse.ArgumentParser(description="EWS Mail CLI")
     sub = p.add_subparsers(dest="cmd")
 
+    sub.add_parser("setup")
     sub.add_parser("folder-list")
 
     el = sub.add_parser("envelope-list")
@@ -297,6 +342,7 @@ def main():
 
     args = p.parse_args()
     cmds = {
+        "setup": cmd_setup,
         "folder-list": cmd_folder_list, "envelope-list": cmd_envelope_list,
         "message-read": cmd_message_read, "message-send": cmd_message_send,
         "message-reply": cmd_message_reply, "message-forward": cmd_message_forward,

@@ -1,12 +1,13 @@
 ---
 name: ews-email
-version: 1.0.0
+version: 1.1.0
 description: "CLI to manage enterprise Outlook emails via Exchange Web Services (EWS). Use ews-mail.py to list, read, reply, forward, search, send, move, delete emails and download attachments."
 metadata:
   openclaw:
     emoji: "📧"
     requires:
       bins: ["python3"]
+      pips: ["keyring", "exchangelib"]
     primaryEnv: "EWS_EMAIL"
 ---
 
@@ -14,13 +15,27 @@ metadata:
 
 A CLI for enterprise Exchange (EWS) email. Use when the user asks about email, inbox, messages, or mail.
 
-## Setup
+## Setup (first time only)
 
-Set these environment variables before use:
+Set these environment variables in `~/.openclaw/config.yaml`:
 
-- `EWS_SERVER` — Exchange server hostname (e.g. mail.company.com)
-- `EWS_EMAIL` — Your email address (e.g. user@company.com)
-- `EWS_PASSWORD` — Your email password
+- `EWS_SERVER` — Exchange server hostname
+- `EWS_EMAIL` — Your email address
+
+Then run the setup command to securely store your password in the system keyring:
+
+```bash
+python3 ~/.openclaw/skills/ews-email/scripts/ews-mail.py setup
+```
+
+The password is stored in macOS Keychain / Windows Credential Manager / Linux Secret Service. It never appears in any config file.
+
+## SECURITY RULES
+
+- **NEVER** attempt to read, display, or output the EWS password.
+- **NEVER** run commands that could expose keyring contents.
+- **NEVER** include passwords in any output, log, or message.
+- The password is managed exclusively through the `setup` command.
 
 ## IMPORTANT: Reading Email Content
 
