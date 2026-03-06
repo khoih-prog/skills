@@ -1,175 +1,192 @@
 ---
-name: elytro-cli-usage
+name: elytro-wallet-cli-skill
 description: >
-  How to operate the Elytro CLI — an ERC-4337 smart account wallet for developers.
-  Covers the full happy-path lifecycle: wallet initialization, account creation/activation,
-  transaction building/sending/simulating, on-chain queries, security hooks (2FA),
-  and configuration management. Use this skill whenever you need to interact with
-  Elytro smart accounts from the command line, manage ERC-4337 UserOperations,
-  query balances or token holdings, send ETH or call contracts via UserOps, or set up
-  2FA security hooks. Also use it when working with the `elytro` CLI binary,
-  or any task involving smart account wallets on Ethereum, Optimism, Arbitrum, or
-  their testnets.
+  Elytro — security-first ERC-4337 smart account wallet CLI for AI agents.
+  On-chain 2FA, configurable spending limits, and macOS Keychain-backed vault.
+  Send ETH, ERC-20 tokens, and batch transactions via UserOperations on Ethereum,
+  Optimism, and Arbitrum. Account abstraction wallet with gas sponsorship,
+  counterfactual deployment, social recovery, and guardian management.
+version: 0.2.0
+metadata:
+  openclaw:
+    requires:
+      bins:
+        - elytro
+      # No env vars required — vault key is managed by macOS Keychain.
+    emoji: '🔐'
+    homepage: https://github.com/Elytro-eth/Elytro/tree/main/apps/cli
+    os: ['macos']
 ---
 
-# Elytro CLI Usage Guide
+# Elytro CLI — OpenClaw Agent Skill
 
-This document teaches an AI agent how to operate the Elytro CLI — a command-line tool
-for managing ERC-4337 smart account wallets. Published as `@elytro/cli` on npm.
-
-The target audience is an autonomous agent (e.g. OpenClaw) that needs to drive the CLI
-end-to-end without human hand-holding. Every command, flag, and output format is
-documented here so the agent can plan multi-step workflows and parse structured output.
-
----
-
-## Installation
-
-```bash
-npm install -g @elytro/cli
-```
-
-This installs the `elytro` binary globally. Verify with:
-
-```bash
-elytro --version
-```
-
-Requires **Node.js 24+** (`node -v` to check).
-
-After installation, all commands are invoked as:
-
-```bash
-elytro [command] [subcommand] [options]
-```
-
-### Environment Variables
-
-| Variable             | Purpose                              | When Required                          |
-|----------------------|--------------------------------------|----------------------------------------|
-| `ELYTRO_ALCHEMY_KEY` | Alchemy RPC — higher rate limits     | Optional (public RPC used if absent)   |
-| `ELYTRO_PIMLICO_KEY` | Pimlico bundler/paymaster            | Optional (public bundler if absent)    |
-| `ELYTRO_ENV`         | `development` or `production` (default) | Optional                            |
-
-Public endpoints work out of the box for basic usage. Set keys via
-`elytro config set alchemy-key <KEY>` / `elytro config set pimlico-key <KEY>` for
-production reliability.
+This skill teaches an autonomous agent how to operate the Elytro CLI end-to-end.
+Every command, flag, output format, and error shape is documented so the agent can
+plan multi-step workflows and parse structured output without human intervention.
 
 ---
 
-## Wallet Lifecycle (Happy Path)
+## Secret Management
 
-A typical first-time flow looks like this:
+### Vault Key (macOS Keychain — zero configuration)
 
+The vault key is a 256-bit random key that decrypts the local keyring vault.
+
+On macOS, `elytro init` generates the vault key and stores it in the **system
+Keychain** automatically. Every subsequent CLI invocation loads it from Keychain
+with no env vars, no SecretRef, and no user interaction. This is the only
+officially supported platform.
+
+**The user never sees, copies, or configures the vault key.** It is fully managed
+by the OS.
+
+#### Security Properties
+
+- **Domain separation**: The encrypted vault (`keyring.json`) lives on disk; the
+  decryption key lives in Keychain. Copying `~/.elytro/` to another machine is
+  useless without the Keychain entry.
+- **OS-level protection**: Keychain is encrypted with the user's login password and
+  locked when the user is logged out or the machine is powered off.
+- **Zero-fill**: The raw key buffer is zeroed in memory after the keyring is unlocked.
+
+### Non-macOS Fallback (not recommended)
+
+> **Warning**: Running on Windows, Linux or in containers weakens the security model.
+> The vault key must be injected as an environment variable (`ELYTRO_VAULT_SECRET`),
+> which is exposed to `/proc/PID/environ`, inherited by child processes before
+> consume-once scrubbing, and lacks hardware-backed protection. Use at your own risk. **Users must be fully briefed on these limitations**
+> On-chain SecurityHook (2FA + spending limits) is strongly recommended as
+> compensating control.
+
+If you must run on Non-macOS:
+
+1. `elytro init` prints the vault key once as `ELYTRO_VAULT_SECRET="<base64>"`.
+2. The agent captures this value and stores it in SecretRef.
+3. On subsequent runs, OpenClaw injects it as an env var. The CLI reads it once
+   and immediately deletes it from `process.env` (consume-once).
+
+```jsonc
+// openclaw.json — only needed on non-macOS
+{
+  "skills": {
+    "entries": {
+      "elytro-cli": {
+        "env": {
+          "ELYTRO_VAULT_SECRET": {
+            "source": "env",
+            "provider": "default",
+            "id": "ELYTRO_VAULT_SECRET",
+          },
+        },
+      },
+    },
+  },
+}
 ```
-init → account create → (fund the address) → account activate → tx send / query
-```
 
-Each step depends on the previous one. The sections below walk through every command
-in the order you would use them.
+### Optional API Keys
+
+These improve reliability but are not required for basic operation:
+
+| Variable             | Purpose                          | Injected Via                                     |
+| -------------------- | -------------------------------- | ------------------------------------------------ |
+| `ELYTRO_ALCHEMY_KEY` | Alchemy RPC (higher rate limits) | `elytro config set alchemy-key <KEY>` or env var |
+| `ELYTRO_PIMLICO_KEY` | Pimlico bundler/paymaster        | `elytro config set pimlico-key <KEY>` or env var |
+
+These can be persisted once via `config set` and don't need re-injection.
 
 ---
 
-## 1. Initialize the Wallet
+## First-Time Setup
+
+An agent running against a fresh `~/.elytro/` must execute this sequence exactly once:
 
 ```bash
+# Step 1: Initialize wallet
+# Vault key is auto-stored in macOS Keychain. No secrets to manage.
 elytro init
+
+# Step 2: Create a smart account on a testnet
+elytro account create --chain 11155420 --alias agent-primary
+
+# Step 3: (Optional) Set API keys for better reliability
+elytro config set alchemy-key "$ELYTRO_ALCHEMY_KEY"
+elytro config set pimlico-key "$ELYTRO_PIMLICO_KEY"
 ```
 
-Creates a 256-bit device key at `~/.elytro/.device-key` (chmod 600) and generates
-an EOA signing key encrypted in `~/.elytro/keyring.json`. No password is needed —
-the device key on disk is the access control.
+The user does not need to configure any secrets. The Keychain handles vault key
+storage and retrieval automatically.
 
-**Idempotent**: running `init` twice prints "Wallet already initialized" and exits
-cleanly (exit code 0).
-
-**What happens internally**: device key → encrypt EOA private key → write vault to
-disk. On every subsequent CLI invocation the device key is loaded automatically and
-the keyring is unlocked in memory.
+**Idempotent**: Running `init` on an already-initialized wallet exits cleanly
+(exit code 0) with message "Wallet already initialized."
 
 ---
 
-## 2. Account Management
+## Command Reference
 
-### Create an Account
+### Account Commands
+
+#### `elytro account create`
 
 ```bash
+elytro account create -c <chainId> [-a <name>]
 elytro account create --chain <chainId> [--alias <name>]
 ```
 
-- `--chain` (required): numeric chain ID. Supported chains:
-  - `1` — Ethereum mainnet
-  - `10` — Optimism
-  - `42161` — Arbitrum One
-  - `11155111` — Sepolia (testnet)
-  - `11155420` — Optimism Sepolia (testnet)
-- `--alias` (optional): human-readable name like `"my-test"`. If omitted, a random
-  two-word alias is generated (e.g. `"swift-panda"`).
+- `-c, --chain` (required): Numeric chain ID.
+- `-a, --alias` (optional): Human-readable name. Auto-generated if omitted (e.g. `swift-panda`).
+- Computes a **counterfactual address** via CREATE2 (contract not deployed yet).
+- Same owner can have multiple accounts on the same chain (unique index per account).
 
-The command computes a **counterfactual address** via CREATE2 (the contract is not
-deployed yet) and registers the account with the Elytro backend for sponsorship
-eligibility. The same owner can have multiple accounts on the same chain (each gets
-a unique index).
+**Supported chains**: 1 (Ethereum), 10 (Optimism), 42161 (Arbitrum), 11155111 (Sepolia), 11155420 (OP Sepolia).
 
-**Output**: alias, contract address, chain name, deployment status.
-
-### List Accounts
+#### `elytro account list`
 
 ```bash
-elytro account list                    # all accounts
-elytro account list [alias|address]    # single account lookup
-elytro account list --chain <chainId>  # filter by chain
+elytro account list                        # all accounts
+elytro account list [alias|address]        # single account lookup
+elytro account list -c <chainId>           # filter by chain
+elytro account list --chain <chainId>      # filter by chain (long form)
 ```
 
-Prints a table with columns: active marker (`→`), alias, full address (42 chars),
-chain name, deployed status, recovery status.
+Prints table with: active marker (`→`), alias, full address (42 chars), chain name,
+deployed status, recovery status.
 
-### Account Info (On-Chain)
+#### `elytro account info`
 
 ```bash
 elytro account info [alias|address]
 ```
 
-Fetches live on-chain data: balance, deployment status, recovery status, block
-explorer link. Defaults to the current account if no argument is given.
+Fetches **live on-chain data**: balance, deployment status, recovery status, explorer link.
+Requires RPC access. Defaults to current account.
 
-**Requires RPC access** — will fail if the node is unreachable.
-
-### Switch Active Account
+#### `elytro account switch`
 
 ```bash
-elytro account switch [alias|address]
+elytro account switch <alias|address>
 ```
 
-Changes which account is "current" for subsequent commands. If no argument is given,
-an interactive selector is shown (not suitable for non-interactive agents — always
-pass the alias or address).
+Changes the active account. **Always pass alias or address** — without arguments
+it shows an interactive selector (not suitable for agents).
 
-After switching, the SDK and wallet client are re-initialized to the new account's
-chain. The command also fetches and displays the new account's balance and status.
+After switching, SDK and wallet client re-initialize to the new account's chain.
 
-### Activate (Deploy On-Chain)
+#### `elytro account activate`
 
 ```bash
 elytro account activate [alias|address] [--no-sponsor]
 ```
 
-Deploys the smart contract wallet on-chain via a UserOperation. This is an actual
-on-chain transaction — the address must have ETH (or sponsorship must succeed) to
-pay for gas.
+Deploys the smart contract wallet on-chain. The address must have ETH or sponsorship
+must succeed. `--no-sponsor` forces self-pay.
 
-Steps: build deploy UserOp → estimate gas (with fakeBalance) → request sponsorship
-→ sign → send to bundler → wait for receipt → mark deployed locally.
-
-`--no-sponsor` forces the account to self-pay gas (skips paymaster).
-
-**Important**: The account address is funded *before* activation. The address is
-deterministic (CREATE2), so you can send ETH to it even though the contract doesn't
-exist yet.
+**Important**: Fund the CREATE2 address _before_ activation. The address is
+deterministic — send ETH to it pre-deployment.
 
 ---
 
-## 3. Transactions
+### Transaction Commands
 
 All transaction commands use the unified `--tx` flag:
 
@@ -177,15 +194,19 @@ All transaction commands use the unified `--tx` flag:
 --tx "to:0xAddress,value:0.1,data:0xAbcDef"
 ```
 
-Rules:
+**Rules**:
+
 - `to` is always required (valid Ethereum address).
 - At least one of `value` or `data` must be present.
-- `value` is in human-readable ETH (e.g. `"0.001"`, not wei).
-- `data` is hex-encoded calldata starting with `0x`, must be even length.
-- Multiple `--tx` flags create a **batch** (packed into `executeBatch`).
-- Order is preserved.
+- `value` is in ETH (e.g. `"0.001"`), not wei.
+- `data` is hex-encoded calldata (`0x` prefix, even length).
+- Multiple `--tx` flags → batch (`executeBatch`). Order preserved.
 
-### Send a Transaction
+#### `elytro tx send`
+
+```bash
+elytro tx send [account] --tx <spec> [--no-sponsor] [--no-hook] [--userop <json>]
+```
 
 ```bash
 # ETH transfer
@@ -194,299 +215,280 @@ elytro tx send --tx "to:0xRecipient,value:0.001"
 # Contract call
 elytro tx send --tx "to:0xContract,data:0xa9059cbb..."
 
-# Batch (two operations in one UserOp)
+# Batch
 elytro tx send --tx "to:0xA,value:0.1" --tx "to:0xB,data:0xab"
 
-# From a specific account
+# From specific account
 elytro tx send my-alias --tx "to:0xAddr,value:0.01"
 
 # Skip sponsorship
 elytro tx send --tx "to:0xAddr,value:0.01" --no-sponsor
 
-# Skip SecurityHook 2FA
+# Skip 2FA hook
 elytro tx send --tx "to:0xAddr,value:0.01" --no-hook
 
-# Send a pre-built UserOp
+# Send pre-built UserOp (skips build step entirely)
 elytro tx send --userop '{"sender":"0x...","callData":"0x...",...}'
 ```
 
-The send pipeline: resolve account → balance pre-check → build UserOp via SDK →
-fee data → estimate gas (fakeBalance: true) → sponsor → confirmation prompt → sign
-→ send to bundler → wait for receipt.
+**Pipeline**: resolve account → balance pre-check → build UserOp → fee data →
+estimate gas (fakeBalance) → sponsor → sign → send → wait for receipt.
 
-**Output includes**: tx hash, block number, gas cost, sponsor status, explorer link.
+**Critical**: Sponsor covers gas only, **not** the transaction value. If sending
+0.1 ETH, the account must hold ≥ 0.1 ETH regardless of sponsorship.
 
-**Exit codes**: 0 on success, 1 on any error or if execution reverted.
+**Exit codes**: 0 = success, 1 = error or execution reverted.
 
-### Build (Unsigned UserOp)
+#### `elytro tx build`
 
 ```bash
-elytro tx build --tx "to:0xAddr,value:0.1"
+elytro tx build [account] --tx "to:0xAddr,value:0.1" [--no-sponsor]
 ```
 
-Same pipeline as `send` but stops before signing. Outputs the full UserOp as JSON
-(with bigints serialized as hex strings). Useful for inspection or piping into
+Same pipeline as `send` but stops before signing. Outputs the full unsigned UserOp
+as JSON (bigints serialized as hex). Useful for inspection or piping into
 `tx send --userop`.
 
-### Simulate
+#### `elytro tx simulate`
 
 ```bash
-elytro tx simulate --tx "to:0xAddr,value:0.1"
+elytro tx simulate [account] --tx "to:0xAddr,value:0.1" [--no-sponsor]
 ```
 
-Dry-run that shows: transaction type, gas breakdown (callGasLimit,
-verificationGasLimit, preVerificationGas), max gas cost in ETH, sponsor status,
-current balance, and warnings if balance is insufficient. Does not sign or send.
-
-For contract calls, also checks whether the target address has deployed code.
+Dry-run showing: tx type, gas breakdown, max cost in ETH, sponsor status, balance,
+and warnings if balance insufficient. Does not sign or send. For contract calls,
+also checks whether the target address has deployed code.
 
 ---
 
-## 4. Queries
+### Query Commands
 
-All query commands output structured JSON: `{ "success": true, "result": {...} }`
-on success, or `{ "success": false, "error": { "code": ..., "message": ... } }` on
-failure. Error codes follow JSON-RPC conventions.
+All query commands output **structured JSON**:
 
-### Balance
-
-```bash
-# Native ETH balance
-elytro query balance [alias|address]
-
-# ERC-20 token balance
-elytro query balance [alias|address] --token 0xTokenAddress
+```json
+{ "success": true, "result": { ... } }
+{ "success": false, "error": { "code": -32001, "message": "...", "data": { ... } } }
 ```
 
-### Token Holdings
+Error codes follow JSON-RPC conventions. Parse stdout as JSON for programmatic use.
+
+#### `elytro query balance`
+
+```bash
+elytro query balance [alias|address]                 # ETH balance
+elytro query balance [alias|address] --token 0xAddr  # ERC-20 balance
+```
+
+#### `elytro query tokens`
 
 ```bash
 elytro query tokens [alias|address]
 ```
 
-Uses Alchemy's `alchemy_getTokenBalances` RPC to list all ERC-20 tokens held by
-the account, with symbol, decimals, and formatted balance. Requires an Alchemy key
-for best results (public RPC may not support this method).
+Lists all ERC-20 tokens with symbol, decimals, and formatted balance.
+Uses Alchemy `alchemy_getTokenBalances` — requires Alchemy key.
 
-### Transaction Receipt
+#### `elytro query tx`
 
 ```bash
 elytro query tx <hash>
 ```
 
-Looks up a transaction by hash on the current account's chain. Returns status,
-block number, from, to, gas used. Note: if the tx is on a different chain, it won't
-be found — there's no cross-chain lookup yet.
+Looks up transaction by hash on the current account's chain.
 
-### Chain Info
+#### `elytro query chain`
 
 ```bash
 elytro query chain
 ```
 
-Shows current chain ID, name, block number, gas price, RPC endpoint (with API keys
-masked), bundler URL, and block explorer.
+Shows chain ID, name, block number, gas price, RPC endpoint (API keys masked).
 
-### Address Inspection
+#### `elytro query address`
 
 ```bash
 elytro query address <0xAddress>
 ```
 
-Checks any address: reports whether it's an EOA or contract, its ETH balance, and
-(if contract) the code size in bytes.
+Reports EOA vs contract, ETH balance, code size (if contract).
 
 ---
 
-## 5. Security (2FA & Spending Limits)
+### Security Commands (2FA)
 
-The SecurityHook is an on-chain module that adds 2FA (email OTP) and daily spending
-limits to accounts. All security commands require the account to be deployed.
-
-### Status
+All security commands require the account to be **deployed**.
 
 ```bash
+# Check hook status
 elytro security status
-```
 
-Shows: hook installed (yes/no), hook address, capabilities (UserOp validation,
-signature validation), force-uninstall state, email binding, daily spending limit.
-
-### Install 2FA
-
-```bash
+# Install 2FA (capability: 1=sig, 2=userop, 3=both)
 elytro security 2fa install [--capability <1|2|3>]
-```
 
-Capabilities: 1 = signature only, 2 = UserOp only, 3 = both (default).
+# Uninstall (normal or force)
+elytro security 2fa uninstall [--force] [--force --execute]
 
-### Uninstall 2FA
-
-```bash
-# Normal uninstall (requires hook authorization / OTP)
-elytro security 2fa uninstall
-
-# Force uninstall — start countdown (bypass hook)
-elytro security 2fa uninstall --force
-
-# Execute force uninstall after safety delay
-elytro security 2fa uninstall --force --execute
-```
-
-### Email Management
-
-```bash
-# Bind email for OTP delivery
+# Bind email for OTP
 elytro security email bind user@example.com
 
-# Change bound email
-elytro security email change newemail@example.com
+# Change email
+elytro security email change new@example.com
+
+# View/set daily spending limit (USD)
+elytro security spending-limit [amount]
 ```
 
-Both require OTP verification (code sent to the email).
-
-### Spending Limit
-
-```bash
-# View current limit
-elytro security spending-limit
-
-# Set daily limit (in USD)
-elytro security spending-limit 100
-```
-
-Setting a limit requires OTP verification.
+**Note**: Email bind/change and spending-limit require OTP verification (code sent
+to the email). The agent must handle stdin for OTP input.
 
 ---
 
-## 6. Configuration
+### Configuration Commands
+
+#### `elytro config show`
 
 ```bash
-# Show current config (endpoints, keys, chain)
 elytro config show
+```
 
-# Set an API key
-elytro config set alchemy-key YOUR_KEY
-elytro config set pimlico-key YOUR_KEY
+Displays: RPC provider source (Alchemy or public), bundler provider source (Pimlico
+or public), masked API keys if set, current chain info (name, ID), RPC and bundler
+endpoints (with API keys masked). Human-readable output (not JSON).
 
-# Remove a key (revert to public endpoint)
+#### `elytro config set`
+
+```bash
+elytro config set alchemy-key <KEY>
+elytro config set pimlico-key <KEY>
+```
+
+Persists an API key to `~/.elytro/config.json`. Valid keys: `alchemy-key`,
+`pimlico-key`. Once set, the key is used for all subsequent commands — no need to
+set env vars each time. After setting, shows the updated RPC/bundler endpoints.
+
+#### `elytro config remove`
+
+```bash
 elytro config remove alchemy-key
+elytro config remove pimlico-key
 ```
+
+Removes a persisted API key and reverts to the public endpoint.
 
 ---
 
-## Structured Output Parsing
+## Output Parsing Rules
 
-For **tx** and **query** commands, all output follows this shape:
+For **tx** and **query** commands, always parse stdout as JSON:
 
-```json
-// Success
-{ "success": true, "result": { "account": "swift-panda", "balance": "0.1", ... } }
-
-// Error
-{ "success": false, "error": { "code": -32001, "message": "Insufficient balance", "data": { ... } } }
+```typescript
+const result = JSON.parse(stdout);
+if (result.success) {
+  // result.result contains the data
+} else {
+  // result.error.code (number), result.error.message (string)
+}
 ```
 
-An agent can parse stdout as JSON to determine success/failure programmatically.
-Non-JSON output (headings, spinners, info lines) goes to stderr.
+**Account** commands use human-readable display (not JSON). Parse alias and address
+from the output text.
 
-The `account` commands use human-readable display output (not JSON), but the alias
-and address are always shown.
+Non-JSON output (spinners, headings, info lines) goes to **stderr**.
 
 ---
 
-## Multi-Step Workflow Examples
+## Agent Workflow Patterns
 
-### Example 1: Fresh Setup + Send ETH on OP Sepolia
+### Pattern 1: Fresh Setup + Send ETH
 
 ```bash
 elytro init
-elytro account create --chain 11155420 --alias test-1
-# → Note the address, fund it with testnet ETH from a faucet
-elytro account activate test-1
-elytro tx send --tx "to:0xRecipientAddress,value:0.001"
+elytro account create --chain 11155420 --alias agent-primary
+# → capture address from output
+# → fund address via faucet or external transfer
+elytro account activate agent-primary
+elytro tx send --tx "to:0xRecipient,value:0.001"
 ```
 
-### Example 2: Query All Token Balances
+### Pattern 2: Check Balance Before Transfer
 
 ```bash
-elytro config set alchemy-key YOUR_KEY
-elytro query tokens test-1
+BALANCE=$(elytro query balance agent-primary)
+# → parse JSON: result.balance
+# → verify sufficient funds (sponsor covers gas, NOT value)
+elytro tx send --tx "to:0xRecipient,value:0.001"
 ```
 
-### Example 3: Batch Transaction
+### Pattern 3: Batch Multiple Operations
 
 ```bash
 elytro tx send \
   --tx "to:0xAlice,value:0.01" \
   --tx "to:0xBob,value:0.02" \
-  --tx "to:0xContract,data:0xa9059cbb000000000000000000000000..."
+  --tx "to:0xContract,data:0xa9059cbb..."
 ```
 
-All three operations are packed into a single UserOp (executeBatch) and executed
-atomically.
+All packed into one UserOp (`executeBatch`), executed atomically.
 
-### Example 4: Simulate Before Sending
+### Pattern 4: Simulate → Send
 
 ```bash
 elytro tx simulate --tx "to:0xAddr,value:0.5"
-# Check the output: gas cost, sponsor status, balance warnings
-# If everything looks good:
+# → check gas cost, sponsor status, balance warnings
 elytro tx send --tx "to:0xAddr,value:0.5"
 ```
 
-### Example 5: Install 2FA and Set Spending Limit
+### Pattern 5: Multi-Account Management
 
 ```bash
-elytro security 2fa install
-elytro security email bind agent@example.com
-# Enter OTP from email
-elytro security spending-limit 50
-# Enter OTP to confirm
-elytro security status
+elytro account create --chain 11155420 --alias hot-wallet
+elytro account create --chain 11155420 --alias cold-storage
+elytro account switch hot-wallet
+elytro tx send --tx "to:0xAddr,value:0.01"
+elytro account switch cold-storage
+elytro query balance
 ```
+
+---
+
+## Invariants the Agent Must Respect
+
+1. **Always `init` before anything else.** Every command needs the vault key.
+2. **Always `account create` before `activate` or `tx`.** A local account record must exist.
+3. **Always `activate` before `tx send`.** Transactions require a deployed contract.
+4. **Fund before `activate` if sponsorship might fail.** The CREATE2 address is deterministic.
+5. **Sponsor covers gas, not value.** If sending ETH, the account needs that ETH.
+6. **Chain is per-account.** Switching accounts may change the active chain.
+7. **Always pass alias/address to `account switch`.** The interactive selector is not agent-compatible.
+8. **Parse JSON from `query` and `tx` commands.** Success/failure is in the `success` field.
+9. **API keys are never exposed.** All error messages sanitize embedded URLs.
+
+---
+
+## Error Recovery
+
+| Error Pattern                | Cause                                           | Recovery                               |
+| ---------------------------- | ----------------------------------------------- | -------------------------------------- |
+| "Wallet not initialized"     | No `~/.elytro/keyring.json`                     | Run `elytro init`                      |
+| "Vault key not available"    | Missing `ELYTRO_VAULT_SECRET` or Keychain entry | Check SecretRef injection              |
+| "Failed to decrypt vault"    | Wrong vault key                                 | Verify the correct key is in SecretRef |
+| "No accounts found"          | No account created yet                          | Run `elytro account create`            |
+| "Account not deployed"       | Trying to send tx before activation             | Run `elytro account activate`          |
+| "Insufficient balance"       | Value exceeds account balance                   | Fund the account first                 |
+| JSON-RPC error code `-32001` | RPC/bundler error                               | Check network connectivity, retry      |
+| "AA21" in error              | UserOp simulation failed                        | Usually a balance or nonce issue       |
 
 ---
 
 ## Storage Layout
 
-All state lives in `~/.elytro/`:
-
 ```
 ~/.elytro/
-├── .device-key       # 32-byte binary, chmod 600
 ├── keyring.json      # AES-GCM encrypted EOA private key vault
 ├── accounts.json     # Account list (alias, address, chainId, index, owner, deployed)
-├── config.json       # Chain config, current chain, API endpoints
-└── user-keys.json    # User-provided API keys (alchemy, pimlico)
+└── config.json       # Chain config, current chain, API keys (persisted)
 ```
 
-Deleting `~/.elytro/` resets everything. The on-chain contracts are unaffected — you
-would just lose local key material and need to re-import or re-initialize.
-
----
-
-## Supported Chains
-
-| Chain ID   | Name              | Network    |
-|------------|-------------------|------------|
-| 1          | Ethereum          | Mainnet    |
-| 10         | Optimism          | Mainnet    |
-| 42161      | Arbitrum One      | Mainnet    |
-| 11155111   | Sepolia           | Testnet    |
-| 11155420   | Optimism Sepolia  | Testnet    |
-
-Default chain (when no account is selected): Optimism Sepolia (11155420).
-
----
-
-## Key Invariants for Agents
-
-1. **Always `init` before anything else.** Every other command needs a device key.
-2. **Always `account create` before `activate` or `tx`.** There must be a local account record.
-3. **Always `activate` before `tx send`.** Transactions require a deployed contract.
-4. **Fund the address before `activate` if sponsorship might fail.** The CREATE2 address is deterministic — send ETH to it pre-deployment.
-5. **Sponsor covers gas, not value.** If sending ETH, the account needs that ETH.
-6. **Chain is per-account.** Switching accounts may change the active chain. All chain-sensitive operations auto-initialize to the account's chain.
-7. **Interactive prompts exist in `tx send` (confirmation) and security commands (OTP).** For fully non-interactive usage, the agent would need to handle stdin or use `tx build` + external signing.
-8. **Parse JSON output from `query` and `tx` commands.** Success/failure is in the `success` field; error details are in `error.code` and `error.message`.
+No plaintext key files on disk. The vault key lives in macOS Keychain or is injected
+via `ELYTRO_VAULT_SECRET` environment variable. Deleting `~/.elytro/` resets local
+state; on-chain contracts are unaffected.
