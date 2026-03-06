@@ -1,167 +1,165 @@
 # 🧠 Fluid Memory
 
-> 🧬 流体认知记忆架构 - 你的赛博大脑
-
-**inspired by 艾宾浩斯遗忘曲线 + MemGPT + OpenClaw**
-
-[English](./README_EN.md) | [中文](./README.md)
+> 基于艾宾浩斯遗忘曲线和访问频率的衰减模型设计的遗忘和归档机制，完全依赖 OpenClaw 原生记忆系统的拟人化流体记忆系统
 
 ---
 
-## 🌟 特性
+## 特性
 
-- **🧠 自动学习**: 每次对话自动记录（可选启用）
-- **🔄 动态遗忘**: 不是所有记忆都要永远记住。权重低的记忆会被自动遗忘。
-- **⚡ 语义理解**: 基于 ChromaDB 向量检索，理解"饮料"="可乐"。
-- **💪 强化机制**: 被检索次数越多的记忆，越难被遗忘。
-- **🌙 梦境模式**: 每天自动整理大脑，归档低价值记忆。
-- **🔌 OpenClaw Ready**: 开箱即用的 OpenClaw Skill。
+- **🤝 原生联动**: 依赖 OpenClaw 原生 memory flush 触发
+- **🔄 动态遗忘**: 权重低的记忆会被自动淡化
+- **⚡ 语义理解**: 基于 ChromaDB 向量检索
+- **💪 强化机制**: 被检索次数越多的记忆，越难被遗忘
+- **🔌 OpenClaw Ready**: 开箱即用的 OpenClaw Skill
 
 ---
 
-## 🏗️ 架构
+## 工作原理
+
+### 架构
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Fluid Memory Core                         │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ┌─────────────┐     ┌─────────────┐     ┌─────────────┐  │
-│  │   植入      │ ──> │   向量存储   │ ──> │   检索      │  │
-│  │  Remember  │     │  ChromaDB  │     │   Recall   │  │
-│  └─────────────┘     └─────────────┘     └─────────────┘  │
-│         │                                         │         │
-│         │            ┌─────────────┐              │         │
-│         └──────────>│  流体公式    │<─────────────┘         │
-│                      │   Score     │                       │
-│                      │ = Sim*Decay │                       │
-│                      │    + Boost  │                       │
-│                      └─────────────┘                       │
-│                              │                             │
-│                              ▼                             │
-│                      ┌─────────────┐                       │
-│                      │   梦境守护   │                       │
-│                      │  Maintenance│                       │
-│                      └─────────────┘                       │
-└─────────────────────────────────────────────────────────────┘
+用户对话 → Hook 记录到临时文件 → OpenClaw 触发 flush → AI 调用 fluid_increment_summarize → 写入向量库
 ```
 
----
+### 触发流程
 
-## 🧪 核心算法
-
-### 流体评分公式
-
-$$ Score = (相似度 \times e^{-\lambda \times t}) + \alpha \times \log(1 + N) $$
-
-其中：
-- $\lambda$ (lambda): 遗忘速率
-- $t$: 距离上次访问的天数
-- $\alpha$ (alpha): 强化系数
-- $N$: 被访问(检索)的次数
-
-**原理**：
-- 越久没被提及的记忆，分数越低
-- 越常被检索的记忆，分数越高
+1. **Hook 记录**: 每次 AI 回复时，对话记录到 `conversation_log.txt`
+2. **原生 flush**: 当 OpenClaw 上下文快满时，触发 memory flush
+3. **AI 响应**: AI 收到提醒，同步调用 `fluid_increment_summarize`
+4. **向量存储**: 对话摘要写入 ChromaDB 向量库
 
 ---
 
-## 🚀 快速开始
+## 与 OpenClaw 原生系统互补
 
-### 环境要求
+| 维度 | 原生 Memory | Fluid Memory |
+|------|-------------|--------------|
+| **存储格式** | 文本 (Markdown) | 向量 (Embedding) |
+| **检索方式** | 关键词匹配 | 语义理解 |
+| **遗忘机制** | 永不清除 | 动态权重衰减 |
 
-- Python 3.8+
-- chromadb
-- openai (可选，用于 embedding)
+---
 
-### 安装
+## 安装
+
+### 1. 安装 Skill
 
 ```bash
-# 克隆仓库
-git clone https://github.com/AgaintA/fluid-memory.git
-cd fluid-memory
-
-# 安装依赖
-pip install -r requirements.txt
+clawhub install fluid-memory
 ```
 
-### 使用
-
-#### 配置文件 (config.yaml)
-
-```yaml
-decay_rate: 0.05   # 遗忘速度
-boost_factor: 0.2  # 强化力度
-auto_learn: true   # 自动学习模式：每次检索时自动记录对话
-summarize_threshold: 3  # 多少轮对话后自动总结
-```
-
-#### 4. 多轮对话总结
+### 2. 安装 Hook
 
 ```bash
-python fluid_skill.py summarize --conversation "用户说xxx | 我回复xxx | 用户说xxx"
+cp -r hooks/fluid-memory-sync ~/.openclaw/hooks/
 ```
 
-系统会自动提取：偏好、决定、待办、学习内容，然后存入记忆。
+### 3. 配置 OpenClaw
 
-#### 5. 遗忘记忆
+在 `openclaw.json` 中启用 Hook 和调整触发频率：
+
+```json5
+{
+  "hooks": {
+    "internal": {
+      "entries": {
+        "fluid-memory-sync": { "enabled": true }
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "compaction": {
+        "memoryFlush": {
+          "enabled": true,
+          "softThresholdTokens": 50000
+        }
+      }
+    }
+  }
+}
+```
+
+### 触发时机
+
+> 触发 = contextWindow - reserveTokensFloor (20000) - softThresholdTokens
+
+例如 Minimax 195K：195K - 20K - 50K = 125K（约 64% 满时触发）
+
+---
+
+## 使用
+
+### 手动记录
 
 ```bash
 python fluid_skill.py remember --content "用户喜欢喝可乐"
-```
-
-#### 2. 检索记忆
-
-```bash
 python fluid_skill.py recall --query "用户喝什么"
-```
-
-#### 3. 遗忘记忆
-
-```bash
 python fluid_skill.py forget --content "青椒肉丝"
-```
-
-#### 4. 启动梦境守护 (每天自动整理)
-
-```bash
-python dream_daemon.py
+python fluid_skill.py status
 ```
 
 ---
 
-## 📁 项目结构
+## 遗忘机制
+
+### 1. 动态遗忘（检索时过滤）
+
+```
+Score = (相似度 × e^(-λt)) + α × log(1+N)
+```
+
+- λ = 遗忘速度 (0.05)
+- t = 距离上次访问的天数
+- α = 强化力度 (0.2)
+- N = 被访问次数
+
+分数 < 0.05 的记忆不返回。
+
+### 2. 主动遗忘
+
+调用 `forget` 命令归档记忆。
+
+### 3. 梦境守护
+
+运行 `maintenance.py`，归档超过 120 天的低权重记忆。
+
+---
+
+## 文件结构
 
 ```
 fluid-memory/
-├── SKILL.md              # OpenClaw Skill 定义
-├── fluid_skill.py       # 核心引擎
-├── maintenance.py       # 梦境整理脚本
-├── dream_daemon.py    # 定时守护进程
-├── wrapper.py         # CLI 封装
-├── config.yaml        # 配置文件
-├── LICENSE            # MIT 许可证
-└── README.md          # 本文件
+├── SKILL.md                    # OpenClaw Skill 定义
+├── fluid_skill.py              # 核心引擎
+├── maintenance.py              # 梦境整理脚本
+├── dream_daemon.py            # 定时守护进程
+├── wrapper.py                 # CLI 封装
+├── config.yaml                # 配置文件
+├── LICENSE                    # MIT 许可证
+├── README.md                  # 本文件
+└── hooks/
+    └── fluid-memory-sync/     # 自动同步 Hook
+        ├── HOOK.md
+        └── handler.js
 ```
 
 ---
 
-## 🤝 贡献
+## ⚠️ 隐私声明
 
-欢迎提交 Issue 和 Pull Request！
+- **存储位置**: 所有数据存储在本地 `~/.openclaw/workspace/database/`
+- **存储格式**: 明文存储（无加密）
+- **文件列表**:
+  - `chroma_store/` - 向量数据库
+  - `conversation_log.txt` - 对话缓存
+  - `summary_buffer.json` - 摘要缓存
 
-## 📝 许可证
-
-MIT License - see [LICENSE](./LICENSE) file.
-
----
-
-## 🙏 致谢
-
-- [ChromaDB](https://www.trychroma.com/) - 向量存储
-- [OpenClaw](https://github.com/openclaw/openclaw) - AI Agent 框架
-- 艾宾浩斯遗忘曲线 - 理论基石
+**风险**: 如果多人共用一台电脑，建议加密磁盘或定期清理。数据无云端同步，安全性取决于本地系统。
 
 ---
 
-**Made with 💕 by Aga & Rin**
+## 许可证
+
+MIT License

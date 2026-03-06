@@ -1,6 +1,6 @@
 /**
  * Fluid Memory Sync Hook
- * Automatically syncs conversation to Fluid Memory when messages are sent
+ * 记录对话到临时文件，等 OpenClaw 原生 flush 触发时再处理
  */
 
 import { spawn } from "child_process";
@@ -8,24 +8,8 @@ import path from "path";
 import fs from "fs";
 import os from "os";
 
-// Path to fluid_skill.py
-const FLUID_SKILL_PATH = path.join(
-  path.dirname(process.execPath),
-  "..",
-  "..",
-  "..",
-  "..",
-  "..",
-  ".openclaw",
-  "workspace",
-  "skills",
-  "fluid-memory",
-  "fluid_skill.py"
-);
-
-// Alternative: try to find in user home
 const USER_HOME = os.homedir();
-const ALT_FLUID_SKILL_PATH = path.join(
+const FLUID_SKILL_PATH = path.join(
   USER_HOME,
   ".openclaw",
   "workspace",
@@ -34,64 +18,30 @@ const ALT_FLUID_SKILL_PATH = path.join(
   "fluid_skill.py"
 );
 
+const CONVERSATION_LOG = path.join(
+  USER_HOME,
+  ".openclaw",
+  "workspace",
+  "database",
+  "conversation_log.txt"
+);
+
 function getPythonPath() {
-  // Try common Python paths on Windows
   const candidates = [
     "python",
     "python3",
     path.join(USER_HOME, "miniconda3", "python.exe"),
-    path.join(USER_HOME, "AppData", "Local", "Programs", "Python", "python.exe"),
+    path.join(USER_HOME, "anaconda3", "python.exe"),
   ];
   
   for (const candidate of candidates) {
     try {
-      // Just return the first available one
       return candidate;
     } catch (e) {
       continue;
     }
   }
   return "python";
-}
-
-function runFluidSkill(args) {
-  return new Promise((resolve, reject) => {
-    const pythonPath = getPythonPath();
-    const scriptPath = fs.existsSync(FLUID_SKILL_PATH) 
-      ? FLUID_SKILL_PATH 
-      : ALT_FLUID_SKILL_PATH;
-    
-    if (!fs.existsSync(scriptPath)) {
-      console.error("[fluid-memory-sync] Skill not found at:", scriptPath);
-      reject(new Error("Fluid Memory skill not found"));
-      return;
-    }
-
-    const proc = spawn(pythonPath, [scriptPath, ...args], {
-      stdio: ["ignore", "pipe", "pipe"],
-      windowsHide: true,
-    });
-
-    let stdout = "";
-    let stderr = "";
-
-    proc.stdout.on("data", (data) => {
-      stdout += data.toString();
-    });
-
-    proc.stderr.on("data", (data) => {
-      stderr += data.toString();
-    });
-
-    proc.on("close", (code) => {
-      if (code === 0) {
-        resolve(stdout.trim());
-      } else {
-        console.error("[fluid-memory-sync] Error:", stderr);
-        reject(new Error(`Exit code: ${code}`));
-      }
-    });
-  });
 }
 
 export default async function handler(event) {
@@ -106,31 +56,22 @@ export default async function handler(event) {
   }
 
   try {
-    // Format: "用户说: xxx | 我说: yyy"
-    const conversation = `用户说: ${event.content}`;
+    // 记录对话到临时文件
+    const timestamp = new Date().toISOString();
+    const logEntry = `[${timestamp}] 用户说: ${event.content}\n`;
     
-    console.log("[fluid-memory-sync] Syncing conversation to Fluid Memory...");
-    
-    const result = await runFluidSkill([
-      "increment_summarize",
-      "--conversation",
-      conversation,
-    ]);
-
-    console.log("[fluid-memory-sync] Result:", result);
-    
-    // Parse result to check if it was stored or buffered
-    try {
-      const parsed = JSON.parse(result);
-      if (parsed.status === "stored") {
-        console.log("[fluid-memory-sync] ✅ Memory stored to vector DB!");
-      } else if (parsed.status === "buffering") {
-        console.log(`[fluid-memory-sync] ⏳ Buffering (${parsed.rounds})`);
-      }
-    } catch (e) {
-      // Result might not be JSON, ignore
+    // 确保目录存在
+    const dir = path.dirname(CONVERSATION_LOG);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
     }
+    
+    // 追加到日志文件
+    fs.appendFileSync(CONVERSATION_LOG, logEntry);
+    
+    console.log("[fluid-memory-sync] 对话已记录，等待原生 flush 触发...");
+    
   } catch (error) {
-    console.error("[fluid-memory-sync] Failed to sync:", error.message);
+    console.error("[fluid-memory-sync] Failed to log conversation:", error.message);
   }
 }

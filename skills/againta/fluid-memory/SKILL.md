@@ -1,7 +1,16 @@
 ---
 name: fluid-memory
-description: 基于流体认知架构的记忆系统。特点：会遗忘、需强化、懂语义。自动学习模式下每次对话都会自动记录。
+description: 基于艾宾浩斯遗忘曲线和访问频率的衰减模型设计的遗忘和归档机制，完全依赖openclaw原生记忆系统的拟人化流体记忆系统
 command-dispatch: tool
+metadata:
+  {
+    "openclaw": {
+      "requires": {
+        "bins": ["python"],
+        "python_packages": ["chromadb", "pyyaml"]
+      }
+    }
+  }
 ---
 
 # Fluid Memory Skill
@@ -10,11 +19,16 @@ command-dispatch: tool
 
 ## 自动学习模式 (Auto Learn)
 
-**已启用！** 每次你和用户对话时，系统会自动记录对话内容。
+**通过 OpenClaw 原生 flush 触发！** 每次 OpenClaw 触发 memory flush 时，AI 会同步调用 fluid-memory 记录对话。
 
-- 每次调用 `fluid_recall` 检索时，会自动把当前对话存入记忆
-- 无需手动说「记住xxx」，系统会自动学
-- 可在 `config.yaml` 中关闭：`auto_learn: false`
+- 依赖 OpenClaw 原生 compaction 机制（配置 `softThresholdTokens` 控制频率）
+- 需在 OpenClaw 配置中启用 `memoryFlush`
+
+## 遗忘机制
+
+- **动态遗忘**：检索时分数 < 0.05 被过滤
+- **主动遗忘**：调用 `fluid_forget` 归档指定记忆
+- **梦境守护**：定时归档分数 < 0.15 的记忆
 
 ## 核心理念
 
@@ -78,43 +92,18 @@ command-dispatch: tool
 }
 ```
 
-### 5. 多轮总结
-当对话进行 N 轮后（默认3轮），自动总结关键信息。
-
-**Trigger**: 对话达到一定轮次，或用户说"总结一下"
-
-**Tool Call**:
-```json
-{
-  "name": "fluid_summarize",
-  "arguments": {
-    "conversation": "用户说xxx | 我回复xxx | 用户说xxx | 我回复xxx"
-  }
-}
-```
-
-### 6. 增量总结（推荐）
-每次只处理新增对话，自动累积，达到阈值后写入。节省 Token！
-
-**Trigger**: 每次用户说话后调用
-
-**Tool Call**:
-```json
-{
-  "name": "fluid_increment_summarize",
-  "arguments": {
-    "conversation": "用户说xxx | 我回复xxx"
-  }
-}
-```
-
 ## 内部实现 (供开发者参考)
 
 实际执行命令：
 ```bash
-# 使用 Conda 环境
-C:\Users\41546\miniconda3\python.exe wrapper.py remember --content "..."
+python wrapper.py remember --content "..."
 ```
+
+## 隐私
+
+- 数据存储在本地 `~/.openclaw/workspace/database/`
+- 明文存储（无加密）
+- 无云端同步
 
 ## 最佳实践
 

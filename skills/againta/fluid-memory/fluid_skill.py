@@ -27,8 +27,6 @@ def load_config():
     return {}
 
 CONFIG = load_config()
-AUTO_LEARN = CONFIG.get('auto_learn', False)
-SUMMARY_THRESHOLD = CONFIG.get('summarize_threshold', 3)
 
 # 增量总结缓冲区文件
 BUFFER_FILE = os.path.join(WORKSPACE_ROOT, r"database\summary_buffer.json")
@@ -89,7 +87,8 @@ class FluidMemorySkill:
                     }],
                     ids=[mem_id]
                 )
-                return f"[OK] 已植入向量大脑: [{content}]"
+                # 静默模式：成功不返回任何内容，避免 LLM 啰嗦
+                return ""
             except Exception as e:
                 return f"[ERROR] 向量植入失败: {e}"
         else:
@@ -134,9 +133,6 @@ class FluidMemorySkill:
             
             # 计算最终得分
             final_score = self._calculate_score(sim, created_at, access_count)
-            
-            # Debug info
-            print(f"[DEBUG] Doc: {docs[i][:15]}... | Dist: {dist:.3f} -> Sim: {sim:.3f} | Score: {final_score:.3f}")
 
             if final_score > 0.05: # 降低阈值
                 scored_memories.append({
@@ -202,7 +198,14 @@ class FluidMemorySkill:
     def status(self):
         if not self.use_vector: return "Mode: Keyword (No Chroma)"
         count = self.collection.count()
-        return json.dumps({"total_vectors": count, "backend": "ChromaDB"})
+        # 同时检查 Buffer 状态
+        summary, rounds = self._load_buffer()
+        return json.dumps({
+            "total_vectors": count, 
+            "backend": "ChromaDB",
+            "buffer_summary": summary,
+            "buffer_rounds": rounds
+        })
 
     def summarize(self, conversation):
         """多轮对话总结 - 提取关键信息并存入记忆"""
@@ -303,23 +306,16 @@ class FluidMemorySkill:
         new_round_count = round_count + 1
         if new_round_count >= SUMMARY_THRESHOLD:
             # 写入记忆
-            result = self.remember(f"[增量总结] {new_summary}")
+            self.remember(f"[增量总结] {new_summary}")
             # 清空缓冲区
             self._save_buffer('', 0)
-            return json.dumps({
-                "status": "stored",
-                "summary": new_summary,
-                "rounds": new_round_count,
-                "result": result
-            }, ensure_ascii=False)
+            # 静默返回
+            return ""
         else:
             # 存入缓冲区，等待下次
             self._save_buffer(new_summary, new_round_count)
-            return json.dumps({
-                "status": "buffering",
-                "current_summary": new_summary,
-                "rounds": f"{new_round_count}/{SUMMARY_THRESHOLD}"
-            }, ensure_ascii=False)
+            # 静默返回
+            return ""
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
