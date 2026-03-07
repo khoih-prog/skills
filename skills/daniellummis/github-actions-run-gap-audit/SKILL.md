@@ -1,7 +1,7 @@
 ---
 name: github-actions-run-gap-audit
 description: Detect GitHub Actions workflow groups that stopped running on their normal cadence using median run intervals and current inactivity gap.
-version: 1.0.0
+version: 1.1.0
 metadata: {"openclaw":{"requires":{"bins":["bash","python3"]}}}
 ---
 
@@ -35,6 +35,10 @@ Optional:
 - `EVENT_EXCLUDE` (regex, optional)
 - `REPO_MATCH` (regex, optional)
 - `REPO_EXCLUDE` (regex, optional)
+- `RUN_ID_MATCH` (regex, optional)
+- `RUN_ID_EXCLUDE` (regex, optional)
+- `RUN_URL_MATCH` (regex, optional)
+- `RUN_URL_EXCLUDE` (regex, optional)
 - `NOW_ISO` (optional fixed evaluation time for deterministic CI tests)
 - `FAIL_ON_CRITICAL` (`0` or `1`, default: `0`)
 
@@ -62,6 +66,16 @@ JSON output with fail gate:
 RUN_GLOB='artifacts/github-actions/*.json' \
 OUTPUT_FORMAT=json \
 FAIL_ON_CRITICAL=1 \
+bash skills/github-actions-run-gap-audit/scripts/run-gap-audit.sh
+```
+
+Targeted run-scope triage:
+
+```bash
+RUN_GLOB='artifacts/github-actions/*.json' \
+RUN_ID_MATCH='^(88|89)' \
+RUN_URL_EXCLUDE='rerun' \
+OUTPUT_FORMAT=json \
 bash skills/github-actions-run-gap-audit/scripts/run-gap-audit.sh
 ```
 

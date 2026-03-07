@@ -17,6 +17,10 @@ EVENT_MATCH="${EVENT_MATCH:-}"
 EVENT_EXCLUDE="${EVENT_EXCLUDE:-}"
 REPO_MATCH="${REPO_MATCH:-}"
 REPO_EXCLUDE="${REPO_EXCLUDE:-}"
+RUN_ID_MATCH="${RUN_ID_MATCH:-}"
+RUN_ID_EXCLUDE="${RUN_ID_EXCLUDE:-}"
+RUN_URL_MATCH="${RUN_URL_MATCH:-}"
+RUN_URL_EXCLUDE="${RUN_URL_EXCLUDE:-}"
 NOW_ISO="${NOW_ISO:-}"
 FAIL_ON_CRITICAL="${FAIL_ON_CRITICAL:-0}"
 
@@ -48,7 +52,7 @@ if [[ "$FAIL_ON_CRITICAL" != "0" && "$FAIL_ON_CRITICAL" != "1" ]]; then
   exit 1
 fi
 
-python3 - "$RUN_GLOB" "$TOP_N" "$OUTPUT_FORMAT" "$MIN_RUNS" "$WARN_GAP_MULTIPLIER" "$CRITICAL_GAP_MULTIPLIER" "$MIN_WARN_GAP_HOURS" "$MIN_CRITICAL_GAP_HOURS" "$WORKFLOW_MATCH" "$WORKFLOW_EXCLUDE" "$BRANCH_MATCH" "$BRANCH_EXCLUDE" "$EVENT_MATCH" "$EVENT_EXCLUDE" "$REPO_MATCH" "$REPO_EXCLUDE" "$NOW_ISO" "$FAIL_ON_CRITICAL" <<'PY'
+python3 - "$RUN_GLOB" "$TOP_N" "$OUTPUT_FORMAT" "$MIN_RUNS" "$WARN_GAP_MULTIPLIER" "$CRITICAL_GAP_MULTIPLIER" "$MIN_WARN_GAP_HOURS" "$MIN_CRITICAL_GAP_HOURS" "$WORKFLOW_MATCH" "$WORKFLOW_EXCLUDE" "$BRANCH_MATCH" "$BRANCH_EXCLUDE" "$EVENT_MATCH" "$EVENT_EXCLUDE" "$REPO_MATCH" "$REPO_EXCLUDE" "$RUN_ID_MATCH" "$RUN_ID_EXCLUDE" "$RUN_URL_MATCH" "$RUN_URL_EXCLUDE" "$NOW_ISO" "$FAIL_ON_CRITICAL" <<'PY'
 import glob
 import json
 import re
@@ -74,6 +78,10 @@ from datetime import datetime, timezone
     event_exclude_raw,
     repo_match_raw,
     repo_exclude_raw,
+    run_id_match_raw,
+    run_id_exclude_raw,
+    run_url_match_raw,
+    run_url_exclude_raw,
     now_iso_raw,
     fail_on_critical_raw,
 ) = sys.argv[1:]
@@ -140,6 +148,10 @@ event_match = compile_regex(event_match_raw, 'EVENT_MATCH')
 event_exclude = compile_regex(event_exclude_raw, 'EVENT_EXCLUDE')
 repo_match = compile_regex(repo_match_raw, 'REPO_MATCH')
 repo_exclude = compile_regex(repo_exclude_raw, 'REPO_EXCLUDE')
+run_id_match = compile_regex(run_id_match_raw, 'RUN_ID_MATCH')
+run_id_exclude = compile_regex(run_id_exclude_raw, 'RUN_ID_EXCLUDE')
+run_url_match = compile_regex(run_url_match_raw, 'RUN_URL_MATCH')
+run_url_exclude = compile_regex(run_url_exclude_raw, 'RUN_URL_EXCLUDE')
 
 now = parse_ts(now_iso_raw, 'NOW_ISO') if now_iso_raw else datetime.now(timezone.utc)
 
@@ -201,6 +213,22 @@ for path in files:
         runs_filtered += 1
         continue
 
+    run_id = str(payload.get('databaseId') or payload.get('id') or '')
+    run_url = str(payload.get('url') or '')
+
+    if run_id_match and not run_id_match.search(run_id):
+        runs_filtered += 1
+        continue
+    if run_id_exclude and run_id_exclude.search(run_id):
+        runs_filtered += 1
+        continue
+    if run_url_match and not run_url_match.search(run_url):
+        runs_filtered += 1
+        continue
+    if run_url_exclude and run_url_exclude.search(run_url):
+        runs_filtered += 1
+        continue
+
     created_at = parse_ts(payload.get('createdAt') or payload.get('runStartedAt') or payload.get('startedAt'), 'createdAt')
     if created_at is None:
         parse_errors.append(f'{path}: missing createdAt/runStartedAt/startedAt')
@@ -214,7 +242,6 @@ for path in files:
     bucket['event'] = event
     bucket['timestamps'].append(created_at)
 
-    run_url = payload.get('url')
     if run_url and run_url not in bucket['sample_urls'] and len(bucket['sample_urls']) < 3:
         bucket['sample_urls'].append(run_url)
 
@@ -299,6 +326,10 @@ summary = {
         'event_exclude': event_exclude_raw or None,
         'repo_match': repo_match_raw or None,
         'repo_exclude': repo_exclude_raw or None,
+        'run_id_match': run_id_match_raw or None,
+        'run_id_exclude': run_id_exclude_raw or None,
+        'run_url_match': run_url_match_raw or None,
+        'run_url_exclude': run_url_exclude_raw or None,
     },
 }
 
