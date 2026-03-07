@@ -186,6 +186,8 @@ python3 scripts/smb-download-subtitle.py --all
 - **SMB subtitle download** works best for popular movies and TV shows
 - **Test SMB connection** with `python3 scripts/smb-download-subtitle.py --test`
 - **For TV series**: Use `--subtitle` flag to auto-download subtitles for all episodes
+- **Subtitle resolution independence**: Subtitles are resolution-independent; 720p subtitles work on 1080p videos if the timing matches
+- **Expand subtitle sources**: By default uses 9 subtitle providers (addic7ed, opensubtitles, podnapisi, etc.) to maximize subtitle find rate
 
 ## Troubleshooting
 
@@ -232,6 +234,12 @@ pip3 install pysmb subliminal
 ```
 
 ## Changelog
+
+### v3.2.0 - 2025-03-06
+- ✅ **Expanded subtitle providers**: Now uses all 9 available subtitle sources (addic7ed, bsplayer, gestdown, napiprojekt, opensubtitles, opensubtitlescom, podnapisi, subtitulamos, tvsubtitles)
+- ✅ **Improved subtitle find rate**: Successfully found subtitles for 141/141 Young Sheldon episodes (131 Chinese + 20 English)
+- ✅ **Resolution independence**: Clarified that subtitles are not resolution-dependent; 720p subtitles work on 1080p videos
+- ✅ **Enhanced smb-download-subtitle.py**: Refactored with modular functions and better error handling
 
 ### v3.0 - 2025-02-23
 - ✅ Added SMB subtitle download support
