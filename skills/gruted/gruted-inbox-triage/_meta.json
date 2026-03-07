@@ -1,0 +1,11 @@
+{
+  "owner": "gruted",
+  "slug": "gruted-inbox-triage",
+  "displayName": "Inbox Triage Bot",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772840132035,
+    "commit": null
+  },
+  "history": []
+}
