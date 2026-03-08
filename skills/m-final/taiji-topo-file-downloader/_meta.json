@@ -1,11 +1,17 @@
 {
   "owner": "m-final",
   "slug": "taiji-topo-file-downloader",
-  "displayName": "太极平台配置文件下载工具",
+  "displayName": "Taiji Topo File Downloader",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772557899989,
-    "commit": "https://github.com/openclaw/skills/commit/8e1f9e771cf79a3206e1f1c7928376a3c889266d"
+    "version": "1.1.0",
+    "publishedAt": 1772935521822,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772557899989,
+      "commit": "https://github.com/openclaw/skills/commit/8e1f9e771cf79a3206e1f1c7928376a3c889266d"
+    }
+  ]
 }
