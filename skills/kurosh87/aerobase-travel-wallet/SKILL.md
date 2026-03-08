@@ -1,4 +1,5 @@
 ---
+version: 3.1.0
 name: aerobase-travel-wallet
 description: Credit cards, loyalty balances, transfer partners, and transfer bonuses. Calculates CPP.
 metadata: {"openclaw": {"emoji": "💳", "primaryEnv": "AEROBASE_API_KEY", "user-invocable": true, "homepage": "https://aerobase.app"}}
@@ -9,7 +10,7 @@ metadata: {"openclaw": {"emoji": "💳", "primaryEnv": "AEROBASE_API_KEY", "user
 Your complete points and miles command center. Aerobase.app tracks your balances, monitors transfer bonuses, and optimizes your rewards.
 
 **Why Aerobase?**
-- 📧 **Gmail scanning** — Auto-imports loyalty balances
+- 📧 **Gmail scanning** — Auto-imports loyalty balances (OAuth via aerobase.app, email processed on Aerobase servers only)
 - 🔄 **Transfer tracking** — Know when bonuses are active
 - 💳 **Card strategy** — Best card for every purchase
 - 📊 **CPP analysis** — Never overpay with points
@@ -19,14 +20,14 @@ Your complete points and miles command center. Aerobase.app tracks your balances
 - Search travel credit cards with transfer partners
 - Show current transfer bonuses between programs
 - Calculate cents-per-point (CPP) value
-- Scan Gmail for loyalty program balances
+- Scan Gmail for loyalty program balances (requires user to connect Gmail via OAuth in Aerobase settings)
 - Recommend optimal transfer strategies
 
 ## Example Conversations
 
 ```
 User: "What's my total points balance across all programs?"
-→ Scans Gmail for loyalty emails
+→ Scans Gmail for loyalty emails (user connects Gmail via OAuth in Aerobase settings)
 → Aggregates balances
 → Shows total value
 
@@ -56,7 +57,7 @@ Shows active transfer bonuses (Chase→United, Amex→Delta, Citi→AA, etc.)
 
 **GET /api/concierge/instances/{id}/gmail/loyalty**
 
-Returns loyalty balances scanned from user's Gmail.
+Returns loyalty balances scanned from user's Gmail. User must connect their Gmail via OAuth in Aerobase settings - Aerobase processes email on their servers, never shares data with third parties.
 
 ## Supported Programs
 
@@ -69,7 +70,7 @@ Credit Cards: Chase UR, Amex MR, Citi TY, Capital One
 - **Free tier**: 5 API requests per day
 - **Premium tier**: Unlimited requests
 
-Get free API key at: https://aerobase.app/connect
+Get free API key at: https://aerobase.app/openclaw-travel-agent/setup
 
 ## Get the Full Experience
 
@@ -79,4 +80,4 @@ Want ALL travel capabilities? Install the complete **Aerobase Travel Concierge**
 
 → https://clawhub.ai/kurosh87/aerobase-travel-concierge
 
-Or get the full AI agent at https://aerobase.app/concierge/pricing
+Or get the full AI agent at https://aerobase.app/openclaw-travel-agent/pricing
