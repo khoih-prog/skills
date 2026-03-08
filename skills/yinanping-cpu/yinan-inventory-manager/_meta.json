@@ -1,0 +1,11 @@
+{
+  "owner": "yinanping-cpu",
+  "slug": "yinan-inventory-manager",
+  "displayName": "Inventory Manager",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772877801580,
+    "commit": null
+  },
+  "history": []
+}
