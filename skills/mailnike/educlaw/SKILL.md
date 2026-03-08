@@ -7,7 +7,7 @@ homepage: https://www.educlaw.ai
 source: https://github.com/avansaber/educlaw
 tier: 4
 category: education
-requires: [erpclaw-setup, erpclaw-gl, erpclaw-selling, erpclaw-payments, erpclaw-hr]
+requires: [erpclaw, erpclaw-people]
 database: ~/.openclaw/erpclaw/data.sqlite
 scripts: scripts/db_query.py
 user-invocable: true
@@ -42,7 +42,7 @@ school, university, college, report card, progress report.
 ### Setup (First Use Only)
 
 ```
-python3 {baseDir}/../erpclaw-setup/scripts/db_query.py --action initialize-database
+python3 {baseDir}/../erpclaw/scripts/db_query.py --action initialize-database
 python3 {baseDir}/scripts/db_query.py --action status
 ```
 
@@ -222,50 +222,50 @@ For all actions: `python3 {baseDir}/scripts/db_query.py --action <action> [flags
 | `submit-announcement` | --announcement-id [--published-by] | Publish + create notifications for audience |
 | `list-announcements` | --announcement-status --audience-type --company-id | List announcements |
 | `get-announcement` | --announcement-id | Get announcement + notification count |
-| `send-notification` | --recipient-type --recipient-id --notification-type --title --message --company-id | Send targeted notification |
+| `submit-notification` | --recipient-type --recipient-id --notification-type --title --message --company-id | Send targeted notification |
 | `list-notifications` | --recipient-id --recipient-type --is-read --company-id | List notifications |
-| `send-progress-report` | --student-id --academic-term-id --company-id | Mid-term report to student + guardians |
-| `send-emergency-alert` | --title --message --company-id | Broadcast emergency to ALL recipients |
+| `generate-progress-report` | --student-id --academic-term-id --company-id | Mid-term report to student + guardians |
+| `submit-emergency-alert` | --title --message --company-id | Broadcast emergency to ALL recipients |
 
 ## Advanced Patterns (Tier 3)
 
 ### FERPA Compliance
 Every `get-student` call automatically logs a FERPA access record. For manual logging:
 ```
---action log-data-access --student-id {id} --data-category grades --access-type view --access-reason "Parent conference" --user-id {user_id}
+--action record-data-access --student-id {id} --data-category grades --access-type view --access-reason "Parent conference" --user-id {user_id}
 ```
 
 ### Waitlist Flow
 ```
-# Section full → student goes to waitlist automatically on enroll-in-section
---action enroll-in-section --student-id {id} --section-id {full_section_id} --company-id {id}
+# Section full → student goes to waitlist automatically on create-section-enrollment
+--action create-section-enrollment --student-id {id} --section-id {full_section_id} --company-id {id}
 # → returns waitlist_status: waitlisted
 
 # When a student drops, advance the waitlist:
---action process-waitlist --section-id {id}
+--action apply-waitlist --section-id {id}
 # → offers seat to next student (48-hour window), sends notification
 ```
 
 ### Grade Amendment
 ```
-# After submit-grades (immutable), use amend-grade:
---action amend-grade --enrollment-id {id} --new-letter-grade B --new-grade-points 3.0 --reason "Data entry error" --amended-by {user_id}
+# After submit-grades (immutable), use update-grade:
+--action update-grade --enrollment-id {id} --new-letter-grade B --new-grade-points 3.0 --reason "Data entry error" --amended-by {user_id}
 # Creates amendment record + triggers GPA recalculation
 ```
 
 ### Emergency Alert
 ```
 # Broadcasts to ALL students + guardians + staff in company:
---action send-emergency-alert --title "School Closure" --message "School closed due to weather." --company-id {id} --sent-by {user_id}
+--action submit-emergency-alert --title "School Closure" --message "School closed due to weather." --company-id {id} --sent-by {user_id}
 ```
 
 ### Batch Operations
 ```
 # Batch attendance for entire class:
---action batch-mark-attendance --attendance-date 2025-09-15 --section-id {id} --company-id {id} \
+--action record-batch-attendance --attendance-date 2025-09-15 --section-id {id} --company-id {id} \
   --records '[{"student_id":"{id1}","attendance_status":"present"},{"student_id":"{id2}","attendance_status":"absent"}]'
 
 # Batch grade entry:
---action batch-enter-results --assessment-id {id} \
+--action record-batch-results --assessment-id {id} \
   --results '[{"student_id":"{id1}","points_earned":92},{"student_id":"{id2}","points_earned":78}]'
 ```

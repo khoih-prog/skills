@@ -28,7 +28,7 @@ def create_educlaw_tables(db_path):
         "SELECT name FROM sqlite_master WHERE type='table'"
     ).fetchall()]
     if "company" not in tables:
-        print("ERROR: Foundation tables not found. Run erpclaw-setup first.")
+        print("ERROR: Foundation tables not found. Run erpclaw first.")
         sys.exit(1)
 
     conn.executescript("""
@@ -700,8 +700,8 @@ def create_educlaw_tables(db_path):
     conn.commit()
     conn.close()
 
-    print(f"EduClaw schema created: 32 tables")
-    print(f"Database: {db_path}")
+    print(f"EduClaw schema created: 32 tables", file=sys.stderr)
+    print(f"Database: {db_path}", file=sys.stderr)
 
 
 if __name__ == "__main__":

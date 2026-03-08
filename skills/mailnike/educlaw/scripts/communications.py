@@ -176,7 +176,7 @@ def add_announcement(conn, args):
                (id, title, body, priority, audience_type, audience_filter,
                 publish_date, expiry_date, announcement_status, published_by,
                 company_id, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'draft', NULL, ?, ?, ?)""",
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'draft', '', ?, ?, ?)""",
             (ann_id, title, body, priority, audience_type,
              audience_filter,
              getattr(args, "publish_date", None),
