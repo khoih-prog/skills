@@ -14,11 +14,30 @@ from email.header import Header, decode_header
 from datetime import datetime, timedelta
 import email.utils
 import os
+import re
+
+# 加载环境变量
+ENV_PATH = os.path.join(os.path.expanduser('~'), '.openclaw', '.env')
+if os.path.exists(ENV_PATH):
+    with open(ENV_PATH, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                key, value = line.split('=', 1)
+                os.environ[key.strip()] = value.strip()
+
+def resolve_env_variables(text):
+    """解析 ${VAR_NAME} 格式的环境变量"""
+    def replace_var(match):
+        var_name = match.group(1)
+        return os.environ.get(var_name, match.group(0))
+    return re.sub(r'\$\{([^}]+)\}', replace_var, text)
 
 # 加载配置
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'email_config.json')
 with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
-    config = json.load(f)
+    config_text = f.read()
+    config = json.loads(resolve_env_variables(config_text))
 
 EMAIL_CONFIG = config['email']
 MONITOR_CONFIG = config['monitor']

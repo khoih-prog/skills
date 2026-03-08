@@ -3,11 +3,16 @@
   "slug": "email-monitor",
   "displayName": "Email Monitor",
   "latest": {
-    "version": "1.0.7",
-    "publishedAt": 1772705394496,
-    "commit": "https://github.com/openclaw/skills/commit/c9eae643a04cec3feba0f991279e3c4429473952"
+    "version": "2.0.0",
+    "publishedAt": 1772970251976,
+    "commit": null
   },
   "history": [
+    {
+      "version": "1.0.7",
+      "publishedAt": 1772705394496,
+      "commit": "https://github.com/openclaw/skills/commit/c9eae643a04cec3feba0f991279e3c4429473952"
+    },
     {
       "version": "1.0.4",
       "publishedAt": 1772682091931,
