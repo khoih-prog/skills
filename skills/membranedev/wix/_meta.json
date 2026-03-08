@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "wix",
+  "displayName": "Wix",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772866950928,
+    "commit": null
+  },
+  "history": []
+}
