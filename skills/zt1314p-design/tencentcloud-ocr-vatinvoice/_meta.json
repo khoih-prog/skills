@@ -1,0 +1,11 @@
+{
+  "owner": "zt1314p-design",
+  "slug": "tencentcloud-ocr-vatinvoice",
+  "displayName": "TencentCloud VatInvoice OCR",
+  "latest": {
+    "version": "1.0.1",
+    "publishedAt": 1772962340704,
+    "commit": null
+  },
+  "history": []
+}
