@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "heroku",
+  "displayName": "Heroku",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772866939184,
+    "commit": null
+  },
+  "history": []
+}
