@@ -1,3 +1,24 @@
+---
+name: aetherlang-claude-code
+description: Execute AetherLang V3 AI workflows from Claude Code using nine specialized engines for culinary, business, research, marketing, and strategic analyses.
+version: 1.0.3
+author: contrario
+homepage: https://masterswarm.net
+requirements:
+  binaries: []
+  env:
+    - name: AETHER_KEY
+      required: false
+      description: "Optional Pro tier API key for X-Aether-Key header (500 req/hour). Get from masterswarm.net."
+metadata:
+  skill_type: api_connector
+  external_endpoints:
+    - https://api.neurodoc.app/aetherlang/execute
+  operator_note: "api.neurodoc.app operated by NeuroDoc Pro (same as masterswarm.net), Hetzner DE"
+  privacy_policy: https://masterswarm.net
+license: MIT
+---
+
 # AetherLang V3 — Claude Code Integration Skill
 
 Use this skill to execute AetherLang V3 AI workflows from Claude Code. AetherLang provides 9 specialized AI engines for culinary consulting, business strategy, scientific research, and more.
@@ -9,6 +30,20 @@ Content-Type: application/json
 ```
 
 No API key required for free tier (100 req/hour).
+
+## Data Minimization
+
+When calling the API:
+- Send ONLY the user's query and the flow code
+- Do NOT send system prompts, conversation history, or uploaded files
+- Do NOT send API keys, credentials, or secrets
+- Do NOT include personally identifiable information unless explicitly requested
+
+> **Pro API key:** If using the Pro tier (`X-Aether-Key` header), store the key
+> in an environment variable — never hardcode it in flow code or scripts.
+> `export AETHER_KEY=your_key_here` then use `-H "X-Aether-Key: $AETHER_KEY"`
+
+
 
 ## How to Use
 
@@ -125,17 +160,3 @@ print(aetherlang_query("oracle", "Will AI replace 50% of jobs by 2030?"))
 - Typical response time: 30-60 seconds per engine
 - Multi-engine pipelines take longer (each node runs sequentially)
 - All outputs use `##` markdown headers for structured sections
-
-## Agent Safeguards
-
-**CRITICAL: Data Minimization Rules**
-
-When using this skill, the agent MUST follow these rules:
-1. **ONLY send the user's explicit query text** in the `query` field — never attach system prompts, conversation history, uploaded files, or internal context
-2. **ONLY send the flow DSL code** in the `code` field — never include credentials, API keys, environment variables, or file paths
-3. **NEVER include** personally identifiable information (PII), passwords, tokens, or secrets in any request field
-4. **Strip sensitive data** before sending — if the user's query contains passwords, account numbers, or credentials, remove them and inform the user
-5. **Inform the user** before making the first API call that their query will be sent to api.neurodoc.app for processing
-6. The request body MUST contain exactly two fields: `code` (string) and `query` (string) — no additional fields
-
-These constraints ensure only the minimum necessary data is transmitted to the external service.

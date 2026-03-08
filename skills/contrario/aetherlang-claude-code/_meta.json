@@ -3,9 +3,15 @@
   "slug": "aetherlang-claude-code",
   "displayName": "AetherLang V3 for Claude Code",
   "latest": {
-    "version": "1.0.1",
-    "publishedAt": 1771376548377,
-    "commit": "https://github.com/openclaw/skills/commit/774684ce7060be75e774562654ecf09a2ff1d609"
+    "version": "1.0.3",
+    "publishedAt": 1772877043259,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.1",
+      "publishedAt": 1771376548377,
+      "commit": "https://github.com/openclaw/skills/commit/774684ce7060be75e774562654ecf09a2ff1d609"
+    }
+  ]
 }
