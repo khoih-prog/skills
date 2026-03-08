@@ -3,9 +3,15 @@
   "slug": "bug-audit",
   "displayName": "Bug Audit",
   "latest": {
-    "version": "1.0.0",
-    "publishedAt": 1772090836511,
-    "commit": "https://github.com/openclaw/skills/commit/c7b275ceb8699e915b74413e7e54882ec8ad9162"
+    "version": "1.1.0",
+    "publishedAt": 1772820083423,
+    "commit": null
   },
-  "history": []
+  "history": [
+    {
+      "version": "1.0.0",
+      "publishedAt": 1772090836511,
+      "commit": "https://github.com/openclaw/skills/commit/c7b275ceb8699e915b74413e7e54882ec8ad9162"
+    }
+  ]
 }
