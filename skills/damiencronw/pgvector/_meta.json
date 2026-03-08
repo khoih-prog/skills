@@ -1,0 +1,11 @@
+{
+  "owner": "damiencronw",
+  "slug": "pgvector",
+  "displayName": "pgvector",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772934681623,
+    "commit": null
+  },
+  "history": []
+}
