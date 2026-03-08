@@ -10,7 +10,7 @@ SC_API_KEY="${SC_API_KEY:?SC_API_KEY not set}"
 
 # Concurrency guard: prevent overlapping poll runs.
 LOCK_DIR="${TMPDIR:-/tmp}/squad-control-poll.lock"
-LOCK_TTL_SEC="${SC_POLL_LOCK_TTL_SEC:-840}" # 14 min default, below 15m cron interval
+LOCK_TTL_SEC="${SC_POLL_LOCK_TTL_SEC:-240}" # 4 min default, below 5m cron interval
 
 cleanup_lock() {
   rm -rf "$LOCK_DIR" 2>/dev/null || true

@@ -33,6 +33,13 @@ Then restart: `openclaw gateway restart`
 Optional hardening env vars:
 - `SC_REVIEWER_AGENT_ID` — deterministic reviewer routing
 - `SC_DEFAULT_BRANCH` — default PR/merge base branch (if not `main`)
+- `SC_WAKE_DISPATCH_AGENT` — which local OpenClaw agent should issue residual dispatcher handoffs (defaults to `main`)
+- `SC_WAKE_DISPATCH_MODE` — `acp` (default) for direct ACP `sessions.spawn`, or `chat` to force the older dispatcher handoff path
+- `SC_WAKE_ACP_AGENT` — which ACP harness agent should run direct wake-dispatched work (defaults to `codex`)
+- `SC_WAKE_LOCAL_GATEWAY_URL` — override the local authenticated OpenClaw Gateway base URL used for `POST /api/sessions/spawn`
+- `SC_WAKE_LOCAL_GATEWAY_TOKEN` — override the local gateway token if you do not want to rely on `~/.openclaw/gateway.token`
+- `SC_WAKE_LOCAL_GATEWAY_TOKEN_FILE` — override the token file path (default: `~/.openclaw/gateway.token`)
+- `SC_WAKE_ACP_ENDPOINT_CACHE_TTL_SEC` — how long to remember that the local `/api/sessions/spawn` endpoint is unavailable before retrying (default: 3600)
 
 **About SC_API_KEY scopes:**
 - **Workspace-scoped key** — bound to a single workspace. `/api/tasks/pending` returns only that workspace's tasks. Good for single-workspace setups.
@@ -53,9 +60,19 @@ Run this command once in your terminal:
 ```bash
 openclaw cron add \
   --name "squad-control-poll" \
-  --every 15m \
+  --every 5m \
   --session isolated \
   --message "Use the squad-control skill to check for and execute pending tasks."
+```
+
+Optional and currently experimental on OpenClaw 2026.3.2:
+
+```bash
+openclaw cron add \
+  --name "squad-control-wake-listener" \
+  --every 15m \
+  --session isolated \
+  --message "Use the squad-control skill to run the wake listener for low-latency dispatch. If the listener spawns a local openclaw agent handoff, wait for that subprocess to finish before ending the cron session."
 ```
 
 Verify it's scheduled:
@@ -89,8 +106,10 @@ Agents will automatically receive this token when they pick up tasks and use it 
 
 1. Go to **Agents → Create Agent** (e.g. a Developer agent)
 2. Go to **Tasks → New Task**, assign it to your agent
-3. Wait up to 15 min (or click Run on the cron job to test immediately)
+3. Wait up to 5 min (or click Run on the cron job to test immediately)
 4. Watch the agent pick it up and work
+
+With the default polling cron, pickup latency is up to 5 minutes. The optional wake-listener cron is still experimental on current OpenClaw builds: Squad Control first uses an outbound wake relay connection and falls back to the legacy long-poll endpoint if needed, but the final local dispatch step still depends on the host OpenClaw runtime. On older OpenClaw builds that do not expose the local `/api/sessions/spawn` endpoint, the listener caches that capability miss for a while and falls back to chat dispatch.
 
 ---
 
@@ -98,11 +117,11 @@ Agents will automatically receive this token when they pick up tasks and use it 
 
 ```
 Squad Control (cloud)             OpenClaw (your machine)
-  ├── Task kanban              ←→   ├── Polls /api/tasks/pending every 15m
+  ├── Task kanban              ←→   ├── Polls /api/tasks/pending every 5m
   ├── Agent definitions             ├── Parses workspace.repoUrl + githubToken
   ├── Thread history                ├── Clones repo, does work
   └── Review flow                   ├── Creates PRs, posts results to thread
                                     └── Reports success or failure back
 ```
 
-Pull-based: OpenClaw polls Squad Control. No public URL or port forwarding needed.
+Pull-based: OpenClaw polls Squad Control. The optional wake listener keeps the connection outbound-only as well, so there is still no public URL or port forwarding requirement, but the recommended production path on current OpenClaw builds is the 5-minute polling cron.

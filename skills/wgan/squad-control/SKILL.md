@@ -1,6 +1,6 @@
 ---
 name: squad-control
-version: 1.2.1
+version: 1.3.0
 homepage: https://squadcontrol.ai
 env:
   SC_API_URL:
@@ -60,6 +60,7 @@ Orchestrate AI agent tasks from Squad Control's kanban board.
 - **Review checklist:** `references/review-checklist.md`
 - **Poll result schema:** `references/poll-result.schema.json`
 - **Migration notes:** `references/migration-notes.md`
+- **Wake listener:** `scripts/wake-listener.sh`
 
 Required env vars: `SC_API_URL`, `SC_API_KEY`
 
@@ -84,6 +85,22 @@ Alternatively, call the APIs directly:
 - Review: `curl -sL "${SC_API_URL}/api/tasks/list?status=review" -H "x-api-key: ${SC_API_KEY}"`
 
 Parse workspace config from the response (see **Multi-Workspace Response Handling** below).
+
+## Wake Listener Flow
+
+When a cron fires to run the wake listener:
+
+1. Run `~/.openclaw/skills/squad-control/scripts/wake-listener.sh`
+2. The script first calls `POST /api/wake/session` and opens an outbound relay connection when the wake relay is configured
+3. When a wake signal arrives, the script immediately runs `poll-tasks.sh` and captures the resulting `POLL_RESULT` envelope
+4. If `pending.tasks` contains assigned work, the listener launches an ACP worker session directly via the local authenticated `POST /api/sessions/spawn` endpoint instead of routing through a second dispatcher LLM turn
+5. If there is no direct pending work but `review.tasks` or `stuck.tasks` remain, the listener spawns a local `openclaw agent` turn for the residual dispatcher work
+6. The wake-listener cron session can then exit cleanly; future wakes will be handled by the next listener run
+7. If the relay is unavailable, it falls back to `GET /api/wake/poll` and uses the same handoff rule after the first wake
+8. If the local `/api/sessions/spawn` endpoint returns 404/405/410/501 on an older OpenClaw build, the listener caches that capability miss for a while and falls back to the chat dispatcher path without retrying the same 404 on every wake
+
+Use this when you want low-latency async dispatch **without** exposing a public OpenClaw gateway URL.
+The listener stays outbound-only; the existing 15-minute poll cron remains the final fallback recovery path.
 
 ### Multi-Workspace Response Handling
 
@@ -498,7 +515,7 @@ Reviewer selection order:
 Run parser tests locally:
 
 ```bash
-~/.openclaw/workspace/skills/squad-control/scripts/run-tests.sh
+~/.openclaw/skills/squad-control/scripts/run-tests.sh
 ```
 
 `POLL_RESULT` envelope contract is documented in:
