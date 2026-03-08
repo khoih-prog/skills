@@ -3,11 +3,16 @@
   "slug": "meyhem-search",
   "displayName": "Meyhem Search",
   "latest": {
-    "version": "0.1.9",
-    "publishedAt": 1772806206305,
-    "commit": "https://github.com/openclaw/skills/commit/4aac73cf50e36018ed785e4fcd4e4f7d9028c659"
+    "version": "0.2.0",
+    "publishedAt": 1772808254719,
+    "commit": null
   },
   "history": [
+    {
+      "version": "0.1.9",
+      "publishedAt": 1772806206305,
+      "commit": "https://github.com/openclaw/skills/commit/4aac73cf50e36018ed785e4fcd4e4f7d9028c659"
+    },
     {
       "version": "0.1.3",
       "publishedAt": 1772466887057,

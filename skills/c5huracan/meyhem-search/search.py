@@ -13,7 +13,7 @@ def main():
         print("Usage: search.py <query> [-n <num>] [--agent <id>] [--content]")
         sys.exit(0)
 
-    n, agent = 5, 'openclaw-agent'
+    n, agent = 5, 'my-agent'
     if '-n' in args:
         i = args.index('-n'); n = int(args[i+1]); args = args[:i] + args[i+2:]
     if '--agent' in args:
