@@ -1,6 +1,6 @@
 ---
 name: skill-analyzer
-description: Comprehensive skill analysis tool that evaluates OpenClaw skills from 5 dimensions: functionality, security, usability, documentation, and best practices. Uses pure Python (no external dependencies). Provides weighted scoring, strengths/weaknesses analysis, and risk assessment. Use when user wants to analyze, review, or improve an existing skill.
+description: Quality scanner for OpenClaw skills. Evaluates functionality, security, usability, documentation, and best practices with weighted scoring. Use when: (1) Analyzing skill quality before publishing, (2) Finding improvement opportunities, (3) Security review of third-party skills. Pure Python - no dependencies.
 ---
 
 # Skill Analyzer - Comprehensive Skill Analysis Tool
