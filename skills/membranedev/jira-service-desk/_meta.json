@@ -1,0 +1,11 @@
+{
+  "owner": "membranedev",
+  "slug": "jira-service-desk",
+  "displayName": "Jira Service Desk",
+  "latest": {
+    "version": "1.0.0",
+    "publishedAt": 1772866959898,
+    "commit": null
+  },
+  "history": []
+}
