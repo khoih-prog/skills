@@ -1,88 +1,79 @@
 ---
 name: stock-price-checker-pro
-description: Check stock prices using yfinance library. No API key required.
+description: "Run a local script to fetch current stock prices. Use the read tool to load this SKILL.md, then exec the uv run command inside it. Do NOT use sessions_spawn or web search. Triggers: stock price, share price, how much is [company] stock, ticker price, market price of."
 homepage: https://finance.yahoo.com
 metadata: {"clawdbot":{"emoji":"📈","requires":{"bins":["uv"]}}}
 ---
 
-# Skill: Stock Price Checker
-
-
-## Prerequisites
-
-- `uv` is installed (the script will automatically handle dependency installation and execution)
-
+# Skill: Stock Price Checker Pro
 
 ## When to use
-- The user wants to check the current stock price of a company, ETF, or index.
-- The user wants related market data (previous close, market cap, volume) and recent news or corporate events.
+- User asks for the current stock price of a company or ETF.
+- User asks about daily price movement, change, or % change.
+- User asks about 52-week high/low, 2W, 1M, or 6M price ranges.
+- User asks about trading volume or market cap.
+- User wants recent company-specific news headlines.
+- User asks about upcoming earnings, ex-dividend, or dividend dates.
 
-## Step-by-step approach
-- When given a company name, first locate the corresponding stock ticker symbol using Yahoo Finance or another reliable service.
-- If the user doesn't specify a currency, assume USD for stock prices. For stocks listed on other exchanges (e.g., German exchanges), use the appropriate ticker (e.g., `NOV.DE`) rather than converting currencies.
-- Once the ticker is identified, use the ticker as input to the `src/main.py` script. The script will fetch the current price and related information using the `yfinance` library (for example, `uv run src/main.py AAPL`).
+## When NOT to use
+- User wants P/E ratio, margins, debt, ROE, or any fundamental metric → use `stock-fundamentals`
+- User wants broad market news or macro conditions → use `market-news-brief`
+- User wants a full research report combining all signals → use `equity-research`
 
-## Usage Examples
+## Commands
 
-**Check NVIDIA stock:**
+### Check a stock price
+
 ```bash
-uv run src/main.py NVDA
+uv run /root/.openclaw/workspace/skills/stock-price-checker-pro/src/main.py <TICKER>
 ```
 
-**Check VOO (S&P 500 ETF):**
+### Examples
+
 ```bash
-uv run src/main.py VOO
+# US stocks
+uv run /root/.openclaw/workspace/skills/stock-price-checker-pro/src/main.py AAPL
+uv run /root/.openclaw/workspace/skills/stock-price-checker-pro/src/main.py TSLA
+uv run /root/.openclaw/workspace/skills/stock-price-checker-pro/src/main.py NVDA
+uv run /root/.openclaw/workspace/skills/stock-price-checker-pro/src/main.py MSFT
+
+# European stocks
+uv run /root/.openclaw/workspace/skills/stock-price-checker-pro/src/main.py RHM.DE
+uv run /root/.openclaw/workspace/skills/stock-price-checker-pro/src/main.py SAP.DE
+uv run /root/.openclaw/workspace/skills/stock-price-checker-pro/src/main.py ASML.AS
+uv run /root/.openclaw/workspace/skills/stock-price-checker-pro/src/main.py SHEL.L
+
+# ETFs and indices
+uv run /root/.openclaw/workspace/skills/stock-price-checker-pro/src/main.py SPY
+uv run /root/.openclaw/workspace/skills/stock-price-checker-pro/src/main.py QQQ
+
+# Crypto
+uv run /root/.openclaw/workspace/skills/stock-price-checker-pro/src/main.py BTC-USD
+uv run /root/.openclaw/workspace/skills/stock-price-checker-pro/src/main.py ETH-USD
 ```
 
-**Check any stock symbol:**
-```bash
-uv run src/main.py TSLA
-uv run src/main.py MSFT
-uv run src/main.py AAPL
-```
+## Ticker Format Reference
 
-## Output Format
+| Market        | Format       | Example              |
+|---------------|--------------|----------------------|
+| US stocks     | Plain        | `AAPL`, `NVDA`       |
+| German stocks | `.DE` suffix | `RHM.DE`, `SAP.DE`   |
+| UK stocks     | `.L` suffix  | `SHEL.L`, `BP.L`     |
+| Dutch stocks  | `.AS` suffix | `ASML.AS`            |
+| Japanese      | `.T` suffix  | `7203.T`             |
+| Korean        | `.KS` suffix | `005930.KS`          |
+| Crypto        | `-USD`       | `BTC-USD`, `ETH-USD` |
+| ETFs          | Plain        | `SPY`, `QQQ`, `EWG`  |
 
-The script prints a human-readable market snapshot to stdout.
+## Output includes
+- Current price, daily change & % change vs previous close
+- Volume vs average volume and market cap
+- Today's high / low
+- 2W, 1M, 6M, 52W high / low ranges
+- Recent company-specific news headlines with links
+- Upcoming events: earnings date, ex-dividend date, dividend payment
 
-### Example Output
-```text
-NVDA: NVIDIA Corporation
-$189.52 ▲$3.05 (1.64%), Prev Close: $186.47
-Vol: 112.4M Avg: 98.0M | 115% of avg | Mkt Cap: $4.61T
-
-Today High: $190.10
-Today Low:  $185.00
-
-2W High: $195.00
-2W Low:  $172.50
-
-1M High: $195.00
-1M Low:  $160.00
-
-6M High: $210.00
-6M Low:  $120.00
-
-52W High: $212.19
-52W Low:  $86.62
-
-Recent News:
-1. NVIDIA reports record data center revenue
-   Link: https://www.reuters.com/...
-
-Upcoming Events:
-1. Earnings Call: 2026-05-01 20:00:00 GMT
-```
-
-## Technical Notes
-- Uses the `yfinance` library to fetch data from Yahoo Finance.
-- No API key required.
-- The Python implementation lives under `src/` and is split into `src/main.py`, `src/service.py`, `src/utils.py`, and `src/constants.py` to separate orchestration, data retrieval, formatting helpers, and configuration.
-- The script prints formatted text rather than JSON.
-- `market_cap`, `volume`, and `avg_volume` may be unavailable for some tickers depending on Yahoo Finance coverage.
-
-## Troubleshooting
-- If the stock symbol is invalid or not found, the script will return an error message.
-- Some data (like market cap) may be delayed or unavailable for certain tickers (e.g., OTC or very small-cap symbols).
-- For international tickers, specify the exchange suffix (e.g., `BMW.DE`) to ensure data is pulled from the correct market.
-- If `news` or `events` are empty arrays, it means the script could not find recent items for that symbol.
+## Notes
+- `uv run` reads the inline `# /// script` dependency block in `main.py` and auto-installs `yfinance` in an isolated environment — no pip install or venv setup needed.
+- Do NOT use the `stock-price.sh` wrapper — call `uv run src/main.py` directly as shown above.
+- Do NOT use web search or curl to fetch prices — always use this script.
