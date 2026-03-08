@@ -147,6 +147,6 @@ def init_mental_schema(db_path: str = DB_PATH) -> dict:
 
 if __name__ == "__main__":
     result = init_mental_schema()
-    print(f"HealthClaw Mental schema created in {result['database']}")
-    print(f"  Tables: {result['tables']}")
-    print(f"  Indexes: {result['indexes']}")
+    print(f"HealthClaw Mental schema created in {result['database']}", file=sys.stderr)
+    print(f"  Tables: {result['tables']}", file=sys.stderr)
+    print(f"  Indexes: {result['indexes']}", file=sys.stderr)
